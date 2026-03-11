@@ -10,6 +10,12 @@ Ignore Python cache files
 pycache/
 *.pyc
 
+🛑 Ignore Virtual Environments
+
+venv/
+env/
+.venv/
+
 Ignore user uploaded images/documents (so we don't overwrite live files)
 
 static/uploads/profiles/*
