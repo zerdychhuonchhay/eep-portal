@@ -4,15 +4,15 @@
 
 {% block main %}
 <div class="container mt-4 mb-5" style="max-width: 1400px;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
+    <!-- Fixed Mobile Header Layout -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <h2 class="text-center text-md-start"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
         
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap justify-content-center gap-2">
             <a href="/export_grades" class="btn btn-outline-success shadow-sm fw-bold">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export to Excel
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
             </a>
             
-            <!-- Quick Add Button using a Modal to select student -->
             <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#quickAddModal">
                 <i class="bi bi-journal-plus me-1"></i> Add Report
             </button>
@@ -41,35 +41,43 @@
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <!-- MAIN DATA CONTAINER -->
+    <div class="card shadow-sm border-0 bg-transparent bg-md-white">
         <div class="card-body p-0">
-            <div class="p-3 w-100">
-                <table id="academicTable" class="table table-sm table-hover align-middle mb-0 border dt-responsive nowrap" style="width:100%; font-size: 0.9rem;">
-                    <thead class="table-dark">
+            <!-- 
+                APP-LIKE STYLING: We use a custom class 'app-style-table' 
+                to trigger the card layout on mobile devices.
+            -->
+            <div class="p-0 p-md-3 w-100">
+                <table id="academicTable" class="table app-style-table align-middle mb-0" style="width:100%;">
+                    <thead class="table-dark d-none d-md-table-header-group">
                         <tr>
                             <th>Student</th>
                             <th>Term</th>
                             <th>Grade Level</th>
                             <th>School</th>
-                            <th class="text-center border-start">Avg</th>
+                            <th class="text-center">Avg</th>
                             <th class="text-center">Rank</th>
-                            <th class="border-start">Core Subjects & Scores</th>
+                            <th>Core Subjects & Scores</th>
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for record in academic_records %}
-                        <tr>
+                        <tr class="shadow-sm shadow-md-none bg-white rounded mb-3 mb-md-0 d-block d-md-table-row border border-md-0 position-relative p-3 p-md-0">
+                            
                             <!-- Student Info -->
-                            <td>
-                                <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark">
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
+                                <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-1">Student</span>
+                                <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark fs-5 fs-md-6">
                                     {{ record.first_name }} {{ record.last_name }}
                                 </a>
                                 <span class="d-block small text-muted">{{ record.ngo_id }}</span>
                             </td>
                             
                             <!-- Term Info -->
-                            <td>
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
+                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Term:</span>
                                 <span class="fw-bold">{{ record.month }} {{ record.academic_year }}</span>
                                 {% if record.semester %}
                                     <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">{{ record.semester }}</span>
@@ -77,31 +85,37 @@
                             </td>
                             
                             <!-- Historical Grade -->
-                            <td>{{ record.historical_grade if record.historical_grade else record.current_grade }}</td>
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
+                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Level:</span>
+                                {{ record.historical_grade if record.historical_grade else record.current_grade }}
+                            </td>
                             
                             <!-- Historical School -->
-                            <td class="khmer-font small text-muted" style="max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-2 pb-md-2 khmer-font small text-muted" style="max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">School:</span>
                                 {{ record.school_name if record.school_name else '-' }}
                             </td>
                             
-                            <!-- Overall Average -->
-                            <td class="text-center border-start fw-bold">
+                            <!-- Overall Average (Floating badge on mobile!) -->
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom text-md-center position-absolute top-0 end-0 p-3 position-md-static p-md-2">
                                 {% if record.overall_average %}
-                                    <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm fs-6">
+                                    <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm fs-5 fs-md-6">
                                         {{ record.overall_average }}%
                                     </span>
                                 {% else %}
-                                    <span class="text-muted">-</span>
+                                    <span class="text-muted d-none d-md-inline">-</span>
                                 {% endif %}
                             </td>
                             
                             <!-- Class Rank -->
-                            <td class="text-center fw-bold text-secondary">
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-2 pb-md-2 text-md-center fw-bold text-secondary">
+                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Rank:</span>
                                 {{ record.class_rank if record.class_rank else '-' }}
                             </td>
                             
                             <!-- Condensed Subject List -->
-                            <td class="border-start" style="max-width: 300px; white-space: normal;">
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom border-top border-md-start pt-3 pt-md-2 pb-3 pb-md-2" style="max-width: 300px; white-space: normal;">
+                                <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-2">Subject Breakdown:</span>
                                 {% if record.subjects %}
                                     <div class="d-flex flex-wrap gap-1">
                                         {% for sub in record.subjects %}
@@ -117,10 +131,10 @@
                                 {% endif %}
                             </td>
                             
-                            <!-- Action -->
-                            <td class="text-end pe-3">
-                                <a href="/edit_report/{{ record.report_id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-0">
-                                    Edit
+                            <!-- Action (Full width button on mobile) -->
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom text-md-end pt-0 pt-md-2 pe-md-3">
+                                <a href="/edit_report/{{ record.report_id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-2 py-md-0 w-100 w-md-auto mt-2 mt-md-0">
+                                    <i class="bi bi-pencil-square me-1 d-md-none"></i> Edit Report
                                 </a>
                             </td>
                         </tr>
@@ -131,11 +145,42 @@
         </div>
     </div>
 </div>
+
+<!-- Custom CSS for the Native App Layout -->
+<style>
+    /* Remove background on mobile so cards stand out */
+    @media (max-width: 767.98px) {
+        .bg-md-white { background-color: transparent !important; }
+        
+        /* Clean up DataTables controls for mobile */
+        .dataTables_wrapper .dataTables_filter {
+            float: none;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            width: 100%;
+            margin-left: 0;
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_info {
+            display: none; /* Hide pagination info to keep it clean */
+        }
+        
+        /* Add spacing between cards */
+        .app-style-table tbody tr {
+            margin-bottom: 1rem !important;
+            border-radius: 12px !important;
+            display: block;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // JavaScript for the Modal Button Redirect
     function routeToStudent() {
         const studentId = document.getElementById('quickStudentSelect').value;
         if (studentId) {
@@ -143,16 +188,16 @@
         }
     }
 
-    // Initialize DataTables for Search & Sort
     $(document).ready(function() {
+        // We use a simpler DataTables config because our custom CSS handles the mobile view natively
         $('#academicTable').DataTable({
-            responsive: true, // Turns on mobile mode
             "pageLength": 25,
             "order": [
-                [1, "desc"] // Automatically sorts by Term (Column index 1)
+                [1, "desc"] 
             ],
             "language": {
-                "search": "🔍 Search Gradebook:"
+                "search": "",
+                "searchPlaceholder": "🔍 Search records..."
             }
         });
     });
