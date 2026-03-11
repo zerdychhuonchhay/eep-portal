@@ -18,20 +18,24 @@
                     <i class="bi bi-archive-fill me-1"></i> Archive
                 </a>
                 <a href="/export_students" class="btn btn-outline-success shadow-sm fw-bold">
-                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Export to Excel
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
                 </a>
                 <a href="/add_student" class="btn btn-primary shadow-sm fw-bold">
-                    <i class="bi bi-person-plus-fill me-1"></i> Add New Student
+                    <i class="bi bi-person-plus-fill me-1"></i> Add New
                 </a>
             </div>
         </div>
 
-        <div class="card shadow-sm border-0">
+        <!-- MAIN DATA CONTAINER -->
+        <div class="card shadow-sm border-0 bg-transparent bg-md-white">
             <div class="card-body p-0">
-                <!-- FIXED: Removed 'table-responsive' class because it breaks the mobile plugin! -->
-                <div class="p-3 w-100">
-                    <table id="rosterTable" class="table table-hover align-middle mb-0 dt-responsive nowrap" style="width:100%">
-                        <thead class="table-dark">
+                <!-- 
+                    APP-LIKE STYLING: We use a custom class 'app-style-table' 
+                    to trigger the card layout on mobile devices.
+                -->
+                <div class="p-0 p-md-3 w-100">
+                    <table id="rosterTable" class="table app-style-table align-middle mb-0" style="width: 100%;">
+                        <thead class="table-dark d-none d-md-table-header-group">
                             <tr>
                                 <th>NGO ID</th>
                                 <th>First Name</th>
@@ -45,40 +49,64 @@
                         </thead>
                         <tbody>
                             {% for student in students %}
-                                <tr>
-                                    <td><strong>{{ student.ngo_id }}</strong></td>
+                                <!-- 
+                                    MOBILE MAGIC: We made the whole row clickable! 
+                                    Tapping anywhere on the card takes you to the profile.
+                                -->
+                                <tr class="shadow-sm shadow-md-none bg-white rounded mb-3 mb-md-0 d-block d-md-table-row border border-md-0 position-relative p-3 p-md-0" style="cursor: pointer;" onclick="window.location='/student/{{ student.id }}'">
                                     
-                                    <!-- First Name (with Avatar linked to profile) -->
-                                    <td>
-                                        <a href="/student/{{ student.id }}" class="d-flex align-items-center text-decoration-none text-dark">
-                                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=38" %}
-                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-2 shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=38';">
-                                            <span class="fw-bold text-primary">{{ student.first_name }}</span>
-                                        </a>
+                                    <!-- ID (Hidden on mobile to save space, or shown small) -->
+                                    <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
+                                        <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-1">NGO ID: {{ student.ngo_id }}</span>
+                                        <strong class="d-none d-md-inline">{{ student.ngo_id }}</strong>
                                     </td>
                                     
-                                    <!-- Last Name -->
-                                    <td><span class="fw-bold">{{ student.last_name }}</span></td>
+                                    <!-- First Name (with Avatar linked to profile) -->
+                                    <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
+                                        <div class="d-flex align-items-center">
+                                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=45" %}
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=45';">
+                                            <div>
+                                                <!-- We combine First and Last name on mobile for a cleaner look -->
+                                                <span class="fw-bold text-primary fs-5 fs-md-6 d-block">{{ student.first_name }} <span class="d-md-none">{{ student.last_name }}</span></span>
+                                                <span class="d-md-none khmer-font text-muted small">{{ student.khmer_name if student.khmer_name else '-' }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
                                     
-                                    <!-- Khmer Name -->
-                                    <td class="khmer-font text-muted fw-semibold">
+                                    <!-- Last Name (Hidden on mobile since combined with First Name above) -->
+                                    <td class="d-none d-md-table-cell border-0 border-md-bottom"><span class="fw-bold">{{ student.last_name }}</span></td>
+                                    
+                                    <!-- Khmer Name (Hidden on mobile since combined above) -->
+                                    <td class="d-none d-md-table-cell border-0 border-md-bottom khmer-font text-muted fw-semibold">
                                         {{ student.khmer_name if student.khmer_name else '-' }}
                                     </td>
                                     
-                                    <td>{{ student.gender }}</td>
-                                    <td>{{ student.grade_level }}</td>
-                                    <td>
-                                        <span class="badge {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                    <!-- Gender (Hidden on mobile to save space) -->
+                                    <td class="d-none d-md-table-cell border-0 border-md-bottom">{{ student.gender }}</td>
+                                    
+                                    <!-- Grade Level -->
+                                    <td class="d-block d-md-table-cell border-0 border-md-bottom pb-2 pb-md-2 mt-2 mt-md-0">
+                                        <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Grade:</span>
+                                        {{ student.grade_level }}
+                                    </td>
+                                    
+                                    <!-- Status (Floating badge on mobile!) -->
+                                    <td class="d-block d-md-table-cell border-0 border-md-bottom position-absolute top-0 end-0 p-3 position-md-static p-md-2">
+                                        <span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %} shadow-sm">
                                             {{ student.status }}
                                         </span>
                                     </td>
-                                    <td class="text-end pe-3">
-                                        <div class="btn-group shadow-sm">
-                                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold" title="Add Report">
-                                                <i class="bi bi-journal-plus"></i>
+                                    
+                                    <!-- Quick Log (Full width buttons on mobile) -->
+                                    <td class="d-block d-md-table-cell border-0 border-md-bottom border-top border-md-start text-md-end pe-md-3 pt-3 pt-md-2 mt-2 mt-md-0" onclick="event.stopPropagation();">
+                                        <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-2">Quick Actions:</span>
+                                        <div class="d-flex d-md-inline-flex gap-2 w-100 w-md-auto">
+                                            <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold flex-grow-1 shadow-sm" title="Add Report">
+                                                <i class="bi bi-journal-plus"></i> <span class="d-md-none ms-1">Grades</span>
                                             </a>
-                                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold" title="Add Follow-Up">
-                                                <i class="bi bi-clipboard2-heart-fill"></i>
+                                            <a href="/add_followup/{{ student.id }}" class="btn btn-outline-danger fw-bold flex-grow-1 shadow-sm" title="Add Follow-Up">
+                                                <i class="bi bi-clipboard2-heart-fill"></i> <span class="d-md-none ms-1">Notes</span>
                                             </a>
                                         </div>
                                     </td>
@@ -90,6 +118,46 @@
             </div>
         </div>
     </div>
+
+    <!-- Custom CSS for the Native App Layout -->
+    <style>
+        /* Remove background on mobile so cards stand out */
+        @media (max-width: 767.98px) {
+            .bg-md-white { background-color: transparent !important; }
+            
+            /* Clean up DataTables Search for mobile */
+            .dataTables_wrapper .dataTables_filter {
+                float: none;
+                text-align: center;
+                margin-bottom: 1rem;
+            }
+            .dataTables_wrapper .dataTables_filter input {
+                width: 100%;
+                margin-left: 0;
+                padding: 0.6rem;
+                border-radius: 10px;
+                border: 1px solid #dee2e6;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            /* Hide the "Showing 1 to 25 of X entries" text on tiny screens */
+            .dataTables_wrapper .dataTables_length,
+            .dataTables_wrapper .dataTables_info {
+                display: none;
+            }
+            
+            /* Add spacing and styling to the mobile cards */
+            .app-style-table tbody tr {
+                margin-bottom: 1rem !important;
+                border-radius: 15px !important;
+                display: block;
+                transition: transform 0.1s;
+            }
+            /* Cool app effect: Card slightly shrinks when tapped! */
+            .app-style-table tbody tr:active {
+                transform: scale(0.98);
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block scripts %}
@@ -97,16 +165,16 @@
     <script>
         $(document).ready(function() {
             $('#rosterTable').DataTable({
-                responsive: true, // CRITICAL: This turns on the mobile [+] buttons!
                 "pageLength": 25,
                 "order": [
                     [1, "asc"] // Automatically sorts by First Name (Column index 1)
                 ], 
                 "columnDefs": [
-                    { "type": "custom-grade", "targets": 5 } // Custom Grade Sorting
+                    { "type": "custom-grade", "targets": 5 } // Apply our smart sorting to the Grade column
                 ],
                 "language": {
-                    "search": "🔍 Search Roster:"
+                    "search": "",
+                    "searchPlaceholder": "🔍 Search Students..."
                 }
             });
         });
