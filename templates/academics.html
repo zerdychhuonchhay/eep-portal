@@ -48,8 +48,8 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive p-3">
-                <!-- Added table-sm and reduced font size to save space -->
-                <table id="academicTable" class="table table-sm table-hover align-middle mb-0 border" style="font-size: 0.9rem;">
+                <!-- ADDED dt-responsive nowrap AND style="width:100%" -->
+                <table id="academicTable" class="table table-sm table-hover align-middle mb-0 border dt-responsive nowrap" style="width:100%; font-size: 0.9rem;">
                     <thead class="table-dark">
                         <tr>
                             <th>NGO ID</th>
@@ -67,20 +67,20 @@
                         {% for record in academic_records %}
                             <tr>
                                 <td><strong>{{ record.ngo_id }}</strong></td>
-
+                                
                                 <!-- Student Name with Profile Link -->
                                 <td>
                                     <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-primary text-nowrap">
                                         {{ record.first_name }} {{ record.last_name }}
                                     </a>
                                 </td>
-
+                                
                                 <td class="text-nowrap">{{ record.grade_level }}</td>
-
+                                
                                 <!-- Separated Academic Year and Month for better sorting/filtering -->
                                 <td class="fw-bold text-secondary">{{ record.academic_year }}</td>
                                 <td class="fw-bold">{{ record.month }}</td>
-
+                                
                                 <!-- The Grades Breakdown (Made badges slightly smaller) -->
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
@@ -91,7 +91,7 @@
                                         {% endfor %}
                                     </div>
                                 </td>
-
+                                
                                 <!-- Average with Auto-Coloring -->
                                 <td>
                                     {% if record.overall_average %}
@@ -102,7 +102,7 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-
+                                
                                 <td>
                                     {% if record.class_rank %}
                                         <span class="fw-bold">{{ record.class_rank }}</span>
@@ -110,7 +110,7 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-
+                                
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-1">
                                         <a href="/edit_report/{{ record.report_id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-0" title="Edit Report">
@@ -150,11 +150,12 @@
 
     $(document).ready(function() {
         $('#academicTable').DataTable({
+            "responsive": true, // Turn on Mobile Mode!
             "pageLength": 25,
             "order": [
                 [1, "asc"], // Sort by Student Name since we auto-filter by year anyway
                 [4, "desc"] // Then by Month
-            ],
+            ], 
             "language": {
                 "search": "🔍 Search:"
             },
@@ -162,7 +163,7 @@
             initComplete: function () {
                 this.api().columns(3).every(function () { // Target Column 3 (Academic Year)
                     var column = this;
-
+                    
                     // Create the dropdown and put it next to the Search box
                     var select = $('<select class="form-select form-select-sm d-inline-block w-auto ms-3 fw-bold text-primary"><option value="">📅 All Academic Years</option></select>')
                         .appendTo('.dataTables_filter')
@@ -177,7 +178,7 @@
                     column.data().unique().sort().each(function (d, j) {
                         var val = $('<div/>').html(d).text(); // Strip any HTML tags
                         select.append('<option value="' + val + '">' + val + '</option>');
-
+                        
                         // Keep track of the highest/latest year string (e.g. "2026-2027" > "2025-2026")
                         if (val > latestYear) {
                             latestYear = val;

@@ -26,7 +26,8 @@
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
                 <div class="table-responsive p-3">
-                    <table id="rosterTable" class="table table-hover align-middle mb-0">
+                    <!-- ADDED dt-responsive nowrap AND style="width:100%" -->
+                    <table id="rosterTable" class="table table-hover align-middle mb-0 dt-responsive nowrap" style="width:100%">
                         <thead class="table-dark">
                             <tr>
                                 <th>NGO ID</th>
@@ -43,7 +44,7 @@
                             {% for student in students %}
                                 <tr>
                                     <td><strong>{{ student.ngo_id }}</strong></td>
-
+                                    
                                     <!-- First Name (with Avatar linked to profile) -->
                                     <td>
                                         <a href="/student/{{ student.id }}" class="d-flex align-items-center text-decoration-none text-dark">
@@ -52,15 +53,15 @@
                                             <span class="fw-bold text-primary">{{ student.first_name }}</span>
                                         </a>
                                     </td>
-
+                                    
                                     <!-- Last Name -->
                                     <td><span class="fw-bold">{{ student.last_name }}</span></td>
-
+                                    
                                     <!-- Khmer Name -->
                                     <td class="khmer-font text-muted fw-semibold">
                                         {{ student.khmer_name if student.khmer_name else '-' }}
                                     </td>
-
+                                    
                                     <td>{{ student.gender }}</td>
                                     <td>{{ student.grade_level }}</td>
                                     <td>
@@ -93,10 +94,11 @@
     <script>
         $(document).ready(function() {
             $('#rosterTable').DataTable({
+                "responsive": true, // Turn on Mobile Mode!
                 "pageLength": 25,
                 "order": [
                     [1, "asc"] // Automatically sorts by First Name (Column index 1)
-                ],
+                ], 
                 "columnDefs": [
                     { "type": "custom-grade", "targets": 5 } // Custom Grade Sorting
                 ],
