@@ -1,0 +1,319 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Executive Impact Dashboard
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4 mb-5 text-start">
+
+    <!-- Header & Timeframe Filter -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <h2>📊 Impact & Executive Dashboard</h2>
+
+        <div class="btn-group shadow-sm" role="group">
+            <a href="/dashboard?timeframe=1" class="btn btn-outline-primary fw-bold {% if timeframe|string == '1' %}active{% endif %}">1 Month</a>
+            <a href="/dashboard?timeframe=3" class="btn btn-outline-primary fw-bold {% if timeframe|string == '3' %}active{% endif %}">3 Months</a>
+            <a href="/dashboard?timeframe=6" class="btn btn-outline-primary fw-bold {% if timeframe|string == '6' %}active{% endif %}">6 Months</a>
+            <a href="/dashboard?timeframe=12" class="btn btn-outline-primary fw-bold {% if timeframe|string == '12' %}active{% endif %}">1 Year</a>
+        </div>
+    </div>
+
+    <!-- 4-Card Stats Grid -->
+    <div class="row mb-4">
+        <!-- Card 1: Enrollment -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 shadow-sm border-0 border-top border-primary border-4">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-primary fw-bold mb-3">Enrollment Split</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ total_active }}</h2>
+                    <p class="text-muted small mb-3">Total Active Students</p>
+                    <div class="d-flex justify-content-between small border-top pt-2">
+                        <span>Boys: <strong>{{ boys }}</strong></span>
+                        <span>Girls: <strong>{{ girls }}</strong></span>
+                    </div>
+                    <div class="d-flex justify-content-between small">
+                        <span>University: <strong>{{ uni_kids }}</strong></span>
+                        <span>Vocational: <strong>{{ vocal_kids }}</strong></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Services -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 shadow-sm border-0 border-top border-success border-4">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-success fw-bold mb-3">Services Provided</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ meals }}</h2>
+                    <p class="text-muted small mb-3">Hot Meals Served</p>
+                    <div class="d-flex justify-content-between small border-top pt-2">
+                        <span>Parent Meetings:</span>
+                        <strong>{{ meetings }} Held</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Impact -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 shadow-sm border-0 border-top border-info border-4">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-info fw-bold mb-3">Community Impact</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ housing_supports }}</h2>
+                    <p class="text-muted small mb-3">Housing Supports</p>
+                    <div class="d-flex justify-content-between small border-top pt-2">
+                        <span>Other Significant Activities:</span>
+                        <strong>{{ other_activities }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Academic Excellence -->
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card h-100 shadow-sm border-0 border-top border-warning border-4">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-warning fw-bold mb-3">Academic Excellence</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ top_performers }}</h2>
+                    <p class="text-muted small mb-3">Top 10 Class Rankings</p>
+                    <div class="d-flex justify-content-between small border-top pt-2">
+                        <span>Total Graduated:</span>
+                        <strong class="text-success">{{ graduates }} Alumni</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lower Section: Alerts (Left) & Logging Forms (Right) -->
+    <div class="row">
+        
+        <!-- LEFT COLUMN -->
+        <div class="col-lg-8 mb-4">
+            <!-- Priority Alerts Section -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-danger text-white fw-bold">
+                    🚨 Priority Action Alerts
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr class="small text-muted">
+                                    <th>Student</th>
+                                    <th>Alert Type</th>
+                                    <th>Details</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Academic Alerts Loop -->
+                                {% for alert in academic_alerts %}
+                                <tr>
+                                    <td><strong>{{ alert.first_name }} {{ alert.last_name }}</strong></td>
+                                    <td><span class="badge bg-danger">Low Grades</span></td>
+                                    <td class="text-danger small fw-bold">
+                                        Average: {{ alert.overall_average }}%<br>
+                                        <span class="text-muted" style="font-size: 0.7rem;">{{ alert.month }} {{ alert.academic_year }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="/student/{{ alert.id }}" class="btn btn-sm btn-outline-dark">Review</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                
+                                <!-- Protection Alerts Loop -->
+                                {% for alert in protection_alerts %}
+                                <tr>
+                                    <td><strong>{{ alert.first_name }} {{ alert.last_name }}</strong></td>
+                                    <td><span class="badge bg-warning text-dark">Protection Risk</span></td>
+                                    <td class="small">{{ alert.child_protection_concerns }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="/student/{{ alert.id }}" class="btn btn-sm btn-outline-dark">Review</a>
+                                            <!-- The Resolve Button -->
+                                            <form action="/resolve_alert/{{ alert.followup_id }}" method="POST" class="m-0">
+                                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Mark this alert as resolved?');">Resolve</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                                <!-- Empty State -->
+                                {% if not academic_alerts and not protection_alerts %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <h5 class="mb-2">🎉 All Clear!</h5>
+                                        <em>No active priority alerts at this time. Great job!</em>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECURITY FEATURE: ADMIN AUDIT LOG (Only visible to Admins) -->
+            {% if session.get("role") == "Admin" %}
+            <div class="card shadow-sm border-0 border-start border-primary border-4">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-bell-fill text-primary me-2"></i> Admin Audit Log</span>
+                    <span class="badge bg-primary rounded-pill">Live Feed</span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                        {% for log in recent_activity %}
+                        <li class="list-group-item py-3">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 fw-bold text-dark">
+                                    <i class="bi bi-person-circle text-secondary me-1"></i> {{ log.username }}
+                                </h6>
+                                <!-- NEW: Displaying Device Info instead of IP! -->
+                                <div class="text-end">
+                                    <small class="text-muted d-block">{{ log.timestamp }}</small>
+                                    <small class="text-info fw-bold" style="font-size: 0.7rem;"><i class="bi bi-laptop me-1"></i>{{ log.device_info if log.device_info else 'Unknown' }}</small>
+                                </div>
+                            </div>
+                            <p class="mb-0 text-secondary small">
+                                <i class="bi bi-arrow-return-right me-1"></i> {{ log.action }}
+                            </p>
+                        </li>
+                        {% else %}
+                        <li class="list-group-item py-4 text-center text-muted">
+                            <i class="bi bi-shield-check text-success fs-4 d-block mb-2"></i>
+                            No recent system activity recorded.
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+
+        <!-- RIGHT SIDE COLUMN -->
+        <div class="col-lg-4 mb-4">
+            
+            <!-- Log Activity Form -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-dark text-white fw-bold">
+                    📝 Quick Log: Community Activity
+                </div>
+                <div class="card-body bg-light">
+                    <form action="/log_activity" method="post">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Activity Type</label>
+                            <select class="form-select" name="activity_type" required>
+                                <option value="" disabled selected>Select Type...</option>
+                                <option value="Hot Meal">Hot Meal Service</option>
+                                <option value="Parent Meeting">Parent Meeting</option>
+                                <option value="Housing Support">Housing Support</option>
+                                <option value="Medical Run">Medical / Clinic Run</option>
+                                <option value="Other">Other Event</option>
+                            </select>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-7">
+                                <label class="form-label fw-bold small">Date</label>
+                                <input type="date" class="form-control" name="activity_date" value="{{ date_now }}" required>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label fw-bold small">Count</label>
+                                <input type="number" class="form-control" name="attendance_count" min="1" placeholder="e.g. 50" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">Log Activity</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- SMART SPONSOR LETTER TRACKER -->
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-envelope-exclamation-fill me-1"></i> Missing Letters</span>
+                    <span class="badge bg-light text-info">{{ current_quarter }} {{ current_year }}</span>
+                </div>
+                
+                <!-- Quick Filter Dropdown -->
+                <div class="bg-light p-2 border-bottom">
+                    <select id="letterFilter" class="form-select form-select-sm shadow-sm text-muted fw-bold" onchange="filterLetters()">
+                        <option value="all">Show All Missing</option>
+                        <option value="Ready to Send">Ready to Send</option>
+                        <option value="Waiting to Scan">Waiting to Scan</option>
+                        <option value="Needs Translation">Needs Translation</option>
+                        <option value="Not Started">Not Started</option>
+                    </select>
+                </div>
+
+                <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush" id="letterList">
+                        {% for student in missing_letters %}
+                        <!-- We add data-status here so JS can read it -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2 letter-item" data-status="{{ student.status_badge }}">
+                            <div>
+                                <span class="small fw-bold text-dark d-block mb-1">{{ student.first_name }} {{ student.last_name }}</span>
+                                <!-- Dynamic Status Badge -->
+                                <span class="badge bg-{{ student.status_color }} bg-opacity-10 text-{{ student.status_color }} border border-{{ student.status_color }}" style="font-size: 0.65rem;">
+                                    <i class="bi bi-info-circle-fill me-1"></i> {{ student.status_badge }}
+                                </span>
+                            </div>
+                            
+                            <!-- SMART UPDATE BUTTON -->
+                            {% if student.followup_id %}
+                                <a href="/edit_followup/{{ student.followup_id }}" class="btn btn-sm btn-outline-info py-0 px-2 shadow-sm" title="Edit Letter Update">
+                                    Update
+                                </a>
+                            {% else %}
+                                <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-outline-info py-0 px-2 shadow-sm" title="Start New Letter">
+                                    Update
+                                </a>
+                            {% endif %}
+
+                        </li>
+                        {% else %}
+                        <li class="list-group-item text-center text-muted py-4">
+                            <i class="bi bi-check-circle text-success fs-2 mb-2 d-block"></i>
+                            <span class="small fw-bold d-block">All Caught Up!</span>
+                            <em class="small">Every active student has a completed letter for {{ current_quarter }}.</em>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-light border-top text-center p-2">
+                    <span class="small text-muted fw-bold" id="letterCount">{{ missing_letters|length }} letters still pending</span>
+                </div>
+            </div>
+
+            <!-- JavaScript Filter Logic -->
+            <script>
+                function filterLetters() {
+                    const filterValue = document.getElementById('letterFilter').value;
+                    const items = document.querySelectorAll('.letter-item');
+                    let visibleCount = 0;
+
+                    items.forEach(item => {
+                        const status = item.getAttribute('data-status');
+                        
+                        if (filterValue === 'all' || status === filterValue) {
+                            item.classList.remove('d-none');
+                            item.classList.add('d-flex');
+                            visibleCount++;
+                        } else {
+                            item.classList.remove('d-flex');
+                            item.classList.add('d-none');
+                        }
+                    });
+
+                    // Update the footer count
+                    document.getElementById('letterCount').innerText = `${visibleCount} letters showing`;
+                }
+            </script>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}

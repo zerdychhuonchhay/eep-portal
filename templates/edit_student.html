@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Edit Student - {{ student.first_name }}
+{% endblock %}
+
+{% block main %}
+    <div class="d-flex justify-content-between align-items-center mb-4" style="max-width: 800px; margin: 0 auto;">
+        <h2>✏️ Edit Student Profile</h2>
+        <a href="/student/{{ student.id }}" class="btn btn-outline-secondary shadow-sm fw-bold">
+            <i class="bi bi-arrow-left me-1"></i> Cancel
+        </a>
+    </div>
+
+    <div class="card shadow-sm mx-auto border-0" style="max-width: 800px;">
+        <div class="card-body text-start p-4">
+            <form action="/edit_student/{{ student.id }}" method="post">
+
+                <h5 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-person-vcard me-2"></i>1. Student Details</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">NGO ID / <span class="khmer-font">លេខសម្គាល់អង្គការ</span></label>
+                        <input autocomplete="off" class="form-control" name="ngo_id" type="text" value="{{ student.ngo_id }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">Status / <span class="khmer-font">ស្ថានភាព</span></label>
+                        <select class="form-select" name="status">
+                            <option value="Active" {% if student.status == 'Active' %}selected{% endif %}>Active</option>
+                            <option value="Dropped Out" {% if student.status == 'Dropped Out' %}selected{% endif %}>Dropped Out</option>
+                            <option value="Graduated" {% if student.status == 'Graduated' %}selected{% endif %}>Graduated</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">First Name (EN) / <span class="khmer-font">នាមខ្លួន</span></label>
+                        <input class="form-control" name="first_name" type="text" value="{{ student.first_name }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Last Name (EN) / <span class="khmer-font">នាមត្រកូល</span></label>
+                        <input class="form-control" name="last_name" type="text" value="{{ student.last_name }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Khmer Name / <span class="khmer-font">ឈ្មោះជាភាសាខ្មែរ</span></label>
+                        <input class="form-control khmer-font" name="khmer_name" type="text" value="{{ student.khmer_name if student.khmer_name else '' }}">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Gender / <span class="khmer-font">ភេទ</span></label>
+                        <select class="form-select" name="gender" required>
+                            <option disabled value="">Select...</option>
+                            <option value="Male" {% if student.gender == 'Male' %}selected{% endif %}>Male</option>
+                            <option value="Female" {% if student.gender == 'Female' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Date of Birth / <span class="khmer-font">ថ្ងៃខែឆ្នាំកំណើត</span></label>
+                        <input class="form-control" name="dob" type="date" value="{{ student.dob if student.dob else '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Joined Date / <span class="khmer-font">ថ្ងៃចូលរៀន</span></label>
+                        <input class="form-control" name="joined_date" type="date" value="{{ student.joined_date if student.joined_date else '' }}">
+                    </div>
+                </div>
+
+                <h5 class="text-primary border-bottom pb-2 mb-3 mt-4"><i class="bi bi-book me-2"></i>2. Education & Family Info</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Guardian Name / <span class="khmer-font">ឈ្មោះអាណាព្យាបាល</span></label>
+                        <input class="form-control" name="guardian_name" type="text" value="{{ student.guardian_name if student.guardian_name else '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Phone Number / <span class="khmer-font">លេខទូរស័ព្ទ</span></label>
+                        <input class="form-control" name="phone_number" type="text" value="{{ student.phone_number if student.phone_number else '' }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Slum Area / <span class="khmer-font">តំបន់សហគមន៍</span></label>
+                        <input class="form-control" name="slum_area" type="text" value="{{ student.slum_area if student.slum_area else '' }}">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Current School / <span class="khmer-font">សាលារៀនបច្ចុប្បន្ន</span></label>
+                        <input class="form-control" name="current_school" type="text" value="{{ student.current_school if student.current_school else '' }}">
+                    </div>
+
+                    <!-- STRUCTURED GRADE DROPDOWN (Pre-Selected) -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Grade Level / <span class="khmer-font">កម្រិតថ្នាក់</span></label>
+                        <select class="form-select" name="grade_level" required>
+                            <option value="" disabled>Select Grade...</option>
+
+                            <optgroup label="Early Education">
+                                <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
+                            </optgroup>
+
+                            <optgroup label="Primary & Secondary (K-12)">
+                                <option value="Grade 1" {% if student.grade_level == 'Grade 1' %}selected{% endif %}>Grade 1</option>
+                                <option value="Grade 2" {% if student.grade_level == 'Grade 2' %}selected{% endif %}>Grade 2</option>
+                                <option value="Grade 3" {% if student.grade_level == 'Grade 3' %}selected{% endif %}>Grade 3</option>
+                                <option value="Grade 4" {% if student.grade_level == 'Grade 4' %}selected{% endif %}>Grade 4</option>
+                                <option value="Grade 5" {% if student.grade_level == 'Grade 5' %}selected{% endif %}>Grade 5</option>
+                                <option value="Grade 6" {% if student.grade_level == 'Grade 6' %}selected{% endif %}>Grade 6</option>
+                                <option value="Grade 7" {% if student.grade_level == 'Grade 7' %}selected{% endif %}>Grade 7</option>
+                                <option value="Grade 8" {% if student.grade_level == 'Grade 8' %}selected{% endif %}>Grade 8</option>
+                                <option value="Grade 9" {% if student.grade_level == 'Grade 9' %}selected{% endif %}>Grade 9</option>
+                                <option value="Grade 10" {% if student.grade_level == 'Grade 10' %}selected{% endif %}>Grade 10</option>
+                                <option value="Grade 11" {% if student.grade_level == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+                                <option value="Grade 12" {% if student.grade_level == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+                            </optgroup>
+
+                            <optgroup label="Higher Education">
+                                <option value="University Year 1" {% if student.grade_level == 'University Year 1' %}selected{% endif %}>University Year 1</option>
+                                <option value="University Year 2" {% if student.grade_level == 'University Year 2' %}selected{% endif %}>University Year 2</option>
+                                <option value="University Year 3" {% if student.grade_level == 'University Year 3' %}selected{% endif %}>University Year 3</option>
+                                <option value="University Year 4" {% if student.grade_level == 'University Year 4' %}selected{% endif %}>University Year 4</option>
+                                <option value="University Year 5" {% if student.grade_level == 'University Year 5' %}selected{% endif %}>University Year 5</option>
+                                <option value="Vocational Training" {% if student.grade_level == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- NEW: MEAL PLAN DROPDOWN -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Nutrition Plan / <span class="khmer-font">ផែនការអាហារ</span></label>
+                        <select class="form-select border-warning" name="meal_plan" required>
+                            <option value="None" {% if student.meal_plan == 'None' or not student.meal_plan %}selected{% endif %}>No Meals Assigned</option>
+                            <option value="Daily Hot Lunch" {% if student.meal_plan == 'Daily Hot Lunch' %}selected{% endif %}>🍛 Daily Hot Lunch</option>
+                            <option value="Monthly Groceries" {% if student.meal_plan == 'Monthly Groceries' %}selected{% endif %}>🌾 Monthly Groceries/Rice</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h5 class="text-primary border-bottom pb-2 mb-3 mt-4"><i class="bi bi-journal-text me-2"></i>3. Additional Notes</h5>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">General Comments / <span class="khmer-font">មតិយោបល់ទូទៅ</span></label>
+                        <textarea class="form-control khmer-font" name="comment" rows="3">{{ student.comment if student.comment else '' }}</textarea>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4 border-top pt-4">
+                    <button class="btn btn-warning btn-lg px-5 shadow-sm fw-bold" type="submit">
+                        <i class="bi bi-pencil-square me-1"></i> Update Student Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

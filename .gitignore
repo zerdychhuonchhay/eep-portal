@@ -1,0 +1,21 @@
+🛑 CRITICAL: Never upload the databases to GitHub!
+
+eep.db
+eep_test.db
+temp_export.csv
+temp_grades_export.csv
+
+Ignore Python cache files
+
+pycache/
+*.pyc
+
+Ignore user uploaded images/documents (so we don't overwrite live files)
+
+static/uploads/profiles/*
+static/uploads/documents/*
+
+Keep the folders themselves, just ignore the files inside
+
+!static/uploads/profiles/.gitkeep
+!static/uploads/documents/.gitkeep

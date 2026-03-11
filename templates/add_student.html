@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Add Student
+{% endblock %}
+
+{% block main %}
+    <h2 class="mb-4">Register New Student</h2>
+
+    <div class="card shadow-sm mx-auto border-0" style="max-width: 800px;">
+        <div class="card-body text-start p-4">
+            <form action="/add_student" method="post">
+
+                <h5 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-person-vcard me-2"></i>1. Student Details</h5>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">NGO ID / <span class="khmer-font">លេខសម្គាល់អង្គការ</span></label>
+                        <input autocomplete="off" class="form-control" name="ngo_id" type="text" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted">Status / <span class="khmer-font">ស្ថានភាព</span></label>
+                        <select class="form-select" name="status">
+                            <option value="Active" selected>Active</option>
+                            <option value="Dropped Out">Dropped Out</option>
+                            <option value="Graduated">Graduated</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">First Name (EN) / <span class="khmer-font">នាមខ្លួន</span></label>
+                        <input class="form-control" name="first_name" type="text" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Last Name (EN) / <span class="khmer-font">នាមត្រកូល</span></label>
+                        <input class="form-control" name="last_name" type="text" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Khmer Name / <span class="khmer-font">ឈ្មោះជាភាសាខ្មែរ</span></label>
+                        <input class="form-control khmer-font" name="khmer_name" type="text">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Gender / <span class="khmer-font">ភេទ</span></label>
+                        <select class="form-select" name="gender" required>
+                            <option disabled selected value="">Select...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Date of Birth / <span class="khmer-font">ថ្ងៃខែឆ្នាំកំណើត</span></label>
+                        <input class="form-control" name="dob" type="date">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Joined Date / <span class="khmer-font">ថ្ងៃចូលរៀន</span></label>
+                        <input class="form-control" name="joined_date" type="date">
+                    </div>
+                </div>
+
+                <h5 class="text-primary border-bottom pb-2 mb-3 mt-4"><i class="bi bi-book me-2"></i>2. Education & Family Info</h5>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Guardian Name / <span class="khmer-font">ឈ្មោះអាណាព្យាបាល</span></label>
+                        <input class="form-control" name="guardian_name" type="text">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Phone Number / <span class="khmer-font">លេខទូរស័ព្ទ</span></label>
+                        <input class="form-control" name="phone_number" type="text">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Slum Area / <span class="khmer-font">តំបន់សហគមន៍</span></label>
+                        <input class="form-control" name="slum_area" type="text" placeholder="e.g., Steung Meanchey">
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Current School / <span class="khmer-font">សាលារៀនបច្ចុប្បន្ន</span></label>
+                        <input class="form-control" name="current_school" type="text" placeholder="e.g., New Life School">
+                    </div>
+
+                    <!-- STRUCTURED GRADE DROPDOWN -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Grade Level / <span class="khmer-font">កម្រិតថ្នាក់</span></label>
+                        <select class="form-select" name="grade_level" required>
+                            <option value="" disabled selected>Select Grade...</option>
+
+                            <optgroup label="Early Education">
+                                <option value="Kindergarten">Kindergarten</option>
+                            </optgroup>
+
+                            <optgroup label="Primary & Secondary (K-12)">
+                                <option value="Grade 1">Grade 1</option>
+                                <option value="Grade 2">Grade 2</option>
+                                <option value="Grade 3">Grade 3</option>
+                                <option value="Grade 4">Grade 4</option>
+                                <option value="Grade 5">Grade 5</option>
+                                <option value="Grade 6">Grade 6</option>
+                                <option value="Grade 7">Grade 7</option>
+                                <option value="Grade 8">Grade 8</option>
+                                <option value="Grade 9">Grade 9</option>
+                                <option value="Grade 10">Grade 10</option>
+                                <option value="Grade 11">Grade 11</option>
+                                <option value="Grade 12">Grade 12</option>
+                            </optgroup>
+
+                            <optgroup label="Higher Education">
+                                <option value="University Year 1">University Year 1</option>
+                                <option value="University Year 2">University Year 2</option>
+                                <option value="University Year 3">University Year 3</option>
+                                <option value="University Year 4">University Year 4</option>
+                                <option value="University Year 5">University Year 5</option>
+                                <option value="Vocational Training">Vocational Training</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <!-- NEW: MEAL PLAN DROPDOWN -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Nutrition Plan / <span class="khmer-font">ផែនការអាហារ</span></label>
+                        <select class="form-select border-success" name="meal_plan" required>
+                            <option value="None" selected>No Meals Assigned</option>
+                            <option value="Daily Hot Lunch">🍛 Daily Hot Lunch</option>
+                            <option value="Monthly Groceries">🌾 Monthly Groceries/Rice</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h5 class="text-primary border-bottom pb-2 mb-3 mt-4"><i class="bi bi-journal-text me-2"></i>3. Additional Notes</h5>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted">General Comments / <span class="khmer-font">មតិយោបល់ទូទៅ</span></label>
+                        <textarea class="form-control khmer-font" name="comment" rows="3" placeholder="Any special notes about this student..."></textarea>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-success btn-lg px-5 shadow-sm fw-bold" type="submit">
+                        <i class="bi bi-save me-1"></i> Save Student Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

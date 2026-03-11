@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+
+{% block title %}Roster Dashboard{% endblock %}
+
+{% block main %}
+    <div class="container mt-4 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <!-- This title changes dynamically depending on if we are in the Archive or not -->
+            <h2>{{ title if title else 'Student Roster' }}</h2>
+            <div class="d-flex gap-2">
+                <a href="/" class="btn btn-outline-primary shadow-sm fw-bold">
+                    <i class="bi bi-people-fill me-1"></i> Active
+                </a>
+                <a href="/archive" class="btn btn-outline-secondary shadow-sm fw-bold">
+                    <i class="bi bi-archive-fill me-1"></i> Archive
+                </a>
+                <a href="/export_students" class="btn btn-outline-success shadow-sm fw-bold">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Export to Excel
+                </a>
+                <a href="/add_student" class="btn btn-primary shadow-sm fw-bold">
+                    <i class="bi bi-person-plus-fill me-1"></i> Add New Student
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive p-3">
+                    <table id="rosterTable" class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>NGO ID</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Khmer Name</th>
+                                <th>Gender</th>
+                                <th>Grade Level</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Quick Log</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                                <tr>
+                                    <td><strong>{{ student.ngo_id }}</strong></td>
+
+                                    <!-- First Name (with Avatar linked to profile) -->
+                                    <td>
+                                        <a href="/student/{{ student.id }}" class="d-flex align-items-center text-decoration-none text-dark">
+                                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=38" %}
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-2 shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=38';">
+                                            <span class="fw-bold text-primary">{{ student.first_name }}</span>
+                                        </a>
+                                    </td>
+
+                                    <!-- Last Name -->
+                                    <td><span class="fw-bold">{{ student.last_name }}</span></td>
+
+                                    <!-- Khmer Name -->
+                                    <td class="khmer-font text-muted fw-semibold">
+                                        {{ student.khmer_name if student.khmer_name else '-' }}
+                                    </td>
+
+                                    <td>{{ student.gender }}</td>
+                                    <td>{{ student.grade_level }}</td>
+                                    <td>
+                                        <span class="badge {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ student.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <div class="btn-group shadow-sm">
+                                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold" title="Add Report">
+                                                <i class="bi bi-journal-plus"></i>
+                                            </a>
+                                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold" title="Add Follow-Up">
+                                                <i class="bi bi-clipboard2-heart-fill"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Initialize DataTables for Search & Sort -->
+    <script>
+        $(document).ready(function() {
+            $('#rosterTable').DataTable({
+                "pageLength": 25,
+                "order": [
+                    [1, "asc"] // Automatically sorts by First Name (Column index 1)
+                ],
+                "columnDefs": [
+                    { "type": "custom-grade", "targets": 5 } // Custom Grade Sorting
+                ],
+                "language": {
+                    "search": "🔍 Search Roster:"
+                }
+            });
+        });
+    </script>
+{% endblock %}

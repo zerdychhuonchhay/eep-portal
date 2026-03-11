@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Beta Testing Guide
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4 mb-5 text-start" style="max-width: 800px;">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold text-primary">🚀 Welcome to the EEP Beta!</h1>
+        <p class="text-muted fs-5">Thank you for helping us test the new system before we launch.</p>
+    </div>
+
+    <!-- The Golden Rule Alert (UPDATED FOR SANDBOX WARNING) -->
+    <div class="alert alert-danger shadow-sm border-danger border-2 border-start-0 border-end-0 border-bottom-0 mb-4 p-4">
+        <h4 class="alert-heading fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>DO NOT ENTER REAL DATA YET</h4>
+        <p class="mb-0 fs-5 text-dark">
+            This system is currently a "Sandbox" for testing. It contains a copy of our real student roster, but <strong>any new reports or follow-ups you enter today will be erased when we do the official launch.</strong> 
+            <br><br>Please only enter <strong>fake/test data</strong> today so you don't waste your time!
+        </p>
+    </div>
+
+    <!-- The Mission -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-dark text-white fw-bold fs-5">
+            <i class="bi bi-list-check me-2"></i> Your Mission for Today
+        </div>
+        <div class="card-body bg-light p-4">
+            <ul class="list-group list-group-flush fs-5">
+                <li class="list-group-item bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                    <strong>🖱️ 1. Click Everything:</strong> Go to the Roster, view a Student Profile, check out the Executive Dashboard.
+                </li>
+                <li class="list-group-item bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                    <strong>✍️ 2. Add Fake Data:</strong> Try adding a fake student, entering a fake monthly report card, or logging a fake social work follow-up.
+                </li>
+                <li class="list-group-item bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+                    <strong>📁 3. Upload Stuff:</strong> Try uploading a random picture or PDF into a student's Digital Filing Cabinet.
+                </li>
+                <li class="list-group-item bg-transparent py-3 text-danger">
+                    <strong>💥 4. Be Destructive:</strong> Try deleting a report or editing a student's name to see what happens!
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- How to give feedback -->
+    <div class="card shadow-sm border-0 bg-info bg-opacity-10 border-info border border-2">
+        <div class="card-body p-4 text-center">
+            <h5 class="fw-bold text-info-emphasis mb-3"><i class="bi bi-chat-dots-fill me-2"></i> Found a bug? Confused by a button?</h5>
+            <p class="text-dark mb-0">
+                Please take a screenshot and drop it in our Telegram/WhatsApp group chat. Don't worry about hurting feelings—your feedback is what will make this app perfect for us!
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,318 @@
+{#
+   CS50 FINAL PROJECT CITATION:
+   The layout structure, the split-pane UI, the JavaScript hover-to-zoom image viewer,
+   and the dynamic subject filtering logic in this template were developed and refined
+   with the assistance of Google Gemini. The core data architecture, database schema,
+   and integration logic remain my own original work.
+#}
+{% extends "layout.html" %}
+
+{% block title %}
+    Add Report - {{ student.first_name }} {{ student.last_name }}
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid mt-4 px-lg-5 text-start">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Add Academic Report for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></h2>
+    </div>
+
+    <div class="card shadow-sm mb-5 border-0">
+        <div class="card-body">
+
+            <form action="/add_report/{{ student.id }}" method="post" enctype="multipart/form-data">
+
+                <!-- CRITICAL: Hidden field to remember if we came from Roster or Profile -->
+                <input type="hidden" name="source_url" value="{{ request.referrer }}">
+
+                <div class="row">
+
+                    <!-- LEFT COLUMN: Live Scan Preview -->
+                    <div class="col-md-5 mb-4 mb-md-0 border-end pe-md-4">
+                        <div class="position-sticky" style="top: 20px;">
+                            <h5 class="text-secondary border-bottom pb-2 mb-3">📸 Reference Scan / <span class="khmer-font">ឯកសារស្កេនយោង</span></h5>
+                            <p class="small text-muted">Upload a photo of the physical report card to view it side-by-side while you type.</p>
+
+                            <input type="file" id="scan_upload" name="scanned_document" class="form-control mb-3" accept="image/*,application/pdf">
+
+                            <div id="scan_container" class="text-center bg-light rounded p-2 border overflow-hidden" style="min-height: 300px; position: relative;">
+                                <img id="scan_preview" src="" style="max-width: 100%; display: none; cursor: zoom-in; transition: transform 0.2s ease-out;" class="rounded shadow-sm">
+                                <span id="scan_placeholder" class="text-muted d-flex align-items-center justify-content-center h-100 mt-5 pt-5">
+                                    <em>Image preview will appear here</em>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: Grade Inputs -->
+                    <div class="col-md-7 ps-md-4">
+                        <!-- Section 1: Report Details -->
+                        <h5 class="text-info border-bottom pb-2 mb-3">Report Details / <span class="khmer-font">ព័ត៌មានលម្អិតនៃរបាយការណ៍</span></h5>
+
+                        <!-- Row 1: Time & Attendance -->
+                        <div class="row">
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <label for="month" class="form-label fw-bold small">Month / <span class="khmer-font">ខែ</span> *</label>
+                                <select class="form-select" id="month" name="month" required>
+                                    <option value="" disabled selected>Select Month...</option>
+                                    <option value="January">January</option>
+                                    <option value="February">February</option>
+                                    <option value="March">March</option>
+                                    <option value="April">April</option>
+                                    <option value="May">May</option>
+                                    <option value="June">June</option>
+                                    <option value="July">July</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <label for="semester" class="form-label fw-bold small text-primary">Semester / <span class="khmer-font">ឆមាស</span></label>
+                                <select class="form-select border-primary" id="semester" name="semester">
+                                    <option value="" selected>Not a Semester Exam</option>
+                                    <option value="Semester 1">Semester 1 Exam</option>
+                                    <option value="Semester 2">Semester 2 Exam</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <label for="academic_year" class="form-label fw-bold small">Academic Year / <span class="khmer-font">ឆ្នាំសិក្សា</span> *</label>
+                                <input type="text" class="form-control" id="academic_year" name="academic_year" value="2025-2026" required>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 mb-3">
+                                <label for="attendance_days" class="form-label fw-bold small">Attendance / <span class="khmer-font">វត្តមាន (ថ្ងៃ)</span></label>
+                                <input type="number" class="form-control" id="attendance_days" name="attendance_days" min="0" max="31">
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Historical Snapshot Data -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="grade_level" class="form-label fw-bold small">Historical Grade / <span class="khmer-font">កម្រិតថ្នាក់</span> *</label>
+                                <!-- We added an ID and onchange event so the JavaScript knows when this changes -->
+                                <select class="form-select text-primary fw-bold" id="grade_level" name="grade_level" required onchange="filterSubjects()">
+                                    <option value="" disabled>Select Grade...</option>
+
+                                    <optgroup label="Early Education">
+                                        <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
+                                    </optgroup>
+
+                                    <optgroup label="Primary & Secondary (K-12)">
+                                        <option value="Grade 1" {% if student.grade_level == 'Grade 1' %}selected{% endif %}>Grade 1</option>
+                                        <option value="Grade 2" {% if student.grade_level == 'Grade 2' %}selected{% endif %}>Grade 2</option>
+                                        <option value="Grade 3" {% if student.grade_level == 'Grade 3' %}selected{% endif %}>Grade 3</option>
+                                        <option value="Grade 4" {% if student.grade_level == 'Grade 4' %}selected{% endif %}>Grade 4</option>
+                                        <option value="Grade 5" {% if student.grade_level == 'Grade 5' %}selected{% endif %}>Grade 5</option>
+                                        <option value="Grade 6" {% if student.grade_level == 'Grade 6' %}selected{% endif %}>Grade 6</option>
+                                        <option value="Grade 7" {% if student.grade_level == 'Grade 7' %}selected{% endif %}>Grade 7</option>
+                                        <option value="Grade 8" {% if student.grade_level == 'Grade 8' %}selected{% endif %}>Grade 8</option>
+                                        <option value="Grade 9" {% if student.grade_level == 'Grade 9' %}selected{% endif %}>Grade 9</option>
+                                        <option value="Grade 10" {% if student.grade_level == 'Grade 10' %}selected{% endif %}>Grade 10</option>
+                                        <option value="Grade 11" {% if student.grade_level == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+                                        <option value="Grade 12" {% if student.grade_level == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+                                    </optgroup>
+
+                                    <optgroup label="Higher Education">
+                                        <option value="University Year 1" {% if student.grade_level == 'University Year 1' %}selected{% endif %}>University Year 1</option>
+                                        <option value="University Year 2" {% if student.grade_level == 'University Year 2' %}selected{% endif %}>University Year 2</option>
+                                        <option value="University Year 3" {% if student.grade_level == 'University Year 3' %}selected{% endif %}>University Year 3</option>
+                                        <option value="University Year 4" {% if student.grade_level == 'University Year 4' %}selected{% endif %}>University Year 4</option>
+                                        <option value="University Year 5" {% if student.grade_level == 'University Year 5' %}selected{% endif %}>University Year 5</option>
+                                        <option value="Vocational Training" {% if student.grade_level == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <!-- HISTORICAL SCHOOL INPUT -->
+                            <div class="col-md-5 mb-3">
+                                <label for="school_name" class="form-label fw-bold small">Historical School / <span class="khmer-font">សាលារៀន</span></label>
+                                <input type="text" class="form-control text-primary fw-bold khmer-font" id="school_name" name="school_name" value="{{ student.current_school if student.current_school else '' }}" required>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="class_rank" class="form-label fw-bold small">Class Rank / <span class="khmer-font">ចំណាត់ថ្នាក់</span></label>
+                                <input type="text" class="form-control" id="class_rank" name="class_rank" placeholder="e.g., 11/19">
+                            </div>
+                        </div>
+
+                        <!-- Row 3: Smart Override Inputs -->
+                        <div class="row bg-light rounded pt-3 pb-1 mb-3 mx-1 border">
+                            <div class="col-12 mb-2">
+                                <span class="fw-bold text-secondary">⚙️ Smart Overrides / <span class="khmer-font">ការកែតម្រូវដោយដៃ</span></span> <span class="small text-muted">(Leave blank to auto-calculate)</span>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small">Manual Total Score / <span class="khmer-font">ពិន្ទុសរុប</span></label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" name="manual_total_score" placeholder="Leave blank">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small">Manual Overall Average / <span class="khmer-font">មធ្យមភាគ</span></label>
+                                <input type="number" step="0.01" class="form-control form-control-sm" name="manual_average" placeholder="Leave blank">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label small">Manual Overall Grade / <span class="khmer-font">និទ្ទេសសរុប</span></label>
+                                <input type="text" class="form-control form-control-sm" name="manual_grade" placeholder="e.g. A, B, Good">
+                            </div>
+                        </div>
+
+                        <div class="mb-4 mt-2">
+                            <label for="teacher_comment" class="form-label fw-bold small">Teacher Comment / <span class="khmer-font">មតិយោបល់របស់គ្រូ</span></label>
+                            <textarea class="form-control khmer-font" id="teacher_comment" name="teacher_comment" rows="2" placeholder="Notes on behavior, improvement, etc..."></textarea>
+                        </div>
+
+                        <!-- Section 2: Subject Scores -->
+                        <h5 class="text-success border-bottom pb-2 mb-3 mt-4">Subject Scores / <span class="khmer-font">ពិន្ទុតាមមុខវិជ្ជា</span></h5>
+                        <div class="alert alert-secondary py-2 mb-3">
+                            <i class="fw-bold bi bi-magic"></i> <span class="small">The subject list is automatically filtered based on the student's <strong>Historical Grade</strong>.</span>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle mb-4" id="subjectsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40%;">Subject / <span class="khmer-font">មុខវិជ្ជា</span></th>
+                                        <th style="width: 30%;">Score / <span class="khmer-font">ពិន្ទុ</span></th>
+                                        <th style="width: 30%;">Max Score / <span class="khmer-font">ពិន្ទុអតិបរមា</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subject in subjects %}
+                                        <!-- We attach the category to the row so JavaScript can read it -->
+                                        <tr class="subject-row" data-category="{{ subject.category }}">
+                                            <td>
+                                                <span class="badge bg-light text-secondary border me-1 float-end" style="font-size: 0.6rem;">{{ subject.category }}</span>
+                                                <strong>{{ subject.name }}</strong>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" name="score_{{ subject.id }}" placeholder="e.g. 95 or 'A'">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" name="max_score_{{ subject.id }}" placeholder="e.g. 100">
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">No subjects found in the database.</td>
+                                        </tr>
+                                    {% endfor %}
+
+                                    <!-- THE WILDCARD ROW -->
+                                    <tr class="table-warning border-warning">
+                                        <td>
+                                            <div class="small fw-bold text-warning-emphasis mb-1">
+                                                <i class="bi bi-stars"></i> Custom Subject / <span class="khmer-font">មុខវិជ្ជាផ្សេងៗ</span>
+                                            </div>
+                                            <input type="text" class="form-control form-control-sm border-warning" name="custom_subject_name" placeholder="e.g. Art Project">
+                                        </td>
+                                        <td>
+                                            <div class="small text-muted mb-1">&nbsp;</div>
+                                            <input type="text" class="form-control form-control-sm" name="custom_score" placeholder="Score">
+                                        </td>
+                                        <td>
+                                            <div class="small text-muted mb-1">&nbsp;</div>
+                                            <input type="text" class="form-control form-control-sm" name="custom_max_score" placeholder="Max">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Form Submission Buttons -->
+                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-lg px-4 shadow-sm fw-bold">
+                                <i class="bi bi-save me-1"></i> Save Report Card
+                            </button>
+                            <button type="button" onclick="history.back()" class="btn btn-light border btn-lg px-4 ms-auto text-dark shadow-sm fw-bold">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Live Image Preview Logic
+    document.getElementById('scan_upload').addEventListener('change', function(event) {
+        const [file] = event.target.files;
+        if (file && file.type.startsWith('image/')) {
+            const preview = document.getElementById('scan_preview');
+            const placeholder = document.getElementById('scan_placeholder');
+
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+        }
+    });
+
+    // Hover-to-Zoom Magnifying Glass Logic
+    const scanContainer = document.getElementById('scan_container');
+    const scanPreview = document.getElementById('scan_preview');
+
+    scanContainer.addEventListener('mousemove', function(e) {
+        if (scanPreview.style.display !== 'none' && scanPreview.src) {
+            const { left, top, width, height } = scanContainer.getBoundingClientRect();
+            const x = (e.clientX - left) / width * 100;
+            const y = (e.clientY - top) / height * 100;
+
+            scanPreview.style.transformOrigin = `${x}% ${y}%`;
+            scanPreview.style.transform = 'scale(2.5)';
+        }
+    });
+
+    scanContainer.addEventListener('mouseleave', function() {
+        if (scanPreview.style.display !== 'none' && scanPreview.src) {
+            scanPreview.style.transformOrigin = 'center center';
+            scanPreview.style.transform = 'scale(1)';
+        }
+    });
+
+    // --- NEW: SMART SUBJECT FILTER LOGIC ---
+    function filterSubjects() {
+        const gradeLevel = document.getElementById('grade_level').value;
+        const rows = document.querySelectorAll('.subject-row');
+
+        rows.forEach(row => {
+            const category = row.getAttribute('data-category');
+            let showRow = false;
+
+            // General subjects ALWAYS show
+            if (category === 'General') {
+                showRow = true;
+            }
+            // If they are in Kg to Grade 6, show Primary/Lower
+            else if ((gradeLevel.includes('Kindergarten') || gradeLevel.includes('Grade 1') || gradeLevel.includes('Grade 2') || gradeLevel.includes('Grade 3') || gradeLevel.includes('Grade 4') || gradeLevel.includes('Grade 5') || gradeLevel.includes('Grade 6')) && category === 'Primary / Lower Grade') {
+                showRow = true;
+            }
+            // If they are in Grade 7 to 12, show High School
+            else if ((gradeLevel.includes('Grade 7') || gradeLevel.includes('Grade 8') || gradeLevel.includes('Grade 9') || gradeLevel.includes('Grade 10') || gradeLevel.includes('Grade 11') || gradeLevel.includes('Grade 12')) && category === 'High School') {
+                showRow = true;
+            }
+            // If they are in University or Voc, show Uni/Voc
+            else if ((gradeLevel.includes('University') || gradeLevel.includes('Vocational')) && category === 'University / Vocational') {
+                showRow = true;
+            }
+
+            if (showRow) {
+                row.style.display = ''; // Show
+            } else {
+                row.style.display = 'none'; // Hide
+                // Clear any data they might have accidentally typed before hiding
+                row.querySelector('input[name^="score_"]').value = '';
+                row.querySelector('input[name^="max_score_"]').value = '';
+            }
+        });
+    }
+
+    // Run the filter immediately when the page loads to set the initial view
+    window.addEventListener('DOMContentLoaded', filterSubjects);
+</script>
+{% endblock %}

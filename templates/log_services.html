@@ -1,0 +1,195 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Log Nutrition & Services
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4 mb-5 text-start" style="max-width: 800px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-basket2-fill text-success me-2"></i>Log Student Services</h2>
+        <a href="/dashboard" class="btn btn-outline-secondary btn-sm shadow-sm"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+    </div>
+
+    <div class="card shadow-sm border-0 border-top border-success border-4">
+        <div class="card-body bg-light p-4">
+
+            <form action="/log_services" method="post">
+
+                <!-- TOP SECTION: Service Details -->
+                <div class="row bg-white p-3 rounded border shadow-sm mx-0 mb-4">
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <label class="form-label fw-bold small text-primary">Service Date *</label>
+                        <input type="date" class="form-control border-primary" name="service_date" value="{{ today_date }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <label class="form-label fw-bold small text-primary">Service Type *</label>
+                        <!-- Added an onchange event to automatically filter the list based on service type! -->
+                        <select class="form-select border-primary fw-bold" name="service_type" id="service_type" required onchange="autoFilterList()">
+                            <option value="" disabled selected>Select Support...</option>
+                            <option value="Missed Hot Lunch">🍛 Missed Hot Lunch (Absence)</option>
+                            <option value="Holiday - No Meals">🚫 Holiday (Nobody Ate)</option>
+                            <option disabled>------------------------</option>
+                            <option value="Monthly Groceries">🌾 Monthly Groceries / Rice</option>
+                            <option value="Hygiene Kit">🧼 Hygiene Kit</option>
+                            <option value="School Supplies">🎒 School Supplies</option>
+                            <option value="Other Individual Support">📦 Other Support</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-muted">Notes (Optional)</label>
+                        <input type="text" class="form-control" name="notes" placeholder="e.g. 5kg Rice bag">
+                    </div>
+                </div>
+
+                <!-- SMART FILTER ALERT -->
+                <div id="filterAlert" class="alert alert-info small py-2 mb-3" style="display: none;">
+                    <i class="bi bi-info-circle-fill me-1"></i> <span id="alertText">Showing only students officially assigned to receive this specific food plan.</span>
+                </div>
+
+                <!-- BOTTOM SECTION: Student Checklist -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-people-fill me-2 text-secondary"></i>Select Students</h5>
+                    <div id="selectionButtons">
+                        <button type="button" class="btn btn-sm btn-outline-primary shadow-sm me-1" onclick="toggleAll(true)">Select All Visible</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary shadow-sm" onclick="toggleAll(false)">Clear</button>
+                    </div>
+                </div>
+
+                <div class="bg-white border rounded shadow-sm overflow-hidden" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover mb-0 align-middle" id="studentListTable">
+                        <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">#</th>
+                                <th>Student Name</th>
+                                <th>Assigned Plan</th>
+                                <th class="text-end pe-4" id="tableHeaderAction">Received?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <!-- We inject the meal_plan into data-meal-plan so JS can read it! -->
+                            <tr style="cursor: pointer;" class="student-row" onclick="toggleCheckbox('check_{{ student.id }}')" data-meal-plan="{{ student.meal_plan if student.meal_plan else 'None' }}">
+                                <td class="text-center text-muted small">{{ loop.index }}</td>
+                                <td class="fw-bold">
+                                    {{ student.first_name }} {{ student.last_name }}
+                                    <span class="khmer-font text-muted fw-normal ms-2">{{ student.khmer_name if student.khmer_name else '' }}</span>
+                                </td>
+                                <td>
+                                    <!-- Visual Badges so staff know exactly what they get -->
+                                    {% if student.meal_plan == 'Daily Hot Lunch' %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">🍛 Hot Lunch</span>
+                                    {% elif student.meal_plan == 'Monthly Groceries' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">🌾 Groceries</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary opacity-50">No Meals</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <input class="form-check-input fs-4 student-checkbox" type="checkbox" name="student_ids" value="{{ student.id }}" id="check_{{ student.id }}" onclick="event.stopPropagation()">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <button type="submit" id="submitBtn" class="btn btn-success btn-lg px-5 fw-bold shadow-sm"><i class="bi bi-save-fill me-2"></i> Save Support Logs</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // ONLY checks/unchecks rows that are currently VISIBLE on the screen
+    function toggleAll(selectState) {
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const cb = row.querySelector('.student-checkbox');
+                if(cb) cb.checked = selectState;
+            }
+        });
+    }
+
+    // Clicking the table row checks the box automatically
+    function toggleCheckbox(checkboxId) {
+        const cb = document.getElementById(checkboxId);
+        cb.checked = !cb.checked;
+    }
+
+    // SMART AUTO-FILTER & DYNAMIC UI LOGIC
+    function autoFilterList() {
+        const serviceType = document.getElementById('service_type').value;
+        const rows = document.querySelectorAll('.student-row');
+        const alertBox = document.getElementById('filterAlert');
+        const alertText = document.getElementById('alertText');
+        const tableHeader = document.getElementById('tableHeaderAction');
+        const submitBtn = document.getElementById('submitBtn');
+        const selectionButtons = document.getElementById('selectionButtons');
+
+        let hiddenCount = 0;
+
+        // Reset UI defaults
+        tableHeader.innerText = "Received?";
+        tableHeader.className = "text-end pe-4 text-dark";
+        submitBtn.innerHTML = '<i class="bi bi-save-fill me-2"></i> Save Support Logs';
+        submitBtn.className = "btn btn-success btn-lg px-5 fw-bold shadow-sm";
+        selectionButtons.style.display = 'block';
+
+        // Custom UI for "Missed Hot Lunch"
+        if (serviceType === 'Missed Hot Lunch') {
+            tableHeader.innerText = "Missed Lunch?";
+            tableHeader.className = "text-end pe-4 text-danger fw-bold";
+            submitBtn.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i> Log Absences';
+            submitBtn.className = "btn btn-danger btn-lg px-5 fw-bold shadow-sm";
+            selectionButtons.style.display = 'none'; // Hide "Select All" to prevent accidents!
+            alertText.innerText = "EXCEPTION LOGGING: Only check the box if the student was ABSENT and did NOT get their lunch.";
+            alertBox.className = "alert alert-warning small py-2 mb-3 fw-bold";
+        }
+        // Custom UI for "Holiday"
+        else if (serviceType === 'Holiday - No Meals') {
+            alertText.innerText = "Check the box for all students who would normally receive a meal, but didn't due to the holiday.";
+            alertBox.className = "alert alert-info small py-2 mb-3";
+        }
+        else {
+             alertBox.className = "alert alert-info small py-2 mb-3";
+             alertText.innerText = "Showing only students officially assigned to receive this specific food plan.";
+        }
+
+        // Filtering Logic
+        rows.forEach(row => {
+            const mealPlan = row.getAttribute('data-meal-plan');
+            let showRow = true;
+
+            // If tracking Hot Lunches (Missed or Holiday), ONLY show Hot Lunch assigned kids.
+            if ((serviceType === 'Missed Hot Lunch' || serviceType === 'Holiday - No Meals') && mealPlan !== 'Daily Hot Lunch') {
+                showRow = false;
+            }
+            // If logging Monthly Groceries, ONLY show Monthly Grocery assigned kids.
+            else if (serviceType === 'Monthly Groceries' && mealPlan !== 'Monthly Groceries') {
+                showRow = false;
+            }
+
+            if (showRow) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+                row.querySelector('.student-checkbox').checked = false; // Uncheck them if hidden
+                hiddenCount++;
+            }
+        });
+
+        // Show a helpful message if we hid people
+        if (hiddenCount > 0 && (serviceType === 'Missed Hot Lunch' || serviceType === 'Holiday - No Meals' || serviceType === 'Monthly Groceries')) {
+            alertBox.style.display = 'block';
+        } else {
+            alertBox.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

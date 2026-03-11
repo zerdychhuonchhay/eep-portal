@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Error
+{% endblock %}
+
+{% block main %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="card shadow-lg border-0 rounded-4 border-top border-danger border-4" style="width: 100%; max-width: 550px;">
+        <div class="card-body p-5 text-center">
+
+            <!-- Warning Icon -->
+            <div class="mb-4">
+                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4.5rem;"></i>
+            </div>
+
+            <h2 class="fw-bold text-dark mb-3">Action Required</h2>
+
+            <!-- The dynamic message from app.py -->
+            <div class="alert alert-light border text-dark fs-6 mb-4 shadow-sm">
+                {{ message }}
+            </div>
+
+            <!-- The Magic Back Button -->
+            <button onclick="history.back()" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
+                <i class="bi bi-arrow-left-circle me-2"></i> Go Back and Fix
+            </button>
+
+            <p class="text-muted small mt-4 mb-0">💡 Your previously typed data has been saved in your browser.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
