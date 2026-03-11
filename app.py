@@ -916,6 +916,54 @@ def add_followup(student_id):
 
     return render_template("add_followup.html", student=student, current_year=current_year, today_date=today_date, current_user=current_user)
 
+@app.route("/bulk_followup", methods=["GET", "POST"])
+@login_required
+def bulk_followup():
+    """Log a single follow-up note for multiple students at once"""
+    if request.method == "POST":
+        followup_date = request.form.get("followup_date")
+        completed_by = request.form.get("completed_by")
+        location = request.form.get("location")
+        general_notes = request.form.get("general_notes")
+        
+        # request.form.getlist grabs EVERY checked box and puts the IDs in a python list!
+        student_ids = request.form.getlist("student_ids")
+
+        if not followup_date or not completed_by:
+            flash("Date and Completed By are required.", "danger")
+            return redirect("/bulk_followup")
+
+        if not student_ids:
+            flash("You must select at least one student from the list.", "warning")
+            return redirect("/bulk_followup")
+
+        # Loop through the checked students and save the EXACT SAME record for each of them
+        for sid in student_ids:
+            db.execute("""
+                INSERT INTO followups (
+                    student_id, followup_date, location, completed_by, general_notes
+                ) VALUES (?, ?, ?, ?, ?)
+            """, sid, followup_date, location, completed_by, general_notes)
+
+        log_action(f"Logged Group Follow-Up ({location}) for {len(student_ids)} students")
+
+        flash(f"Successfully logged group follow-up for {len(student_ids)} students!", "success")
+        return redirect("/dashboard")
+
+    # For the GET request, grab all active kids
+    students = db.execute("""
+        SELECT id, first_name, last_name, khmer_name, ngo_id, grade_level 
+        FROM students 
+        WHERE status = 'Active' 
+        ORDER BY first_name ASC
+    """)
+    today_date = datetime.now().strftime('%Y-%m-%d')
+    
+    staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
+    current_user = staff_query[0]["username"] if staff_query else ""
+
+    return render_template("bulk_followup.html", students=students, today_date=today_date, current_user=current_user)
+
 
 @app.route("/edit_followup/<int:followup_id>", methods=["GET", "POST"])
 @login_required

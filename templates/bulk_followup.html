@@ -1,0 +1,127 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Group Follow-Up
+{% endblock %}
+
+{% block main %}
+<div class="container mt-4 mb-5 text-start" style="max-width: 800px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people-fill text-danger me-2"></i>Log Group Follow-Up</h2>
+        <a href="/dashboard" class="btn btn-outline-secondary btn-sm shadow-sm"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+
+    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger mb-4 d-flex align-items-center shadow-sm">
+        <i class="bi bi-lightning-charge-fill me-3 fs-4 text-danger"></i>
+        <span class="small text-dark"><strong>Time Saver:</strong> Use this form when you visit a family with multiple siblings, or observe a group of students together. The note you write here will be copied to <strong>every</strong> student you select below.</span>
+    </div>
+
+    <div class="card shadow-sm border-0 border-top border-danger border-4">
+        <div class="card-body bg-light p-4">
+            
+            <form action="/bulk_followup" method="post">
+                
+                <!-- TOP SECTION: The Shared Note -->
+                <h5 class="text-danger border-bottom pb-2 mb-3"><i class="bi bi-card-text me-2"></i>1. The Shared Details</h5>
+                <div class="row bg-white p-3 rounded border shadow-sm mx-0 mb-4">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold small text-muted">Date *</label>
+                        <input type="date" class="form-control" name="followup_date" value="{{ today_date }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold small text-muted">Completed By *</label>
+                        <input type="text" class="form-control" name="completed_by" value="{{ current_user }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold small text-muted">Location / Method</label>
+                        <select class="form-select border-danger text-danger fw-bold" name="location">
+                            <option value="Home Visit">Home Visit / ចុះសួរសុខទុក្ខនៅផ្ទះ</option>
+                            <option value="School Visit">School Visit / ចុះជួបនៅសាលារៀន</option>
+                            <option value="Community Area">Community Area / នៅក្នុងសហគមន៍</option>
+                            <option value="Office Visit">Office Visit / ជួបនៅការិយាល័យ</option>
+                            <option value="Phone Call">Phone Call / តាមទូរស័ព្ទ</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <label class="form-label fw-bold small text-muted">General Notes / <span class="khmer-font">កំណត់ចំណាំទូទៅ</span> *</label>
+                        <textarea class="form-control khmer-font" name="general_notes" rows="3" placeholder="e.g. Visited the house today. The roof is leaking but all 4 siblings look healthy and are attending school..." required></textarea>
+                    </div>
+                </div>
+
+                <!-- BOTTOM SECTION: Student Checklist -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 mt-4 gap-2">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-check2-square me-2 text-primary"></i>2. Apply to Students</h5>
+                    
+                    <!-- Quick Search for Mobile -->
+                    <div class="input-group input-group-sm w-auto shadow-sm">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" id="quickSearch" class="form-control border-start-0" placeholder="Type a name to filter..." onkeyup="filterStudents()">
+                    </div>
+                </div>
+
+                <div class="bg-white border rounded shadow-sm overflow-hidden" style="max-height: 450px; overflow-y: auto;">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                            <tr>
+                                <th>Student Name</th>
+                                <th>ID & Grade</th>
+                                <th class="text-end pe-4">Select</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentListBody">
+                            {% for student in students %}
+                            <tr style="cursor: pointer;" class="student-row" onclick="toggleCheckbox('check_{{ student.id }}')">
+                                <td class="fw-bold">
+                                    <span class="searchable-name">{{ student.first_name }} {{ student.last_name }}</span> 
+                                    <span class="khmer-font text-muted fw-normal ms-1 small d-none d-sm-inline">{{ student.khmer_name if student.khmer_name else '' }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border me-1">{{ student.ngo_id }}</span>
+                                    <span class="small text-muted">{{ student.grade_level }}</span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <input class="form-check-input fs-4" type="checkbox" name="student_ids" value="{{ student.id }}" id="check_{{ student.id }}" onclick="event.stopPropagation()">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-danger btn-lg px-5 fw-bold shadow-sm w-100 w-md-auto"><i class="bi bi-save-fill me-2"></i> Save to All Selected Profiles</button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    // Clicking the table row checks the box automatically (Fat-finger friendly!)
+    function toggleCheckbox(checkboxId) {
+        const cb = document.getElementById(checkboxId);
+        cb.checked = !cb.checked;
+    }
+
+    // Fast Javascript Search Bar
+    function filterStudents() {
+        const input = document.getElementById('quickSearch');
+        const filter = input.value.toLowerCase();
+        const rows = document.querySelectorAll('.student-row');
+
+        rows.forEach(row => {
+            const nameElement = row.querySelector('.searchable-name');
+            if (nameElement) {
+                const textValue = nameElement.textContent || nameElement.innerText;
+                if (textValue.toLowerCase().indexOf(filter) > -1) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
