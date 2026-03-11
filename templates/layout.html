@@ -13,9 +13,6 @@
 
         <!-- DataTables Bootstrap 5 CSS -->
         <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-        
-        <!-- NEW: DataTables Responsive CSS -->
-        <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
 
         <!-- Global Dual-Font Application (Inter for EN, Kantumruy for KH) -->
         <style>
@@ -133,10 +130,6 @@
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-        <!-- NEW: DataTables Responsive JS -->
-        <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-        <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-
         <!-- NEW: DataTables Natural Sort Plugin (Fixes Grade 1 vs Grade 10 sorting) -->
         <script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
 
@@ -161,6 +154,30 @@
                 return 9999; // Anything else goes to the bottom
             };
         </script>
+
+        <!-- Mobile Customizations for DataTables [+] Button & Touch Targets -->
+        <style>
+            /* Make the DataTables Responsive [+] button look like a modern blue app badge */
+            table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before, 
+            table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
+                background-color: #0d6efd !important; /* Bootstrap Primary Blue */
+                border: none !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+                line-height: 1.2em !important;
+            }
+            
+            /* Increase tap target size for action buttons on mobile */
+            @media (max-width: 768px) {
+                .btn-group .btn {
+                    padding: 0.5rem 1rem;
+                    font-size: 1.1rem;
+                }
+                .table td {
+                    padding-top: 1rem;
+                    padding-bottom: 1rem;
+                }
+            }
+        </style>
 
         <!-- Optional: Block for page-specific scripts -->
         {% block scripts %}{% endblock %}

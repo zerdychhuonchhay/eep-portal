@@ -4,10 +4,13 @@
 
 {% block main %}
     <div class="container mt-4 mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <!-- This title changes dynamically depending on if we are in the Archive or not -->
-            <h2>{{ title if title else 'Student Roster' }}</h2>
-            <div class="d-flex gap-2">
+        <!-- FIXED: Added flex-column on mobile, flex-md-row on PC, and gap-3 -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+            <!-- Dynamically show if we are in the Archive or Main Roster -->
+            <h2 class="text-center text-md-start">{{ title if title else 'Student Roster' }}</h2>
+            
+            <!-- FIXED: Added flex-wrap and justify-content-center so buttons stack nicely on phones -->
+            <div class="d-flex flex-wrap justify-content-center gap-2">
                 <a href="/" class="btn btn-outline-primary shadow-sm fw-bold">
                     <i class="bi bi-people-fill me-1"></i> Active
                 </a>
@@ -25,8 +28,8 @@
 
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
-                <div class="table-responsive p-3">
-                    <!-- ADDED dt-responsive nowrap AND style="width:100%" -->
+                <!-- FIXED: Removed 'table-responsive' class because it breaks the mobile plugin! -->
+                <div class="p-3 w-100">
                     <table id="rosterTable" class="table table-hover align-middle mb-0 dt-responsive nowrap" style="width:100%">
                         <thead class="table-dark">
                             <tr>
@@ -94,7 +97,7 @@
     <script>
         $(document).ready(function() {
             $('#rosterTable').DataTable({
-                "responsive": true, // Turn on Mobile Mode!
+                responsive: true, // CRITICAL: This turns on the mobile [+] buttons!
                 "pageLength": 25,
                 "order": [
                     [1, "asc"] // Automatically sorts by First Name (Column index 1)

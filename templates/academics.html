@@ -3,43 +3,39 @@
 {% block title %}Master Gradebook{% endblock %}
 
 {% block main %}
-<div class="container-fluid mt-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-        <div>
-            <h2>📚 Master Gradebook</h2>
-            <p class="text-muted small mb-0">Centralized view of all student reports and subject grades.</p>
-        </div>
-        <div class="btn-group shadow-sm">
-            <!-- NEW: The Add Report Button -->
-            <button type="button" class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#addReportModal">
-                <i class="bi bi-journal-plus me-1"></i> New Report
-            </button>
-            <a href="/export_grades" class="btn btn-outline-success fw-bold">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Grades
+<div class="container mt-4 mb-5" style="max-width: 1400px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
+        
+        <div class="d-flex gap-2">
+            <a href="/export_grades" class="btn btn-outline-success shadow-sm fw-bold">
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export to Excel
             </a>
+            
+            <!-- Quick Add Button using a Modal to select student -->
+            <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                <i class="bi bi-journal-plus me-1"></i> Add Report
+            </button>
         </div>
     </div>
 
-    <!-- NEW: The Add Report Modal -->
-    <div class="modal fade" id="addReportModal" tabindex="-1" aria-hidden="true">
+    <!-- The Quick Add Modal -->
+    <div class="modal fade" id="quickAddModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-person-badge me-2"></i>Select Student to Grade</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">Select Student</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4 text-start">
-                    <label class="form-label fw-bold small text-muted">Choose an Active Student</label>
-                    <select id="studentSelect" class="form-select form-select-lg mb-4 shadow-sm" required>
-                        <option value="" disabled selected>Select a student...</option>
-                        {% for student in active_students %}
-                            <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name }} ({{ student.ngo_id }})</option>
+                <div class="modal-body p-4">
+                    <label class="form-label fw-bold small text-muted">Who are you entering grades for?</label>
+                    <select class="form-select mb-3" id="quickStudentSelect">
+                        <option value="" disabled selected>Search or select a student...</option>
+                        {% for s in active_students %}
+                            <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }} ({{ s.ngo_id }})</option>
                         {% endfor %}
                     </select>
-                    <button type="button" id="proceedToReportBtn" class="btn btn-primary w-100 fw-bold btn-lg shadow-sm">
-                        Proceed to Grading Form <i class="bi bi-arrow-right-short"></i>
-                    </button>
-                    <p class="text-muted small mt-3 text-center mb-0">💡 Tip: Click the dropdown and type a name to search quickly!</p>
+                    <button class="btn btn-primary w-100 fw-bold" onclick="routeToStudent()">Continue <i class="bi bi-arrow-right"></i></button>
                 </div>
             </div>
         </div>
@@ -47,84 +43,87 @@
 
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
-            <div class="table-responsive p-3">
-                <!-- ADDED dt-responsive nowrap AND style="width:100%" -->
+            <div class="p-3 w-100">
                 <table id="academicTable" class="table table-sm table-hover align-middle mb-0 border dt-responsive nowrap" style="width:100%; font-size: 0.9rem;">
                     <thead class="table-dark">
                         <tr>
-                            <th>NGO ID</th>
-                            <th>Student Name</th>
-                            <th>Grade</th>
-                            <th>Academic Year</th>
-                            <th>Month</th>
-                            <th style="width: 35%;">Subjects & Scores</th>
-                            <th>Avg</th>
-                            <th>Rank</th>
-                            <th class="text-center">Action</th>
+                            <th>Student</th>
+                            <th>Term</th>
+                            <th>Grade Level</th>
+                            <th>School</th>
+                            <th class="text-center border-start">Avg</th>
+                            <th class="text-center">Rank</th>
+                            <th class="border-start">Core Subjects & Scores</th>
+                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for record in academic_records %}
-                            <tr>
-                                <td><strong>{{ record.ngo_id }}</strong></td>
-                                
-                                <!-- Student Name with Profile Link -->
-                                <td>
-                                    <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-primary text-nowrap">
-                                        {{ record.first_name }} {{ record.last_name }}
-                                    </a>
-                                </td>
-                                
-                                <td class="text-nowrap">{{ record.grade_level }}</td>
-                                
-                                <!-- Separated Academic Year and Month for better sorting/filtering -->
-                                <td class="fw-bold text-secondary">{{ record.academic_year }}</td>
-                                <td class="fw-bold">{{ record.month }}</td>
-                                
-                                <!-- The Grades Breakdown (Made badges slightly smaller) -->
-                                <td>
+                        <tr>
+                            <!-- Student Info -->
+                            <td>
+                                <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark">
+                                    {{ record.first_name }} {{ record.last_name }}
+                                </a>
+                                <span class="d-block small text-muted">{{ record.ngo_id }}</span>
+                            </td>
+                            
+                            <!-- Term Info -->
+                            <td>
+                                <span class="fw-bold">{{ record.month }} {{ record.academic_year }}</span>
+                                {% if record.semester %}
+                                    <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">{{ record.semester }}</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Historical Grade -->
+                            <td>{{ record.historical_grade if record.historical_grade else record.current_grade }}</td>
+                            
+                            <!-- Historical School -->
+                            <td class="khmer-font small text-muted" style="max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                {{ record.school_name if record.school_name else '-' }}
+                            </td>
+                            
+                            <!-- Overall Average -->
+                            <td class="text-center border-start fw-bold">
+                                {% if record.overall_average %}
+                                    <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm fs-6">
+                                        {{ record.overall_average }}%
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Class Rank -->
+                            <td class="text-center fw-bold text-secondary">
+                                {{ record.class_rank if record.class_rank else '-' }}
+                            </td>
+                            
+                            <!-- Condensed Subject List -->
+                            <td class="border-start" style="max-width: 300px; white-space: normal;">
+                                {% if record.subjects %}
                                     <div class="d-flex flex-wrap gap-1">
-                                        {% for subject in record.subjects %}
-                                            <span class="badge bg-light text-dark border shadow-sm py-1 px-2" style="font-size: 0.8rem;">
-                                                {{ subject.name }}: <strong class="text-primary">{{ subject.score }}</strong><span class="text-muted">/{{ subject.max_score }}</span>
+                                        {% for sub in record.subjects %}
+                                            {% set badge = sub.score|get_badge(sub.max_score) %}
+                                            <span class="badge bg-light text-dark border shadow-sm px-2 py-1" style="font-size: 0.7rem;">
+                                                <span class="text-muted">{{ sub.name }}:</span> 
+                                                <strong class="{% if badge %}text-{{ badge[1] }}{% endif %} ms-1">{{ sub.score }}</strong>
                                             </span>
                                         {% endfor %}
                                     </div>
-                                </td>
-                                
-                                <!-- Average with Auto-Coloring -->
-                                <td>
-                                    {% if record.overall_average %}
-                                        <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm">
-                                            {{ record.overall_average }}%
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                
-                                <td>
-                                    {% if record.class_rank %}
-                                        <span class="fw-bold">{{ record.class_rank }}</span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                
-                                <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-1">
-                                        <a href="/edit_report/{{ record.report_id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-0" title="Edit Report">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <!-- NEW: Delete Button with safety confirmation -->
-                                        <form action="/delete_report/{{ record.report_id }}" method="POST" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to delete this report? This action cannot be undone.');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm py-0" title="Delete Report">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
+                                {% else %}
+                                    <span class="small text-muted fst-italic">No detailed subjects recorded</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Action -->
+                            <td class="text-end pe-3">
+                                <a href="/edit_report/{{ record.report_id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-0">
+                                    Edit
+                                </a>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -135,63 +134,25 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Initialize DataTables for Search & Sort -->
 <script>
-    // NEW: JavaScript for the Modal Button Redirect
-    document.getElementById('proceedToReportBtn').addEventListener('click', function() {
-        var studentId = document.getElementById('studentSelect').value;
+    // JavaScript for the Modal Button Redirect
+    function routeToStudent() {
+        const studentId = document.getElementById('quickStudentSelect').value;
         if (studentId) {
-            // Redirects to the specific student's grading form!
-            window.location.href = '/add_report/' + studentId;
-        } else {
-            alert('Please select a student from the dropdown first.');
+            window.location.href = `/add_report/${studentId}`;
         }
-    });
+    }
 
+    // Initialize DataTables for Search & Sort
     $(document).ready(function() {
         $('#academicTable').DataTable({
-            "responsive": true, // Turn on Mobile Mode!
+            responsive: true, // Turns on mobile mode
             "pageLength": 25,
             "order": [
-                [1, "asc"], // Sort by Student Name since we auto-filter by year anyway
-                [4, "desc"] // Then by Month
-            ], 
+                [1, "desc"] // Automatically sorts by Term (Column index 1)
+            ],
             "language": {
-                "search": "🔍 Search:"
-            },
-            // This magical function creates the "Filter by Year" dropdown automatically!
-            initComplete: function () {
-                this.api().columns(3).every(function () { // Target Column 3 (Academic Year)
-                    var column = this;
-                    
-                    // Create the dropdown and put it next to the Search box
-                    var select = $('<select class="form-select form-select-sm d-inline-block w-auto ms-3 fw-bold text-primary"><option value="">📅 All Academic Years</option></select>')
-                        .appendTo('.dataTables_filter')
-                        .on('change', function () {
-                            var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                            column.search(val ? '^'+val+'$' : '', true, false).draw();
-                        });
-
-                    var latestYear = "";
-
-                    // Find all unique years and add them as options
-                    column.data().unique().sort().each(function (d, j) {
-                        var val = $('<div/>').html(d).text(); // Strip any HTML tags
-                        select.append('<option value="' + val + '">' + val + '</option>');
-                        
-                        // Keep track of the highest/latest year string (e.g. "2026-2027" > "2025-2026")
-                        if (val > latestYear) {
-                            latestYear = val;
-                        }
-                    });
-
-                    // Automatically filter the table to ONLY show the latest academic year on page load!
-                    if (latestYear) {
-                        select.val(latestYear);
-                        var escapedVal = $.fn.dataTable.util.escapeRegex(latestYear);
-                        column.search('^' + escapedVal + '$', true, false).draw();
-                    }
-                });
+                "search": "🔍 Search Gradebook:"
             }
         });
     });
