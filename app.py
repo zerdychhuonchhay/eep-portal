@@ -67,12 +67,7 @@ def log_action(description):
             os_name = "Unknown OS"
 
         if "Chrome" in user_agent_raw and "Edg" not in user_agent_raw:
-            browser = "Chrome"
-        elif "Safari" in user_agent_raw and "Chrome" not in user_agent_raw:
-            browser = "Safari"
-        elif "Firefox" in user_agent_raw:
-            browser = "Firefox"
-        elif "Edg" in user_agent_raw:
+        if "Edg" in user_agent_raw:
             browser = "Edge"
         else:
             browser = "Unknown Browser"
@@ -80,8 +75,13 @@ def log_action(description):
         if user_agent_raw != 'Unknown Device':
             device_info = f"{browser} on {os_name}"
 
-        db.execute("INSERT INTO audit_logs (staff_id, action, device_info, timestamp) VALUES (?, ?, ?, datetime('now', 'localtime'))", 
-                   session["user_id"], description, device_info)
+        # CRASH-PROOF FIX: Try to insert with device_info, fallback if the column doesn't exist yet!
+        try:
+            db.execute("INSERT INTO audit_logs (staff_id, action, device_info, timestamp) VALUES (?, ?, ?, datetime('now', 'localtime'))", 
+                       session["user_id"], description, device_info)
+        except Exception:
+            db.execute("INSERT INTO audit_logs (staff_id, action, timestamp) VALUES (?, ?, datetime('now', 'localtime'))", 
+                       session["user_id"], description)
 
 
 # ==============================================================================
@@ -231,12 +231,21 @@ def dashboard():
     # 8. NEW: Audit Log Feed (Only for Admins)
     recent_activity = []
     if session.get("role") == "Admin":
-        recent_activity = db.execute("""
-            SELECT a.action, a.timestamp, a.device_info, s.username 
-            FROM audit_logs a
-            JOIN staff s ON a.staff_id = s.id
-            ORDER BY a.timestamp DESC LIMIT 15
-        """)
+        # CRASH-PROOF FIX: Try to select device_info, fallback to 'Unknown' if the column doesn't exist yet!
+        try:
+            recent_activity = db.execute("""
+                SELECT a.action, a.timestamp, a.device_info, s.username 
+                FROM audit_logs a
+                JOIN staff s ON a.staff_id = s.id
+                ORDER BY a.timestamp DESC LIMIT 15
+            """)
+        except Exception:
+            recent_activity = db.execute("""
+                SELECT a.action, a.timestamp, 'Unknown' as device_info, s.username 
+                FROM audit_logs a
+                JOIN staff s ON a.staff_id = s.id
+                ORDER BY a.timestamp DESC LIMIT 15
+            """)
 
     date_now = datetime.now().strftime('%Y-%m-%d')
 
