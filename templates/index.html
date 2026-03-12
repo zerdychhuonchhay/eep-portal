@@ -3,180 +3,194 @@
 {% block title %}Roster Dashboard{% endblock %}
 
 {% block main %}
-    <div class="container mt-4 mb-5">
-        <!-- FIXED: Added flex-column on mobile, flex-md-row on PC, and gap-3 -->
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-            <!-- Dynamically show if we are in the Archive or Main Roster -->
-            <h2 class="text-center text-md-start">{{ title if title else 'Student Roster' }}</h2>
-            
-            <!-- FIXED: Added flex-wrap and justify-content-center so buttons stack nicely on phones -->
-            <div class="d-flex flex-wrap justify-content-center gap-2">
-                <a href="/" class="btn btn-outline-primary shadow-sm fw-bold">
-                    <i class="bi bi-people-fill me-1"></i> Active
-                </a>
-                <a href="/archive" class="btn btn-outline-secondary shadow-sm fw-bold">
-                    <i class="bi bi-archive-fill me-1"></i> Archive
-                </a>
-                <a href="/export_students" class="btn btn-outline-success shadow-sm fw-bold">
-                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
-                </a>
-                <a href="/add_student" class="btn btn-primary shadow-sm fw-bold">
-                    <i class="bi bi-person-plus-fill me-1"></i> Add New
-                </a>
-            </div>
-        </div>
-
-        <!-- MAIN DATA CONTAINER -->
-        <div class="card shadow-sm border-0 bg-transparent bg-md-white">
-            <div class="card-body p-0">
-                <!-- 
-                    APP-LIKE STYLING: We use a custom class 'app-style-table' 
-                    to trigger the card layout on mobile devices.
-                -->
-                <div class="p-0 p-md-3 w-100">
-                    <table id="rosterTable" class="table app-style-table align-middle mb-0" style="width: 100%;">
-                        <thead class="table-dark d-none d-md-table-header-group">
-                            <tr>
-                                <th>NGO ID</th>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Khmer Name</th>
-                                <th>Gender</th>
-                                <th>Grade Level</th>
-                                <th>Status</th>
-                                <th class="text-end pe-4">Quick Log</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for student in students %}
-                                <!-- 
-                                    MOBILE MAGIC: We made the whole row clickable! 
-                                    Tapping anywhere on the card takes you to the profile.
-                                -->
-                                <tr class="shadow-sm shadow-md-none bg-white rounded mb-3 mb-md-0 d-block d-md-table-row border border-md-0 position-relative p-3 p-md-0" style="cursor: pointer;" onclick="window.location='/student/{{ student.id }}'">
-                                    
-                                    <!-- ID (Hidden on mobile to save space, or shown small) -->
-                                    <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
-                                        <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-1">NGO ID: {{ student.ngo_id }}</span>
-                                        <strong class="d-none d-md-inline">{{ student.ngo_id }}</strong>
-                                    </td>
-                                    
-                                    <!-- First Name (with Avatar linked to profile) -->
-                                    <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
-                                        <div class="d-flex align-items-center">
-                                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=45" %}
-                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-3 shadow-sm" style="width: 45px; height: 45px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=45';">
-                                            <div>
-                                                <!-- We combine First and Last name on mobile for a cleaner look -->
-                                                <span class="fw-bold text-primary fs-5 fs-md-6 d-block">{{ student.first_name }} <span class="d-md-none">{{ student.last_name }}</span></span>
-                                                <span class="d-md-none khmer-font text-muted small">{{ student.khmer_name if student.khmer_name else '-' }}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    
-                                    <!-- Last Name (Hidden on mobile since combined with First Name above) -->
-                                    <td class="d-none d-md-table-cell border-0 border-md-bottom"><span class="fw-bold">{{ student.last_name }}</span></td>
-                                    
-                                    <!-- Khmer Name (Hidden on mobile since combined above) -->
-                                    <td class="d-none d-md-table-cell border-0 border-md-bottom khmer-font text-muted fw-semibold">
-                                        {{ student.khmer_name if student.khmer_name else '-' }}
-                                    </td>
-                                    
-                                    <!-- Gender (Hidden on mobile to save space) -->
-                                    <td class="d-none d-md-table-cell border-0 border-md-bottom">{{ student.gender }}</td>
-                                    
-                                    <!-- Grade Level -->
-                                    <td class="d-block d-md-table-cell border-0 border-md-bottom pb-2 pb-md-2 mt-2 mt-md-0">
-                                        <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Grade:</span>
-                                        {{ student.grade_level }}
-                                    </td>
-                                    
-                                    <!-- Status (Floating badge on mobile!) -->
-                                    <td class="d-block d-md-table-cell border-0 border-md-bottom position-absolute top-0 end-0 p-3 position-md-static p-md-2">
-                                        <span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %} shadow-sm">
-                                            {{ student.status }}
-                                        </span>
-                                    </td>
-                                    
-                                    <!-- Quick Log (Full width buttons on mobile) -->
-                                    <td class="d-block d-md-table-cell border-0 border-md-bottom border-top border-md-start text-md-end pe-md-3 pt-3 pt-md-2 mt-2 mt-md-0" onclick="event.stopPropagation();">
-                                        <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-2">Quick Actions:</span>
-                                        <div class="d-flex d-md-inline-flex gap-2 w-100 w-md-auto">
-                                            <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold flex-grow-1 shadow-sm" title="Add Report">
-                                                <i class="bi bi-journal-plus"></i> <span class="d-md-none ms-1">Grades</span>
-                                            </a>
-                                            <a href="/add_followup/{{ student.id }}" class="btn btn-outline-danger fw-bold flex-grow-1 shadow-sm" title="Add Follow-Up">
-                                                <i class="bi bi-clipboard2-heart-fill"></i> <span class="d-md-none ms-1">Notes</span>
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<div class="container mt-4 mb-5">
+    
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <h2 class="text-center text-md-start">{{ title if title else 'Student Roster' }}</h2>
+        
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a href="/" class="btn btn-outline-primary shadow-sm fw-bold">
+                <i class="bi bi-people-fill me-1"></i> Active
+            </a>
+            <a href="/archive" class="btn btn-outline-secondary shadow-sm fw-bold">
+                <i class="bi bi-archive-fill me-1"></i> Archive
+            </a>
+            <a href="/export_students" class="btn btn-outline-success shadow-sm fw-bold">
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
+            </a>
+            <a href="/add_student" class="btn btn-primary shadow-sm fw-bold">
+                <i class="bi bi-person-plus-fill me-1"></i> Add New
+            </a>
         </div>
     </div>
 
-    <!-- Custom CSS for the Native App Layout -->
-    <style>
-        /* Remove background on mobile so cards stand out */
-        @media (max-width: 767.98px) {
-            .bg-md-white { background-color: transparent !important; }
+    <!-- The Data Container -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-3">
             
-            /* Clean up DataTables Search for mobile */
-            .dataTables_wrapper .dataTables_filter {
-                float: none;
-                text-align: center;
-                margin-bottom: 1rem;
-            }
-            .dataTables_wrapper .dataTables_filter input {
-                width: 100%;
-                margin-left: 0;
-                padding: 0.6rem;
-                border-radius: 10px;
-                border: 1px solid #dee2e6;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            }
-            /* Hide the "Showing 1 to 25 of X entries" text on tiny screens */
-            .dataTables_wrapper .dataTables_length,
-            .dataTables_wrapper .dataTables_info {
-                display: none;
-            }
-            
-            /* Add spacing and styling to the mobile cards */
-            .app-style-table tbody tr {
-                margin-bottom: 1rem !important;
-                border-radius: 15px !important;
-                display: block;
-                transition: transform 0.1s;
-            }
-            /* Cool app effect: Card slightly shrinks when tapped! */
-            .app-style-table tbody tr:active {
-                transform: scale(0.98);
-            }
+            <!-- 
+                Notice how clean the table is! No messy d-md-block classes.
+                It is a pure HTML table for Desktop.
+            -->
+            <table id="rosterTable" class="table table-hover align-middle mb-0 mobile-cards-table" style="width: 100%;">
+                <thead class="table-dark">
+                    <tr>
+                        <th>NGO ID</th>
+                        <th>Student Name</th>
+                        <th>Khmer Name</th>
+                        <th>Gender</th>
+                        <th>Grade</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                        <tr>
+                            <!-- We use data-label for the mobile CSS to grab -->
+                            <td data-label="NGO ID" class="fw-bold">{{ student.ngo_id }}</td>
+                            
+                            <td data-label="Student">
+                                <div class="d-flex align-items-center">
+                                    {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=40" %}
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-2 shadow-sm" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=40';">
+                                    <a href="/student/{{ student.id }}" class="text-decoration-none fw-bold text-primary fs-6">
+                                        {{ student.first_name }} {{ student.last_name }}
+                                    </a>
+                                </div>
+                            </td>
+                            
+                            <td data-label="Khmer Name" class="khmer-font text-muted fw-semibold">
+                                {{ student.khmer_name if student.khmer_name else '-' }}
+                            </td>
+                            
+                            <td data-label="Gender">{{ student.gender }}</td>
+                            
+                            <td data-label="Grade Level">{{ student.grade_level }}</td>
+                            
+                            <td data-label="Status">
+                                <span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %} shadow-sm">
+                                    {{ student.status }}
+                                </span>
+                            </td>
+                            
+                            <!-- Action Buttons -->
+                            <td data-label="Quick Actions" class="text-md-end">
+                                <div class="btn-group w-100">
+                                    <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-outline-success fw-bold shadow-sm flex-grow-1 flex-md-grow-0" title="Add Report">
+                                        <i class="bi bi-journal-plus"></i> <span class="d-md-none ms-1">Grades</span>
+                                    </a>
+                                    <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-outline-danger fw-bold shadow-sm flex-grow-1 flex-md-grow-0" title="Add Follow-Up">
+                                        <i class="bi bi-clipboard2-heart-fill"></i> <span class="d-md-none ms-1">Notes</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+
+<!-- 
+    THE MOBILE MAGIC
+    This CSS ONLY activates if the screen is smaller than a tablet.
+    It completely ignores the desktop view, keeping it safe!
+-->
+<style>
+    @media (max-width: 767.98px) {
+        /* Hide DataTables Top/Bottom Controls on Mobile to save space */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_info {
+            display: none !important;
         }
-    </style>
+        .dataTables_wrapper .dataTables_filter {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            width: 100%;
+            margin-left: 0;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        /* Force table elements to display as block elements instead of a grid */
+        .mobile-cards-table, 
+        .mobile-cards-table tbody, 
+        .mobile-cards-table th, 
+        .mobile-cards-table td, 
+        .mobile-cards-table tr {
+            display: block;
+            width: 100%;
+        }
+        
+        /* Hide the top header row completely */
+        .mobile-cards-table thead {
+            display: none !important;
+        }
+        
+        /* Style the Rows to look like floating Cards */
+        .mobile-cards-table tr {
+            margin-bottom: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            padding: 0.5rem;
+        }
+        
+        /* Style the Cells */
+        .mobile-cards-table td {
+            position: relative;
+            padding: 0.75rem 0.5rem 0.75rem 40% !important; /* Push text to the right */
+            border: none !important;
+            border-bottom: 1px solid #f8f9fa !important;
+            text-align: right;
+        }
+        
+        /* Remove border from the last cell (the buttons) */
+        .mobile-cards-table td:last-child {
+            border-bottom: none !important;
+            text-align: center;
+            padding-left: 0.5rem !important;
+            padding-top: 1rem !important;
+        }
+        
+        /* Insert the Column Name from the 'data-label' attribute! */
+        .mobile-cards-table td::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 0.5rem;
+            top: 0.75rem;
+            width: 35%;
+            text-align: left;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
-<!-- Initialize DataTables for Search & Sort -->
-    <script>
-        $(document).ready(function() {
-            $('#rosterTable').DataTable({
-                "pageLength": 25,
-                "order": [
-                    [1, "asc"] // Automatically sorts by First Name (Column index 1)
-                ], 
-                "columnDefs": [
-                    { "type": "custom-grade", "targets": 5 } // Apply our smart sorting to the Grade column
-                ],
-                "language": {
-                    "search": "",
-                    "searchPlaceholder": "🔍 Search Students..."
-                }
-            });
+<script>
+    $(document).ready(function() {
+        $('#rosterTable').DataTable({
+            "pageLength": 25,
+            "order": [[ 1, "asc" ]], // Sort by First Name
+            "columnDefs": [
+                { "type": "custom-grade", "targets": 4 } // Grade sorting
+            ],
+            "language": {
+                "search": "",
+                "searchPlaceholder": "🔍 Search Students..."
+            }
         });
-    </script>
+    });
+</script>
 {% endblock %}
