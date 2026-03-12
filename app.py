@@ -18,7 +18,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, Response
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from helpers import login_required
+from helpers import login_required, admin_required
 
 # 1. Turn on the flask application
 app = Flask(__name__)
