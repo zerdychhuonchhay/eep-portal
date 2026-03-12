@@ -66,8 +66,10 @@ def log_action(description):
         else:
             os_name = "Unknown OS"
 
+        # FIXED: Corrected the missing indentation and logic flow here!
         if "Chrome" in user_agent_raw and "Edg" not in user_agent_raw:
-        if "Edg" in user_agent_raw:
+            browser = "Chrome"
+        elif "Edg" in user_agent_raw:
             browser = "Edge"
         else:
             browser = "Unknown Browser"
