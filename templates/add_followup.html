@@ -1,8 +1,8 @@
-{#
+{# 
    CS50 FINAL PROJECT CITATION:
-   The layout structure, tabbed interface, and dynamic HTML/CSS logic
-   in this template were developed and refined with the assistance of Google Gemini.
-   The core data architecture, database schema, and integration logic remain my own original work.
+   The layout structure, tabbed interface, and dynamic HTML/CSS logic 
+   in this template were developed and refined with the assistance of Google Gemini. 
+   The core data architecture, database schema, and integration logic remain my own original work. 
 #}
 {% extends "layout.html" %}
 
@@ -20,7 +20,7 @@
     <div class="card shadow-sm border-0 border-top border-danger border-4">
         <div class="card-body p-0">
             <form action="/add_followup/{{ student.id }}" method="post">
-
+                
                 <!-- Custom Tab Navigation -->
                 <ul class="nav nav-tabs px-4 pt-3 bg-light" id="followupTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -43,11 +43,11 @@
 
                 <!-- Tab Content Areas -->
                 <div class="tab-content p-4" id="followupTabsContent">
-
+                    
                     <!-- TAB 1: LOGISTICS -->
                     <div class="tab-pane fade show active" id="logistics" role="tabpanel">
                         <h5 class="text-primary border-bottom pb-2 mb-4"><i class="bi bi-calendar-check me-2"></i>Meeting Overview / <span class="khmer-font">ព័ត៌មានទូទៅនៃកិច្ចប្រជុំ</span></h5>
-
+                        
                         <div class="row mb-3">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold small text-muted">Date of Follow-Up / <span class="khmer-font">កាលបរិច្ឆេទ</span> *</label>
@@ -60,7 +60,7 @@
                                 <input type="text" class="form-control" name="completed_by" value="{{ current_user }}" required placeholder="e.g. Sreyroth">
                             </div>
                         </div>
-
+                        
                         <div class="mb-4">
                             <label class="form-label fw-bold small text-muted">Location / Method / <span class="khmer-font">ទីតាំង / វិធីសាស្ត្រ</span></label>
                             <select class="form-select" name="location">
@@ -77,11 +77,12 @@
                     <!-- TAB 2: WELL-BEING & HOME -->
                     <div class="tab-pane fade" id="wellbeing" role="tabpanel">
                         <h5 class="text-primary border-bottom pb-2 mb-4"><i class="bi bi-heart-pulse me-2"></i>Physical & Home Environment / <span class="khmer-font">សុខភាព និងស្ថានភាពគ្រួសារ</span></h5>
-
+                        
                         <div class="row mb-4">
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small text-muted">Physical Health / <span class="khmer-font">សុខភាពរាងកាយ</span></label>
                                 <select class="form-select mb-2" name="physical_health">
+                                    <option value="" selected>Not Evaluated</option>
                                     <option value="Good">Good / ល្អ</option>
                                     <option value="Minor Issues">Minor Issues / មានបញ្ហាតិចតួច</option>
                                     <option value="Requires Medical Attention">Requires Medical Attention / ត្រូវការការព្យាបាល</option>
@@ -97,6 +98,7 @@
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small text-muted">Social Interaction / <span class="khmer-font">ទំនាក់ទំនងសង្គម</span></label>
                                 <select class="form-select mb-2" name="social_interaction">
+                                    <option value="" selected>Not Evaluated</option>
                                     <option value="Active">Active / សកម្ម</option>
                                     <option value="Isolated/Withdrawn">Isolated/Withdrawn / ឯកោ</option>
                                     <option value="Aggressive">Aggressive / ឆេវឆាវ</option>
@@ -111,6 +113,7 @@
                         <div class="p-3 bg-light rounded border mb-3">
                             <label class="form-label fw-bold small text-muted">Home Life Stability / <span class="khmer-font">ស្ថិរភាពគ្រួសារ</span></label>
                             <select class="form-select mb-2" name="home_life">
+                                <option value="" selected>Not Evaluated</option>
                                 <option value="Stable">Stable / មានស្ថិរភាព</option>
                                 <option value="Moderate Stress">Moderate Stress / មានភាពតានតឹងមធ្យម</option>
                                 <option value="High Conflict/Unstable">High Conflict/Unstable / មានជម្លោះខ្ពស់/មិនមានស្ថិរភាព</option>
@@ -122,11 +125,12 @@
                     <!-- TAB 3: EDUCATION -->
                     <div class="tab-pane fade" id="education" role="tabpanel">
                         <h5 class="text-primary border-bottom pb-2 mb-4"><i class="bi bi-book me-2"></i>Education Check-In / <span class="khmer-font">ការតាមដានការសិក្សា</span></h5>
-
+                        
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted">Learning Difficulties / <span class="khmer-font">ការលំបាកក្នុងការរៀនសូត្រ</span></label>
                                 <select class="form-select mb-2" name="learning_difficulties">
+                                    <option value="" selected>Not Evaluated</option>
                                     <option value="None">None / គ្មាន</option>
                                     <option value="Reading/Writing">Reading/Writing / អំណាន/សំណេរ</option>
                                     <option value="Math">Math / គណិតវិទ្យា</option>
@@ -136,6 +140,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted">Behavior in Class / <span class="khmer-font">អាកប្បកិរិយាក្នុងថ្នាក់</span></label>
                                 <select class="form-select mb-2" name="behavior_in_class">
+                                    <option value="" selected>Not Evaluated</option>
                                     <option value="Attentive">Attentive / យកចិត្តទុកដាក់</option>
                                     <option value="Distracted">Distracted / មិនយកចិត្តទុកដាក់</option>
                                     <option value="Disruptive">Disruptive / រំខានគេ</option>
@@ -147,6 +152,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted">Peer Issues (Bullying) / <span class="khmer-font">បញ្ហាជាមួយមិត្តភក្តិ (ការសម្លុត)</span></label>
                                 <select class="form-select mb-2" name="peer_issues">
+                                    <option value="" selected>Not Evaluated</option>
                                     <option value="No">No / ទេ</option>
                                     <option value="Yes - Victim">Yes - Victim / បាទ/ចាស - ជាជនរងគ្រោះ</option>
                                     <option value="Yes - Instigator">Yes - Instigator / បាទ/ចាស - ជាអ្នកបង្ក</option>
@@ -155,6 +161,7 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted">Tutoring Participation / <span class="khmer-font">ការចូលរួមរៀនគួរ</span></label>
                                 <select class="form-select mb-2" name="tutoring_participation">
+                                    <option value="" selected>Not Evaluated</option>
                                     <option value="N/A">N/A / មិនមាន</option>
                                     <option value="Attends Regularly">Attends Regularly / ចូលរួមទៀងទាត់</option>
                                     <option value="Frequently Absent">Frequently Absent / ជារឿយៗអវត្តមាន</option>
@@ -166,7 +173,7 @@
                     <!-- TAB 4: RISK ASSESSMENT (CRITICAL) -->
                     <div class="tab-pane fade" id="risk" role="tabpanel">
                         <h5 class="text-danger border-bottom pb-2 mb-4"><i class="bi bi-shield-exclamation me-2"></i>Protection & Risk Assessment / <span class="khmer-font">ការវាយតម្លៃហានិភ័យ និងការការពារ</span></h5>
-
+                        
                         <!-- Checkbox Grid for Risk Factors -->
                         <div class="mb-4 p-3 border border-danger rounded bg-danger bg-opacity-10">
                             <label class="form-label fw-bold text-danger mb-3">Active Risk Factors (Check all that apply) / <span class="khmer-font">កត្តាហានិភ័យសកម្ម (ធីកទាំងអស់ដែលទាក់ទង)</span></label>
@@ -215,11 +222,11 @@
                             <textarea class="form-control khmer-font" name="general_notes" rows="4" placeholder="What are the next steps? What support is needed?"></textarea>
                         </div>
                     </div>
-
+                    
                     <!-- NEW TAB 5: SPONSOR LETTER CHECKLIST -->
                     <div class="tab-pane fade" id="sponsor" role="tabpanel">
                         <h5 class="text-success border-bottom pb-2 mb-4"><i class="bi bi-envelope-check me-2"></i>Sponsor Letter Workflow / <span class="khmer-font">កិច្ចការសំបុត្រអ្នកឧបត្ថម្ភ</span></h5>
-
+                        
                         <div class="alert alert-success bg-success bg-opacity-10 border-success mb-4 d-flex align-items-center">
                             <i class="bi bi-info-circle-fill me-3 fs-4 text-success"></i>
                             <span class="small text-dark">Track the quarterly sponsor letter progress here. You can fill this out without completing a full home visit!</span>
@@ -251,7 +258,7 @@
                                         1. Letter given to student to write / <span class="khmer-font text-muted fw-normal">បានផ្តល់សំបុត្រឱ្យសិស្សសរសេរ</span>
                                     </label>
                                 </div>
-
+                                
                                 <div class="form-check mb-3 p-3 border rounded bg-white shadow-sm d-flex align-items-center">
                                     <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_translated" id="task2" value="Yes">
                                     <label class="form-check-label fw-bold w-100" for="task2" style="cursor: pointer;">
@@ -274,7 +281,7 @@
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div class="row">
                             <div class="col-12">
                                 <label class="form-label fw-bold small text-muted">Additional Letter Notes / <span class="khmer-font">កំណត់ចំណាំបន្ថែម</span></label>
@@ -284,7 +291,7 @@
                     </div>
 
                 </div>
-
+                
                 <div class="card-footer bg-light border-top text-end py-3 px-4 mt-2">
                     <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm fw-bold"><i class="bi bi-save me-1"></i> Save Report</button>
                 </div>

@@ -28,7 +28,7 @@
                     <!-- Avatar Display -->
                     <div class="position-relative d-inline-block mb-3">
                         {% set thumb = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=150" %}
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb }}" class="rounded-circle border border-3 border-white shadow" style="width: 150px; height: 150px; object-fit: cover;">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb }}" alt="Profile Avatar for {{ student.first_name }}" class="rounded-circle border border-3 border-white shadow avatar-xl">
                         
                         <!-- Status Indicator Dot -->
                         <span class="position-absolute bottom-0 end-0 p-2 border border-light border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-primary{% endif %}" title="{{ student.status }}"></span>
@@ -41,8 +41,8 @@
 
                     <!-- Avatar Upload Form -->
                     <form action="/update_avatar/{{ student.id }}" method="post" enctype="multipart/form-data" class="text-start">
-                        <label class="form-label fw-bold small text-muted mb-1"><i class="bi bi-camera-fill me-1"></i> Update Photo</label>
-                        <input type="file" name="profile_picture" class="form-control form-control-sm mb-2" accept="image/*" required>
+                        <label class="form-label fw-bold small text-muted mb-1" for="profile_picture"><i class="bi bi-camera-fill me-1"></i> Update Photo</label>
+                        <input type="file" id="profile_picture" name="profile_picture" class="form-control form-control-sm mb-2" accept="image/*" required aria-label="Upload New Profile Picture">
                         <button type="submit" class="btn btn-sm btn-outline-primary w-100 fw-bold shadow-sm">Upload New Avatar</button>
                     </form>
 
@@ -64,12 +64,12 @@
                     <div class="card-body p-4">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted">NGO ID / <span class="khmer-font fw-normal">លេខសម្គាល់អង្គការ</span></label>
-                                <input autocomplete="off" class="form-control bg-light" name="ngo_id" type="text" value="{{ student.ngo_id }}" required>
+                                <label class="form-label fw-bold small text-muted" for="ngo_id">NGO ID / <span class="khmer-font fw-normal">លេខសម្គាល់អង្គការ</span></label>
+                                <input autocomplete="off" class="form-control bg-light" id="ngo_id" name="ngo_id" type="text" value="{{ student.ngo_id }}" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted">Program Status / <span class="khmer-font fw-normal">ស្ថានភាព</span></label>
-                                <select class="form-select border-primary fw-bold" name="status">
+                                <label class="form-label fw-bold small text-muted" for="status">Program Status / <span class="khmer-font fw-normal">ស្ថានភាព</span></label>
+                                <select class="form-select border-primary fw-bold" id="status" name="status">
                                     <option value="Active" {% if student.status == 'Active' %}selected{% endif %}>🟢 Active</option>
                                     <option value="Dropped Out" {% if student.status == 'Dropped Out' %}selected{% endif %}>🔴 Dropped Out</option>
                                     <option value="Graduated" {% if student.status == 'Graduated' %}selected{% endif %}>🔵 Graduated</option>
@@ -79,35 +79,35 @@
 
                         <div class="row mb-3">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">First Name (EN)</label>
-                                <input class="form-control" name="first_name" type="text" value="{{ student.first_name }}" required>
+                                <label class="form-label fw-bold small text-muted" for="first_name">First Name (EN)</label>
+                                <input class="form-control" id="first_name" name="first_name" type="text" value="{{ student.first_name }}" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Last Name (EN)</label>
-                                <input class="form-control" name="last_name" type="text" value="{{ student.last_name }}" required>
+                                <label class="form-label fw-bold small text-muted" for="last_name">Last Name (EN)</label>
+                                <input class="form-control" id="last_name" name="last_name" type="text" value="{{ student.last_name }}" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Khmer Name</label>
-                                <input class="form-control khmer-font" name="khmer_name" type="text" value="{{ student.khmer_name if student.khmer_name else '' }}">
+                                <label class="form-label fw-bold small text-muted" for="khmer_name">Khmer Name</label>
+                                <input class="form-control khmer-font" id="khmer_name" name="khmer_name" type="text" value="{{ student.khmer_name if student.khmer_name else '' }}">
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Gender</label>
-                                <select class="form-select" name="gender" required>
+                                <label class="form-label fw-bold small text-muted" for="gender">Gender</label>
+                                <select class="form-select" id="gender" name="gender" required>
                                     <option disabled value="">Select...</option>
                                     <option value="Male" {% if student.gender == 'Male' %}selected{% endif %}>Male</option>
                                     <option value="Female" {% if student.gender == 'Female' %}selected{% endif %}>Female</option>
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Date of Birth</label>
-                                <input class="form-control" name="dob" type="date" value="{{ student.dob if student.dob else '' }}">
+                                <label class="form-label fw-bold small text-muted" for="dob">Date of Birth</label>
+                                <input class="form-control" id="dob" name="dob" type="date" value="{{ student.dob if student.dob else '' }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Joined Date</label>
-                                <input class="form-control" name="joined_date" type="date" value="{{ student.joined_date if student.joined_date else '' }}">
+                                <label class="form-label fw-bold small text-muted" for="joined_date">Joined Date</label>
+                                <input class="form-control" id="joined_date" name="joined_date" type="date" value="{{ student.joined_date if student.joined_date else '' }}">
                             </div>
                         </div>
                     </div>
@@ -122,9 +122,9 @@
                     
                     <div class="card-body p-4">
                         
-                        <!-- Clean Standard Dropdown (Replaced the bulky scrolling list) -->
+                        <!-- Clean Standard Dropdown -->
                         <div class="bg-info bg-opacity-10 p-3 rounded border border-info mb-4">
-                            <label class="form-label fw-bold small text-info-emphasis"><i class="bi bi-link-45deg me-1"></i>Central Household Link</label>
+                            <label class="form-label fw-bold small text-info-emphasis" for="householdSelect"><i class="bi bi-link-45deg me-1"></i>Central Household Link</label>
                             
                             <select class="form-select border-info fw-bold shadow-sm" name="household_id" id="householdSelect" onchange="syncHouseholdData()">
                                 <option value="" class="text-danger fw-bold" {% if not student.household_id %}selected{% endif %}>
@@ -146,15 +146,15 @@
                         <!-- Caregiver Info (Synced) -->
                         <div class="row mb-4">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" id="label_guardian">Primary Caregiver Name</label>
+                                <label class="form-label fw-bold small text-muted" id="label_guardian" for="guardian_name">Primary Caregiver Name</label>
                                 <input class="form-control" id="guardian_name" name="guardian_name" type="text" value="{{ student.guardian_name if student.guardian_name else '' }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" id="label_phone">Phone Number</label>
+                                <label class="form-label fw-bold small text-muted" id="label_phone" for="phone_number">Phone Number</label>
                                 <input class="form-control" id="phone_number" name="phone_number" type="text" value="{{ student.phone_number if student.phone_number else '' }}">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" id="label_slum">Slum Area</label>
+                                <label class="form-label fw-bold small text-muted" id="label_slum" for="slum_area">Slum Area</label>
                                 <input class="form-control" id="slum_area" name="slum_area" type="text" placeholder="e.g., Steung Meanchey" value="{{ student.slum_area if student.slum_area else '' }}">
                             </div>
                         </div>
@@ -163,8 +163,8 @@
                         <h6 class="text-secondary fw-bold small text-uppercase mb-3"><i class="bi bi-diagram-3 me-1"></i> Biological Parents & Kinship</h6>
                         <div class="row bg-light p-3 rounded border mx-0">
                             <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted">Relation to Caregiver</label>
-                                <select class="form-select form-select-sm" name="caregiver_relationship">
+                                <label class="form-label fw-bold small text-muted" for="caregiver_relationship">Relation to Caregiver</label>
+                                <select class="form-select form-select-sm" id="caregiver_relationship" name="caregiver_relationship">
                                     <option value="" {% if not student.caregiver_relationship %}selected{% endif %}>Not Specified</option>
                                     <option value="Son" {% if student.caregiver_relationship == 'Son' %}selected{% endif %}>Son</option>
                                     <option value="Daughter" {% if student.caregiver_relationship == 'Daughter' %}selected{% endif %}>Daughter</option>
@@ -178,12 +178,12 @@
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted">Mother's Name</label>
-                                <input class="form-control form-control-sm khmer-font" name="mother_name" type="text" value="{{ student.mother_name if student.mother_name else '' }}" placeholder="Unknown/Abandoned">
+                                <label class="form-label fw-bold small text-muted" for="mother_name">Mother's Name</label>
+                                <input class="form-control form-control-sm khmer-font" id="mother_name" name="mother_name" type="text" value="{{ student.mother_name if student.mother_name else '' }}" placeholder="Unknown/Abandoned">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Father's Name</label>
-                                <input class="form-control form-control-sm khmer-font" name="father_name" type="text" value="{{ student.father_name if student.father_name else '' }}" placeholder="Unknown/Abandoned">
+                                <label class="form-label fw-bold small text-muted" for="father_name">Father's Name</label>
+                                <input class="form-control form-control-sm khmer-font" id="father_name" name="father_name" type="text" value="{{ student.father_name if student.father_name else '' }}" placeholder="Unknown/Abandoned">
                             </div>
                         </div>
 
@@ -198,14 +198,14 @@
                     <div class="card-body p-4">
                         <div class="row">
                             <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted">Current School</label>
-                                <input class="form-control khmer-font" name="current_school" type="text" placeholder="e.g., New Life School" value="{{ student.current_school if student.current_school else '' }}">
+                                <label class="form-label fw-bold small text-muted" for="current_school">Current School</label>
+                                <input class="form-control khmer-font" id="current_school" name="current_school" type="text" placeholder="e.g., New Life School" value="{{ student.current_school if student.current_school else '' }}">
                             </div>
                             
                             <!-- STRUCTURED GRADE DROPDOWN -->
                             <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted">Grade Level</label>
-                                <select class="form-select" name="grade_level" required>
+                                <label class="form-label fw-bold small text-muted" for="grade_level">Grade Level</label>
+                                <select class="form-select" id="grade_level" name="grade_level" required>
                                     <option value="" disabled>Select Grade...</option>
                                     <optgroup label="Early Education">
                                         <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
@@ -237,8 +237,8 @@
 
                             <!-- MEAL PLAN DROPDOWN -->
                             <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Nutrition Plan</label>
-                                <select class="form-select border-success fw-bold" name="meal_plan" required>
+                                <label class="form-label fw-bold small text-muted" for="meal_plan">Nutrition Plan</label>
+                                <select class="form-select border-success fw-bold" id="meal_plan" name="meal_plan" required>
                                     <option value="None" {% if student.meal_plan == 'None' or not student.meal_plan %}selected{% endif %}>No Meals Assigned</option>
                                     <option value="Daily Hot Lunch" class="text-success" {% if student.meal_plan == 'Daily Hot Lunch' %}selected{% endif %}>🍛 Daily Hot Lunch</option>
                                     <option value="Monthly Groceries" class="text-warning" {% if student.meal_plan == 'Monthly Groceries' %}selected{% endif %}>🌾 Monthly Groceries/Rice</option>
@@ -254,8 +254,8 @@
                         <h5 class="text-warning text-darken fw-bold mb-0"><i class="bi bi-journal-text me-2"></i>4. Additional Notes</h5>
                     </div>
                     <div class="card-body p-4">
-                        <label class="form-label fw-bold small text-muted">General Comments / <span class="khmer-font fw-normal">មតិយោបល់ទូទៅ</span></label>
-                        <textarea class="form-control khmer-font" name="comment" rows="4" placeholder="Any special notes, background info, or medical context about this student...">{{ student.comment if student.comment else '' }}</textarea>
+                        <label class="form-label fw-bold small text-muted" for="comment">General Comments / <span class="khmer-font fw-normal">មតិយោបល់ទូទៅ</span></label>
+                        <textarea class="form-control khmer-font" id="comment" name="comment" rows="4" placeholder="Any special notes, background info, or medical context about this student...">{{ student.comment if student.comment else '' }}</textarea>
                     </div>
                 </div>
 

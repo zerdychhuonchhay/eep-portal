@@ -1,607 +1,432 @@
-{# 
-   CS50 FINAL PROJECT CITATION:
-   The layout structure, responsive grid UI, and dynamic JavaScript/Jinja rendering 
-   in this template were developed and refined with the assistance of Google Gemini. 
-   The core data architecture, database schema, and integration logic remain my own original work. 
-#}
 {% extends "layout.html" %}
 
-{% block title %}{{ student.first_name }}'s Profile{% endblock %}
+{% block title %}Student Profile - {{ student.first_name }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid mt-4 mb-5 text-start" style="max-width: 1200px;">
-    
-    <!-- HEADER SECTION: Avatar, Basic Info, and Print Dossier -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <div class="d-flex align-items-center gap-3">
-            <!-- Resilient Avatar with Quick-Update Camera Button -->
-            <div class="position-relative">
-                {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=100" %}
-                <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" 
-                     class="rounded-circle border shadow-sm" 
-                     style="width: 100px; height: 100px; object-fit: cover;" 
-                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=100';">
-                
-                <!-- Hidden Upload Form -->
-                <form action="/update_avatar/{{ student.id }}" method="POST" enctype="multipart/form-data" class="position-absolute bottom-0 end-0 d-print-none" id="avatarForm">
-                    <label for="profile_picture" class="btn btn-sm btn-primary rounded-circle shadow-sm" style="cursor: pointer; padding: 4px 8px;" title="Update Photo">
-                        <i class="bi bi-camera-fill"></i>
-                    </label>
-                    <input type="file" id="profile_picture" name="profile_picture" class="d-none" accept="image/*" onchange="document.getElementById('avatarForm').submit();">
-                </form>
-            </div>
-            
-            <!-- Student Title Info -->
-            <div>
-                <h2 class="fw-bold mb-0 text-primary">{{ student.first_name }} {{ student.last_name }} <span class="khmer-font text-muted fs-4">({{ student.khmer_name if student.khmer_name else '-' }})</span></h2>
-                <p class="text-muted mb-0 fw-bold">NGO ID: {{ student.ngo_id }} | Education Level: {{ student.grade_level }}</p>
-                <div class="d-flex flex-wrap gap-2 mt-1">
-                    <span class="badge {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %} shadow-sm">
-                        {{ student.status }}
-                    </span>
-                    
-                    <!-- Dynamic Meal Plan Tag -->
-                    {% if student.meal_plan == 'Daily Hot Lunch' %}
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success shadow-sm">
-                            <i class="bi bi-cup-hot-fill me-1"></i> Hot Lunch Eligible
-                        </span>
-                    {% elif student.meal_plan == 'Monthly Groceries' %}
-                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning shadow-sm">
-                            <i class="bi bi-basket2-fill me-1"></i> Monthly Groceries
-                        </span>
-                    {% endif %}
-                </div>
-            </div>
+<div class="container-fluid px-lg-5 mt-4 mb-5 text-start">
+
+    <!-- Top Action Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-person-badge text-primary me-2"></i>Student Profile</h2>
+            <p class="text-muted small mb-0">Detailed record for {{ student.first_name }} {{ student.last_name }}</p>
         </div>
-        
-        <!-- Action Buttons -->
-        <div class="d-flex gap-2 mt-3 mt-md-0 d-print-none">
-            <a href="/edit_student/{{ student.id }}" class="btn btn-outline-secondary fw-bold shadow-sm"><i class="bi bi-pencil-square me-1"></i> Edit Profile</a>
-            <button onclick="window.print()" class="btn btn-outline-dark fw-bold shadow-sm"><i class="bi bi-printer-fill me-1"></i> Print Dossier</button>
+        <div class="d-flex gap-2">
+            <a href="/" class="btn btn-outline-secondary shadow-sm fw-bold">
+                <i class="bi bi-arrow-left"></i> Roster
+            </a>
+            {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
+            <a href="/edit_student/{{ student.id }}" class="btn btn-warning shadow-sm fw-bold">
+                <i class="bi bi-pencil-square me-1"></i> Edit Profile
+            </a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- BODY GRID -->
-    <div class="row g-4">
-        
-        <!-- LEFT COLUMN: Demographics, Family, Notes -->
-        <div class="col-lg-4">
-            
-            <!-- Demographics Card -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-light fw-bold border-0 pt-3 pb-2 text-dark"><i class="bi bi-person-vcard me-2 text-primary"></i>Demographics</div>
-                <div class="card-body py-2">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Gender</small> {{ student.gender }}</li>
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Date of Birth</small> {{ student.dob if student.dob else 'Unknown' }}</li>
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Joined EEP</small> {{ student.joined_date if student.joined_date else 'Unknown' }}</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Family & Education Card -->
-            <div class="card shadow-sm border-0 mb-4 border-top border-info border-4">
-                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
-                    <span><i class="bi bi-house-heart-fill text-info me-2"></i>Household & Family Info</span>
-                    
-                    <!-- THE DOORWAY: Link to Central Household Profile -->
-                    {% if student.household_id %}
-                        <a href="/household/{{ student.household_id }}" class="btn btn-sm btn-info text-white fw-bold shadow-sm">
-                            <i class="bi bi-people-fill me-1"></i> View Full Family
-                        </a>
-                    {% endif %}
-                </div>
-                <div class="card-body py-2">
-                    <ul class="list-group list-group-flush">
-                        {% if student.household_id %}
-                            <li class="list-group-item px-0 border-0 pb-2">
-                                <span class="badge bg-info bg-opacity-10 text-info border border-info mb-2"><i class="bi bi-link-45deg"></i> Linked to Central Household #{{ student.household_id }}</span>
-                            </li>
-                        {% else %}
-                            <li class="list-group-item px-0 border-0 pb-2">
-                                <span class="badge bg-warning text-dark border border-warning mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Unlinked Student</span>
-                            </li>
-                        {% endif %}
-
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Primary Caregiver</small> <span class="khmer-font fs-6 fw-bold text-dark">{{ student.guardian_name if student.guardian_name else '-' }}</span></li>
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Phone Number</small> <a href="tel:{{ student.phone_number }}" class="text-decoration-none fw-bold">{{ student.phone_number if student.phone_number else '-' }}</a></li>
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Slum Area</small> <span class="khmer-font">{{ student.slum_area if student.slum_area else '-' }}</span></li>
+    <div class="row">
+        <!-- ========================================== -->
+        <!-- LEFT COLUMN: IDENTITY & KINSHIP CARD       -->
+        <!-- ========================================== -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 rounded-4 sticky-lg-top" style="top: 20px; z-index: 1;">
+                
+                <div class="bg-primary bg-opacity-10 rounded-top-4 py-4 text-center">
+                    <div class="position-relative d-inline-block mb-3">
+                        {% set thumb = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=150" %}
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb }}" alt="Profile Avatar for {{ student.first_name }}" class="rounded-circle border border-4 border-white shadow avatar-xl">
                         
-                        <!-- NEW: BIOLOGICAL & KINSHIP PREVIEW -->
-                        <li class="list-group-item px-0 border-0 border-top mt-2 pt-3">
-                            <div class="bg-light p-3 rounded border">
-                                <h6 class="fw-bold text-dark small mb-3"><i class="bi bi-diagram-3-fill text-secondary me-1"></i> Biological & Kinship Info</h6>
-                                <div class="row">
-                                    <div class="col-12 mb-2">
-                                        <small class="text-muted fw-bold">Relation to Caregiver:</small>
-                                        <span class="badge bg-secondary ms-1">{{ student.caregiver_relationship if student.caregiver_relationship else 'Not Specified' }}</span>
-                                    </div>
-                                    <div class="col-6 border-end">
-                                        <small class="text-muted fw-bold d-block">Mother:</small>
-                                        <span class="khmer-font small fw-bold text-dark">{{ student.mother_name if student.mother_name else 'Unknown/Abandoned' }}</span>
-                                    </div>
-                                    <div class="col-6 ps-3">
-                                        <small class="text-muted fw-bold d-block">Father:</small>
-                                        <span class="khmer-font small fw-bold text-dark">{{ student.father_name if student.father_name else 'Unknown/Abandoned' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
+                        <span class="position-absolute bottom-0 end-0 p-2 border border-light border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-primary{% endif %}" title="{{ student.status }}"></span>
+                    </div>
 
-                        <!-- SIBLINGS PREVIEW LIST -->
-                        {% if siblings %}
-                        <li class="list-group-item px-0 border-0 border-top mt-3 pt-3">
-                            <small class="text-info d-block fw-bold mb-2"><i class="bi bi-people-fill me-1"></i> Siblings in EEP</small>
-                            <div class="d-flex flex-column gap-2">
-                                {% for sibling in siblings %}
-                                <a href="/student/{{ sibling.id }}" class="text-decoration-none d-flex align-items-center bg-white p-2 rounded border shadow-sm text-dark table-hover transition" style="transition: all 0.2s;">
-                                    {% set thumb = "https://ui-avatars.com/api/?name=" ~ sibling.first_name ~ "+" ~ sibling.last_name ~ "&background=random&color=fff&size=30" %}
-                                    <img src="{{ url_for('static', filename='uploads/profiles/' + sibling.profile_picture) if sibling.profile_picture else thumb }}" class="rounded-circle border me-2" style="width: 30px; height: 30px; object-fit: cover;">
-                                    <span class="fw-bold fs-6">{{ sibling.first_name }} {{ sibling.last_name }}</span>
-                                    
-                                    <!-- Show how the sibling is related to the caregiver too! -->
-                                    {% if sibling.caregiver_relationship %}
-                                        <span class="badge bg-light text-dark border ms-2" style="font-size: 0.6rem;">{{ sibling.caregiver_relationship }}</span>
-                                    {% endif %}
-                                    
-                                    <i class="bi bi-arrow-right-short ms-auto text-info fs-5"></i>
-                                </a>
-                                {% endfor %}
-                            </div>
-                        </li>
-                        {% endif %}
-                    </ul>
+                    <h4 class="fw-bold text-dark mb-1 px-3">{{ student.first_name }} {{ student.last_name }}</h4>
+                    <p class="khmer-font text-muted fw-bold mb-2">{{ student.khmer_name if student.khmer_name else '' }}</p>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border px-3 py-2 rounded-pill fs-6">{{ student.ngo_id }}</span>
                 </div>
-            </div>
+                
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase text-muted small mb-3 border-bottom pb-2">Demographics</h6>
+                    <ul class="list-unstyled small mb-4">
+                        <li class="mb-2"><i class="bi bi-gender-ambiguous text-primary me-2"></i> <strong>Gender:</strong> {{ student.gender }}</li>
+                        <li class="mb-2"><i class="bi bi-calendar-event text-primary me-2"></i> <strong>DOB:</strong> {{ student.dob }}</li>
+                        <li class="mb-2"><i class="bi bi-box-arrow-in-right text-primary me-2"></i> <strong>Joined:</strong> {{ student.joined_date }}</li>
+                    </ul>
 
-            <!-- NEW: Nutrition & Services Card -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-light fw-bold border-0 pt-3 pb-2 text-dark"><i class="bi bi-basket2-fill me-2 text-success"></i>Nutrition & Services</div>
-                <div class="card-body py-2">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item px-0 border-0">
-                            <small class="text-muted d-block fw-bold mb-1">Assigned Support Plan</small> 
+                    <h6 class="fw-bold text-uppercase text-muted small mb-3 border-bottom pb-2">Education & Nutrition</h6>
+                    <ul class="list-unstyled small mb-4">
+                        <li class="mb-2"><i class="bi bi-building text-success me-2"></i> <strong>School:</strong> <span class="khmer-font">{{ student.current_school }}</span></li>
+                        <li class="mb-2"><i class="bi bi-mortarboard text-success me-2"></i> <strong>Grade:</strong> {{ student.grade_level }}</li>
+                        <li class="mb-2"><i class="bi bi-basket2 text-success me-2"></i> <strong>Meals:</strong> 
                             {% if student.meal_plan == 'Daily Hot Lunch' %}
-                                <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-cup-hot-fill me-1"></i> Daily Hot Lunch</span>
-                                <div class="small mt-2 text-muted fw-bold bg-success bg-opacity-10 p-2 rounded border border-success border-opacity-25">
-                                    <i class="bi bi-check-circle-fill text-success me-1"></i> Auto-enrolled on standard school days. Only missed meals are manually logged.
-                                </div>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success">Hot Lunch</span>
                             {% elif student.meal_plan == 'Monthly Groceries' %}
-                                <span class="badge bg-warning text-dark px-2 py-1"><i class="bi bi-basket2-fill me-1"></i> Monthly Groceries</span>
-                                <div class="small mt-2 text-muted fw-bold bg-warning bg-opacity-10 p-2 rounded border border-warning border-opacity-25">
-                                    <i class="bi bi-info-circle-fill text-warning me-1"></i> Requires manual logging upon delivery.
-                                </div>
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">Groceries</span>
                             {% else %}
-                                <span class="badge bg-secondary px-2 py-1">No Standard Meals Assigned</span>
+                                <span class="badge bg-secondary opacity-50">None</span>
                             {% endif %}
                         </li>
                     </ul>
-                </div>
-            </div>
 
-            <!-- General Comments (Only shows if there is a comment) -->
-            {% if student.comment %}
-            <div class="card shadow-sm border-0 mb-4 bg-primary bg-opacity-10 border-start border-primary border-4">
-                <div class="card-body">
-                    <h6 class="fw-bold text-primary mb-2"><i class="bi bi-chat-left-text me-1"></i> General Notes</h6>
-                    <p class="mb-0 small khmer-font">{{ student.comment }}</p>
+                    <h6 class="fw-bold text-uppercase text-muted small mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
+                        <span>Household & Kinship</span>
+                        {% if student.household_id %}
+                        <a href="/household/{{ student.household_id }}" class="badge bg-info text-decoration-none shadow-sm"><i class="bi bi-house-fill me-1"></i>View Family</a>
+                        {% endif %}
+                    </h6>
+                    <div class="list-unstyled small mb-4 bg-light p-3 rounded border">
+                        <div class="mb-2"><i class="bi bi-person-hearts text-info me-2"></i> <strong>Caregiver:</strong> <span class="khmer-font">{{ student.guardian_name }}</span></div>
+                        <div class="mb-2"><i class="bi bi-telephone text-info me-2"></i> <strong>Phone:</strong> {{ student.phone_number }}</div>
+                        <div class="mb-2"><i class="bi bi-geo-alt text-info me-2"></i> <strong>Area:</strong> <span class="khmer-font">{{ student.slum_area }}</span></div>
+                        
+                        <hr class="my-2 opacity-25">
+                        
+                        <div class="mb-1 text-muted"><strong>Relation to Caregiver:</strong> {{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</div>
+                        <div class="mb-1 text-muted"><strong>Mother:</strong> <span class="khmer-font">{{ student.mother_name if student.mother_name else 'Unknown' }}</span></div>
+                        <div class="mb-1 text-muted"><strong>Father:</strong> <span class="khmer-font">{{ student.father_name if student.father_name else 'Unknown' }}</span></div>
+                        
+                        {% if siblings %}
+                        <hr class="my-2 opacity-25">
+                        <div class="mt-3">
+                            <strong class="d-block mb-2 text-dark">Siblings in EEP:</strong>
+                            <div class="d-flex flex-wrap gap-2">
+                            {% for sib in siblings %}
+                                <a href="/student/{{ sib.id }}" class="text-decoration-none" title="{{ sib.first_name }} {{ sib.last_name }}">
+                                    {% set s_thumb = "https://ui-avatars.com/api/?name=" ~ sib.first_name ~ "+" ~ sib.last_name ~ "&background=random&color=fff&size=40" %}
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + sib.profile_picture) if sib.profile_picture else s_thumb }}" alt="Avatar for sibling {{ sib.first_name }}" class="rounded-circle border shadow-sm avatar-sm">
+                                </a>
+                            {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if student.comment %}
+                    <h6 class="fw-bold text-uppercase text-muted small mb-2 border-bottom pb-2">Notes</h6>
+                    <p class="small text-muted khmer-font mb-0">{{ student.comment }}</p>
+                    {% endif %}
                 </div>
             </div>
-            {% endif %}
-            
         </div>
 
-        <!-- RIGHT COLUMN: Accordions, Files, Financials -->
+        <!-- ========================================== -->
+        <!-- RIGHT COLUMN: TABS & ACTION AREAS          -->
+        <!-- ========================================== -->
         <div class="col-lg-8">
             
-            <!-- Super Action Bar -->
-            <div class="d-flex flex-column flex-md-row gap-2 mb-4 d-print-none">
-                <a href="/add_report/{{ student.id }}" class="btn btn-primary fw-bold shadow-sm flex-grow-1"><i class="bi bi-journal-plus me-1"></i> Add Academic Report</a>
-                <a href="/add_followup/{{ student.id }}" class="btn btn-danger fw-bold shadow-sm flex-grow-1"><i class="bi bi-clipboard2-heart-fill me-1"></i> Add Social Work Follow-Up</a>
-            </div>
+            <ul class="nav nav-pills mb-4 gap-2" id="profileTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold rounded-pill shadow-sm" id="academics-tab" data-bs-toggle="pill" data-bs-target="#academics" type="button" role="tab" aria-selected="true"><i class="bi bi-mortarboard-fill me-1"></i> Academics</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold rounded-pill shadow-sm" id="followups-tab" data-bs-toggle="pill" data-bs-target="#followups" type="button" role="tab" aria-selected="false"><i class="bi bi-clipboard2-heart-fill me-1"></i> Social Work</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold rounded-pill shadow-sm" id="documents-tab" data-bs-toggle="pill" data-bs-target="#documents" type="button" role="tab" aria-selected="false"><i class="bi bi-folder-fill me-1"></i> Filing Cabinet</button>
+                </li>
+            </ul>
 
-            <!-- ACADEMIC HISTORY ACCORDION -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-mortarboard-fill me-2 text-primary"></i>Academic History</h5>
+            <div class="tab-content" id="profileTabsContent">
+                
+                <!-- TAB: ACADEMICS -->
+                <div class="tab-pane fade show active" id="academics" role="tabpanel" aria-labelledby="academics-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold text-dark mb-0">Academic History</h4>
+                        <a href="/add_report/{{ student.id }}" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-plus-circle me-1"></i> Add Report</a>
+                    </div>
                     
-                    <!-- Timeframe Bouncer Filter -->
-                    <div class="d-print-none">
-                        <form action="/student/{{ student.id }}" method="GET" class="d-flex align-items-center m-0">
-                            <select name="timeframe" class="form-select form-select-sm shadow-sm border-primary text-primary fw-bold" onchange="this.form.submit()">
-                                <option value="" {% if not timeframe %}selected{% endif %}>All Reports</option>
-                                <option value="3" {% if timeframe == '3' %}selected{% endif %}>Last 3 Months</option>
-                                <option value="6" {% if timeframe == '6' %}selected{% endif %}>Last 6 Months</option>
-                                <option value="12" {% if timeframe == '12' %}selected{% endif %}>Last Year</option>
-                                
-                                <!-- Dynamic Academic Year Filter -->
-                                {% if unique_years %}
-                                    <optgroup label="By Academic Year">
-                                    {% for year in unique_years %}
-                                        <option value="{{ year }}" {% if timeframe == year %}selected{% endif %}>{{ year }}</option>
-                                    {% endfor %}
-                                    </optgroup>
+                    {% for report in reports %}
+                    <div class="card shadow-sm border-0 rounded-4 mb-4">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                            <h5 class="text-primary fw-bold mb-0">{{ report.month }} {{ report.academic_year }}</h5>
+                            <span class="badge {% if report.overall_average and report.overall_average >= 85 %}bg-success{% elif report.overall_average and report.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6 px-3 rounded-pill shadow-sm">
+                                Avg: {{ report.overall_average if report.overall_average else 'N/A' }}%
+                            </span>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block fw-bold">Grade Level</small>
+                                    <span class="fw-bold">{{ report.grade_level }}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block fw-bold">Class Rank</small>
+                                    <span class="fw-bold text-secondary">{{ report.class_rank if report.class_rank else '-' }}</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted d-block fw-bold">Attendance</small>
+                                    <span class="fw-bold text-secondary">{{ report.attendance_days if report.attendance_days else '-' }} Days</span>
+                                </div>
+                            </div>
+                            
+                            {% if report.id in grades_by_report %}
+                            <div class="d-flex flex-wrap gap-2 mb-3 bg-light p-3 rounded border">
+                                {% for grade in grades_by_report[report.id] %}
+                                    {% set badge_color = 'secondary' %}
+                                    {% if grade.max_score %}
+                                        {% set pct = (grade.score|float / grade.max_score|float * 100)|int %}
+                                        {% if pct >= 85 %}{% set badge_color = 'success' %}
+                                        {% elif pct >= 50 %}{% set badge_color = 'warning' %}
+                                        {% else %}{% set badge_color = 'danger' %}{% endif %}
+                                    {% endif %}
+                                    <span class="badge bg-white text-dark border shadow-sm px-3 py-2">
+                                        <span class="text-muted me-1">{{ grade.subject_name }}:</span> 
+                                        <strong class="text-{{ badge_color }}">{{ grade.score }}</strong><small class="text-muted">/{{ grade.max_score }}</small>
+                                    </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if report.teacher_comment %}
+                            <p class="small text-muted khmer-font mb-0 fst-italic">"{{ report.teacher_comment }}"</p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3 d-flex justify-content-between">
+                            {% if report.scanned_document %}
+                            <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-outline-secondary fw-bold"><i class="bi bi-file-earmark-image me-1"></i> View Scan</a>
+                            {% else %}
+                            <span></span>
+                            {% endif %}
+                            
+                            <div>
+                                <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-light border fw-bold text-dark me-2">Edit</a>
+                                {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
+                                <form action="/delete_report/{{ report.id }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" aria-label="Delete Report"><i class="bi bi-trash-fill"></i></button>
+                                </form>
                                 {% endif %}
-                            </select>
-                        </form>
+                            </div>
+                        </div>
                     </div>
+                    {% else %}
+                    <div class="card shadow-sm border-0 rounded-4 bg-light">
+                        <div class="card-body p-5 text-center text-muted">
+                            <i class="bi bi-journal-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark">No Reports Yet</h5>
+                            <p class="mb-0">Add the first academic report to start tracking progress.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                <div class="card-body p-0">
-                    <div class="accordion accordion-flush" id="academicAccordion">
-                        {% for report in reports %}
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseReport{{ report.id }}">
-                                    <span class="text-dark">{{ report.month }} {{ report.academic_year }}</span> 
-                                    
-                                    <!-- Special Semester Badge -->
-                                    {% if report.semester %}
-                                        <span class="badge bg-primary ms-2 shadow-sm"><i class="bi bi-star-fill me-1"></i>{{ report.semester }}</span>
-                                    {% endif %}
 
-                                    <!-- Show the Historical Grade & School right on the title! -->
-                                    {% if report.grade_level or report.school_name %}
-                                        <span class="text-muted ms-2 small">
-                                            ({{ report.grade_level if report.grade_level else 'Unknown Grade' }} 
-                                            {% if report.school_name %} @ <span class="khmer-font">{{ report.school_name }}</span>{% endif %})
-                                        </span>
-                                    {% endif %}
-                                    
-                                    {% if report.overall_average %}
-                                        <span class="badge ms-3 shadow-sm {% if report.overall_average >= 85 %}bg-success{% elif report.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                            {{ report.overall_average }}%
-                                        </span>
-                                    {% endif %}
-                                </button>
-                            </h2>
-                            <div id="collapseReport{{ report.id }}" class="accordion-collapse collapse" data-bs-parent="#academicAccordion">
-                                <div class="accordion-body bg-light">
-                                    
-                                    <!-- Badges & Action Buttons -->
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <div class="d-flex flex-wrap gap-2">
-                                            {% if report.total_score %}
-                                                <span class="badge bg-white text-dark border shadow-sm">Total: {{ report.total_score }}</span>
-                                            {% endif %}
-                                            {% if report.class_rank %}
-                                                <span class="badge bg-white text-dark border shadow-sm">Rank: {{ report.class_rank }}</span>
-                                            {% endif %}
-                                            {% if report.attendance_days %}
-                                                <span class="badge bg-secondary border shadow-sm">Attendance: {{ report.attendance_days }} Days</span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="d-flex gap-2 d-print-none">
-                                            {% if report.scanned_document %}
-                                                <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-outline-info shadow-sm" title="View Scan">
-                                                    <i class="bi bi-file-image"></i>
-                                                </a>
-                                            {% endif %}
-                                            <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-outline-secondary shadow-sm" title="Edit Report">
-                                                <i class="bi bi-pencil-fill"></i>
+                <!-- TAB: SOCIAL WORK FOLLOW-UPS -->
+                <div class="tab-pane fade" id="followups" role="tabpanel" aria-labelledby="followups-tab">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="fw-bold text-dark mb-0">Case Notes & Risk</h4>
+                        <a href="/add_followup/{{ student.id }}" class="btn btn-danger fw-bold shadow-sm"><i class="bi bi-plus-circle me-1"></i> Log Follow-Up</a>
+                    </div>
+                    
+                    {% for note in followups %}
+                    <div class="card shadow-sm border-0 rounded-4 mb-4 {% if note.child_protection_concerns and note.child_protection_concerns != 'None' %}border-start border-danger border-4{% endif %}">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                            <h5 class="text-danger fw-bold mb-0">{{ note.followup_date }} <span class="badge bg-light text-secondary border ms-2 fs-6 fw-normal">{{ note.location }}</span></h5>
+                            <small class="text-muted fw-bold">By: {{ note.completed_by }}</small>
+                        </div>
+                        <div class="card-body p-4">
+                            {% if note.child_protection_concerns and note.child_protection_concerns != 'None' and note.child_protection_concerns != 'N/A' and note.child_protection_concerns != '' %}
+                            <div class="alert alert-danger bg-danger bg-opacity-10 border-danger p-3 mb-3 shadow-sm">
+                                <h6 class="fw-bold text-danger mb-1"><i class="bi bi-shield-exclamation me-1"></i> Protection Concern Flagged</h6>
+                                <p class="small text-dark mb-0 khmer-font">{{ note.child_protection_concerns }}</p>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- THE FIX: Only show Health & Edu block if there is actual data! -->
+                            {% if note.physical_health or note.home_life or note.social_interaction or note.behavior_in_class or note.learning_difficulties %}
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-2">
+                                    <small class="text-muted d-block fw-bold"><i class="bi bi-heart-pulse text-danger me-1"></i> Health & Home</small>
+                                    <span class="small fw-bold">{{ note.physical_health if note.physical_health else 'Not Evaluated' }} / {{ note.home_life if note.home_life else 'Not Evaluated' }}</span>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <small class="text-muted d-block fw-bold"><i class="bi bi-book text-primary me-1"></i> Education</small>
+                                    <span class="small fw-bold">Behavior: {{ note.behavior_in_class if note.behavior_in_class else 'Not Evaluated' }}</span>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if note.risk_factors and note.risk_factors != 'None' %}
+                            <div class="mb-3">
+                                <small class="text-muted d-block fw-bold mb-1">Identified Risk Factors</small>
+                                {% for risk in note.risk_factors.split(', ') %}
+                                    <span class="badge bg-warning text-dark border border-warning shadow-sm me-1 mb-1">{{ risk }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if note.general_notes %}
+                            <p class="small text-muted khmer-font mt-3 mb-0 border-top pt-3 fst-italic">"{{ note.general_notes }}"</p>
+                            {% endif %}
+
+                            <!-- RESTORED: SPONSOR LETTER UPDATE TRACKING -->
+                            {% if note.letter_quarter and note.letter_year %}
+                            <div class="mt-4 pt-3 border-top bg-success bg-opacity-10 p-3 rounded border border-success border-opacity-25">
+                                <h6 class="fw-bold small text-success mb-2"><i class="bi bi-envelope-paper-heart-fill me-1"></i> Sponsor Letter Update: {{ note.letter_quarter }} {{ note.letter_year }}</h6>
+                                <div class="d-flex flex-wrap gap-2 small">
+                                    <span class="badge {% if note.letter_given == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
+                                        <i class="bi {% if note.letter_given == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 1. Given
+                                    </span>
+                                    <span class="badge {% if note.letter_translated == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
+                                        <i class="bi {% if note.letter_translated == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 2. Translated
+                                    </span>
+                                    <span class="badge {% if note.letter_scanned == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
+                                        <i class="bi {% if note.letter_scanned == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 3. Scanned
+                                    </span>
+                                    <span class="badge {% if note.letter_sent == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
+                                        <i class="bi {% if note.letter_sent == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 4. Sent
+                                    </span>
+                                </div>
+                                {% if note.letter_notes %}
+                                <p class="small text-muted khmer-font mt-2 mb-0 fst-italic"><i class="bi bi-info-circle me-1"></i> {{ note.letter_notes }}</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                        </div>
+                        <div class="card-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3 text-end">
+                            <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-light border fw-bold text-dark">Edit Notes</a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card shadow-sm border-0 rounded-4 bg-light">
+                        <div class="card-body p-5 text-center text-muted">
+                            <i class="bi bi-clipboard-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                            <h5 class="fw-bold text-dark">No Case Notes</h5>
+                            <p class="mb-0">Log a home visit, school visit, or phone call to start the case history.</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- TAB: FILING CABINET & FINANCIALS -->
+                <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                    
+                    <!-- THE NEW FILING CABINET SECTION -->
+                    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder-fill text-warning me-2"></i>Digital Filing Cabinet</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadForm"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Add Document</button>
+                        </div>
+
+                        <div id="uploadForm" class="collapse mb-4 bg-primary bg-opacity-10 border border-primary p-3 rounded-3 d-print-none shadow-sm">
+                            <form action="/upload_document/{{ student.id }}" method="POST" enctype="multipart/form-data">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-4">
+                                        <!-- A11y Fix: Added aria-label for Screen Readers -->
+                                        <select name="document_type" class="form-select form-select-sm fw-bold text-primary" aria-label="Select Document Type">
+                                            <option>Birth Certificate</option>
+                                            <option>Contract</option>
+                                            <option>Scanned Grade</option>
+                                            <option>Housing Photo</option>
+                                            <option>Sponsor Letter</option>
+                                            <option>Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <!-- A11y Fix: Added aria-label for Screen Readers -->
+                                        <input type="file" name="document_file" class="form-control form-control-sm" aria-label="Upload Document File" required>
+                                    </div>
+                                    <div class="col-md-3 text-end">
+                                        <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm">Upload</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase">
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Filename</th>
+                                        <th>Upload Date</th>
+                                        <th class="d-print-none text-end pe-3">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for doc in documents %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">{{ doc.document_type }}</span></td>
+                                        <td>
+                                            <a href="{{ url_for('static', filename='uploads/documents/' + doc.saved_filename) }}" target="_blank" class="text-decoration-none fw-bold text-primary">
+                                                <i class="bi bi-file-earmark-text me-1"></i>{{ doc.original_filename }}
                                             </a>
-                                            
-                                            <!-- SECURITY FIX: Only Admins can see the Delete button -->
-                                            {% if session.get("role") == "Admin" %}
-                                            <!-- The Safe Delete Bouncer -->
-                                            <form action="/delete_report/{{ report.id }}" method="POST" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to delete this report? This cannot be undone.');">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Delete Report">
-                                                    <i class="bi bi-trash-fill"></i>
-                                                </button>
-                                            </form>
+                                        </td>
+                                        <td class="small text-muted fw-bold">{{ doc.upload_date }}</td>
+                                        <td class="d-print-none text-end pe-3">
+                                            {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
+                                            <!-- A11y Fix: Added aria-label to the icon-only link -->
+                                            <a href="/delete_document/{{ doc.id }}" onclick="return confirm('Permanently delete this file?')" class="btn btn-sm btn-outline-danger" aria-label="Delete Document"><i class="bi bi-trash-fill"></i></a>
+                                            {% else %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary disabled" aria-label="Cannot Delete Document"><i class="bi bi-lock-fill"></i></button>
                                             {% endif %}
-
-                                        </div>
-                                    </div>
-
-                                    {% if report.teacher_comment %}
-                                        <div class="mb-3 bg-white p-2 rounded border">
-                                            <label class="small fw-bold text-primary d-block mb-1"><i class="bi bi-chat-quote-fill me-1"></i>Teacher Comment:</label>
-                                            <span class="khmer-font small text-muted">{{ report.teacher_comment }}</span>
-                                        </div>
-                                    {% endif %}
-
-                                    <!-- Subject Breakdown Table -->
-                                    {% if grades_by_report and report.id in grades_by_report %}
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered bg-white mb-0 shadow-sm align-middle">
-                                            <thead class="table-light">
-                                                <tr class="small text-muted">
-                                                    <th>Subject</th>
-                                                    <th>Score</th>
-                                                    <th>Max Score</th>
-                                                    <th>Grade Badge</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for grade in grades_by_report[report.id] %}
-                                                <tr>
-                                                    <td class="fw-bold small">{{ grade.subject_name }}</td>
-                                                    <td>{{ grade.score }}</td>
-                                                    <td class="text-muted">{{ grade.max_score if grade.max_score else '-' }}</td>
-                                                    <td>
-                                                        {% set badge = grade.score|get_badge(grade.max_score) %}
-                                                        {% if badge %}
-                                                            <span class="badge bg-{{ badge[1] }} shadow-sm">{{ badge[0] }}</span>
-                                                        {% else %}
-                                                            <span class="text-muted">-</span>
-                                                        {% endif %}
-                                                    </td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                        </td>
+                                    </tr>
                                     {% else %}
-                                    <p class="text-muted small mb-0">No subject-specific grades recorded.</p>
-                                    {% endif %}
-                                </div>
-                            </div>
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">No documents uploaded yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                        {% else %}
-                        <div class="p-4 text-center text-muted">
-                            <i class="bi bi-journal-x fs-1 text-light mb-2"></i>
-                            <p class="mb-0">No academic reports found.</p>
-                        </div>
-                        {% endfor %}
                     </div>
+
+                    <!-- FINANCIAL MICRO-LEDGER SECTION -->
+                    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4 border-start border-success border-4" id="financials">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-stack text-success me-2"></i>Financial Support Ledger</h5>
+                                <small class="text-muted">Total NGO Investment: <strong class="text-success">${{ total_spent if total_spent else '0.00' }}</strong></small>
+                            </div>
+                            <!-- A11y Fix: Explicitly defined type="button" -->
+                            <button type="button" class="btn btn-sm btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#expenseModal"><i class="bi bi-plus-circle me-1"></i> Log Expense</button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light small text-muted text-uppercase">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Category</th>
+                                        <th>Vendor/Desc</th>
+                                        <th class="text-end pe-3">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for exp in expenses %}
+                                    <tr>
+                                        <td class="small fw-bold text-muted">{{ exp.expense_date }}</td>
+                                        <td><span class="badge bg-success bg-opacity-10 text-success border">{{ exp.category }}</span></td>
+                                        <td class="small">{{ exp.vendor_name if exp.vendor_name else exp.description }}</td>
+                                        <td class="fw-bold text-end pe-3 text-success">${{ exp.amount }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">No expenses logged yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
-
-            <!-- SOCIAL WORK FOLLOW-UPS ACCORDION -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-clipboard-pulse me-2 text-danger"></i>Social Work Follow-Ups & Letters</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="accordion accordion-flush" id="followupAccordion">
-                        {% for followup in followups %}
-                        <div class="accordion-item">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFollowup{{ followup.id }}">
-                                    <span class="text-dark">{{ followup.followup_date }} - {{ followup.location }}</span>
-                                    {% if followup.child_protection_concerns and followup.child_protection_concerns not in ['No', 'None', 'N/A', ''] %}
-                                        <span class="badge bg-danger ms-3 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i> Risk Alert</span>
-                                    {% endif %}
-                                    {% if followup.letter_quarter and followup.letter_year %}
-                                        <span class="badge bg-success ms-2 shadow-sm"><i class="bi bi-envelope me-1"></i> {{ followup.letter_quarter }} {{ followup.letter_year }}</span>
-                                    {% endif %}
-                                </button>
-                            </h2>
-                            <div id="collapseFollowup{{ followup.id }}" class="accordion-collapse collapse" data-bs-parent="#followupAccordion">
-                                <div class="accordion-body bg-light">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <small class="text-muted fw-bold"><i class="bi bi-person-badge me-1"></i> Completed by: {{ followup.completed_by }}</small>
-                                        <div class="d-print-none">
-                                            <a href="/edit_followup/{{ followup.id }}" class="btn btn-sm btn-outline-secondary shadow-sm"><i class="bi bi-pencil-fill"></i></a>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Only show Well-being/Education if it wasn't just a letter update -->
-                                    {% if followup.location != 'Sponsor Letter Update' %}
-                                    <div class="row g-3 small mb-3">
-                                        <div class="col-md-6">
-                                            <div class="p-3 bg-white rounded border shadow-sm h-100">
-                                                <strong class="d-block text-primary border-bottom pb-1 mb-2">Well-being</strong>
-                                                <p class="mb-1"><span class="text-muted fw-bold">Health:</span> <span class="khmer-font">{{ followup.physical_health }}</span></p>
-                                                <p class="mb-1"><span class="text-muted fw-bold">Social:</span> <span class="khmer-font">{{ followup.social_interaction }}</span></p>
-                                                <p class="mb-0"><span class="text-muted fw-bold">Home:</span> <span class="khmer-font">{{ followup.home_life }}</span></p>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="p-3 bg-white rounded border shadow-sm h-100">
-                                                <strong class="d-block text-primary border-bottom pb-1 mb-2">Education Check</strong>
-                                                <p class="mb-1"><span class="text-muted fw-bold">Challenges:</span> <span class="khmer-font">{{ followup.learning_difficulties }}</span></p>
-                                                <p class="mb-0"><span class="text-muted fw-bold">Behavior:</span> <span class="khmer-font">{{ followup.behavior_in_class }}</span></p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {% if followup.child_protection_concerns or followup.risk_factors != 'None' or followup.general_notes %}
-                                    <div class="p-3 bg-white rounded border shadow-sm border-start border-danger border-4 mb-3">
-                                        <strong class="d-block text-danger border-bottom pb-1 mb-2"><i class="bi bi-shield-exclamation me-1"></i> Protection & Notes</strong>
-                                        {% if followup.risk_factors and followup.risk_factors != 'None' %}
-                                            <p class="mb-1 small"><span class="text-muted fw-bold">Risk Factors:</span> {{ followup.risk_factors }}</p>
-                                        {% endif %}
-                                        {% if followup.child_protection_concerns %}
-                                            <p class="mb-1 small"><span class="text-muted fw-bold">Concerns:</span> <span class="khmer-font">{{ followup.child_protection_concerns }}</span></p>
-                                        {% endif %}
-                                        {% if followup.general_notes %}
-                                            <p class="mb-0 small khmer-font"><span class="text-muted fw-bold">General Notes:</span><br>{{ followup.general_notes }}</p>
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-                                    {% endif %}
-
-                                    <!-- NEW SPONSOR LETTER DISPLAY SECTION -->
-                                    {% if followup.letter_quarter or followup.letter_notes %}
-                                    <div class="p-3 bg-success bg-opacity-10 rounded border border-success shadow-sm">
-                                        <strong class="d-block text-success border-bottom border-success pb-1 mb-2">
-                                            <i class="bi bi-envelope-open-fill me-1"></i> Sponsor Letter Update 
-                                            {% if followup.letter_quarter and followup.letter_year %}
-                                            ({{ followup.letter_quarter }} {{ followup.letter_year }})
-                                            {% endif %}
-                                        </strong>
-                                        
-                                        <div class="row small mb-2">
-                                            <div class="col-sm-6">
-                                                <ul class="list-unstyled mb-0">
-                                                    <li class="mb-1">
-                                                        {% if followup.letter_given == 'Yes' %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %} Given to Student
-                                                    </li>
-                                                    <li>
-                                                        {% if followup.letter_translated == 'Yes' %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %} Translated
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                            <div class="col-sm-6">
-                                                <ul class="list-unstyled mb-0">
-                                                    <li class="mb-1">
-                                                        {% if followup.letter_scanned == 'Yes' %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %} Scanned
-                                                    </li>
-                                                    <li>
-                                                        {% if followup.letter_sent == 'Yes' %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %} Sent to Coordinator
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-
-                                        {% if followup.letter_notes %}
-                                        <div class="mt-2 pt-2 border-top border-success border-opacity-25">
-                                            <span class="text-muted fw-bold small">Notes:</span> 
-                                            <span class="small khmer-font">{{ followup.letter_notes }}</span>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    {% endif %}
-
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="p-4 text-center text-muted">
-                            <i class="bi bi-clipboard-x fs-1 text-light mb-2"></i>
-                            <p class="mb-0">No follow-ups recorded yet.</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- DIGITAL FILING CABINET -->
-            <div class="card shadow-sm border-0 p-4 mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder2-open me-2 text-info"></i>Digital Filing Cabinet</h5>
-                    <button class="btn btn-sm btn-outline-primary fw-bold d-print-none shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadForm"><i class="bi bi-cloud-upload me-1"></i> Add File</button>
-                </div>
-
-                <div id="uploadForm" class="collapse mb-4 bg-light p-3 rounded d-print-none border shadow-sm">
-                    <form action="/upload_document/{{ student.id }}" method="POST" enctype="multipart/form-data">
-                        <div class="row g-2">
-                            <div class="col-md-4">
-                                <select name="document_type" class="form-select form-select-sm" required>
-                                    <option value="" disabled selected>Select Doc Type</option>
-                                    <option>Birth Certificate</option>
-                                    <option>Contract</option>
-                                    <option>Scanned Grade</option>
-                                    <option>Housing Photo</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
-                            <div class="col-md-5">
-                                <input type="file" name="document_file" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn btn-sm btn-primary w-100 fw-bold shadow-sm"><i class="bi bi-upload me-1"></i> Upload</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm align-middle mb-0">
-                        <thead class="table-light text-muted">
-                            <tr>
-                                <th>Type</th>
-                                <th>Filename</th>
-                                <th>Date Uploaded</th>
-                                <th class="d-print-none text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for doc in documents %}
-                            <tr>
-                                <td><span class="badge bg-secondary shadow-sm">{{ doc.document_type }}</span></td>
-                                <td><a href="{{ url_for('static', filename='uploads/documents/' + doc.saved_filename) }}" target="_blank" class="text-decoration-none fw-bold"><i class="bi bi-file-earmark-text me-1"></i>{{ doc.original_filename }}</a></td>
-                                <td class="small text-muted">{{ doc.upload_date }}</td>
-                                <td class="d-print-none text-center">
-                                    
-                                    <!-- SECURITY FIX: Only Admins can see the Delete File button -->
-                                    {% if session.get("role") == "Admin" %}
-                                    <a href="/delete_document/{{ doc.id }}" onclick="return confirm('Permanently delete this file? This cannot be undone.')" class="btn btn-sm btn-outline-danger py-0 px-2 shadow-sm" title="Delete File"><i class="bi bi-trash"></i></a>
-                                    {% endif %}
-                                    
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">
-                                    <i class="bi bi-cloud-slash fs-1 text-light mb-2 d-block"></i>
-                                    <p class="mb-0 small">No documents uploaded.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- FINANCIAL SUPPORT LEDGER -->
-            {% if expenses is defined %}
-            <div class="card shadow-sm border-0 p-4 mb-4" id="financials">
-                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-                    <div>
-                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-stack me-2 text-success"></i>Financial Support Ledger</h5>
-                    </div>
-                    <div class="text-end">
-                        <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.7rem;">Total NGO Investment</small>
-                        <h5 class="text-success fw-bold mb-0">${{ "{:,.2f}".format(total_spent if total_spent else 0) }}</h5>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle mb-0">
-                        <thead class="table-light text-muted">
-                            <tr class="small">
-                                <th>Date</th>
-                                <th>Category</th>
-                                <th>Vendor/Detail</th>
-                                <th class="text-end">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for exp in expenses %}
-                            <tr>
-                                <td class="small text-muted fw-bold">{{ exp.expense_date }}</td>
-                                <td><span class="badge bg-light text-dark border">{{ exp.category }}</span></td>
-                                <td class="small khmer-font">{{ exp.vendor_name if exp.vendor_name else '-' }}</td>
-                                <td class="fw-bold text-end text-success">${{ "{:,.2f}".format(exp.amount) }}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-4">
-                                    <i class="bi bi-wallet2 fs-1 text-light mb-2 d-block"></i>
-                                    <p class="mb-0 small">No financial records found.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            {% endif %}
-
         </div>
     </div>
 </div>
 
-<!-- Print Styles override to automatically force accordions open and strip formatting when printing dossiers -->
-<style>
-    @media print {
-        .collapse {
-            display: block !important;
-            height: auto !important;
-        }
-        .accordion-collapse {
-            display: block !important;
-        }
-        .accordion-button::after {
-            display: none !important;
-        }
-        .card {
-            border: 1px solid #ddd !important;
-            box-shadow: none !important;
-            page-break-inside: avoid;
-        }
-    }
-</style>
+<!-- Scripts for the Tab Functionality -->
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button'));
+        triggerTabList.forEach(function (triggerEl) {
+            var tabCompiler = new bootstrap.Tab(triggerEl);
+            triggerEl.addEventListener('click', function (event) {
+                event.preventDefault();
+                tabCompiler.show();
+            });
+        });
+    });
+</script>
+{% endblock %}
 {% endblock %}

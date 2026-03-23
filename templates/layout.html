@@ -24,20 +24,27 @@
                 --bs-body-font-family: 'Inter', 'Kantumruy Pro', sans-serif;
             }
 
-            /* Ensure all body text, form inputs, buttons, and text areas inherit the dual-font stack */
+            /* FIXED: Added Universal Emoji Fonts to the end of the stack! */
             body,
             input,
             textarea,
             select,
             button,
             .table {
-                font-family: 'Inter', 'Kantumruy Pro', sans-serif !important;
+                font-family: 'Inter', 'Kantumruy Pro', sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
             }
 
             /* Explicit class if you ever need to force Khmer spacing */
             .khmer-font {
-                font-family: 'Kantumruy Pro', sans-serif;
+                font-family: 'Kantumruy Pro', sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             }
+
+            /* --- NEW: Global Utility Classes for A11y & Clean Code --- */
+            .max-w-800 { max-width: 800px; margin: 0 auto; }
+            .avatar-sm { width: 38px; height: 38px; object-fit: cover; }
+            .avatar-md { width: 65px; height: 65px; object-fit: cover; }
+            .avatar-lg { width: 120px; height: 120px; object-fit: cover; }
+            .avatar-xl { width: 150px; height: 150px; object-fit: cover; }
         </style>
 
         <title>EEP Portal: {% block title %}{% endblock %}</title>

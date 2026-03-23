@@ -36,10 +36,10 @@
                         <i class="bi bi-pencil-square"></i> Edit
                     </button>
                     
-                    <!-- UPGRADED AVATAR: Shows Family Photo or Default Initials -->
+                    <!-- UPGRADED AVATAR: Removed inline styles, added class & alt text -->
                     <div class="position-relative d-inline-block mb-2">
                         {% set thumb = "https://ui-avatars.com/api/?name=" ~ household.guardian_name ~ "&background=0d6efd&color=fff&size=120" %}
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + household.caregiver_picture) if household.caregiver_picture else thumb }}" class="rounded-circle border border-4 border-white shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + household.caregiver_picture) if household.caregiver_picture else thumb }}" alt="Caregiver Photo" class="rounded-circle border border-4 border-white shadow-sm avatar-lg">
                     </div>
                     
                     <h4 class="fw-bold text-dark mb-1 px-3">{{ household.guardian_name }}</h4>
@@ -125,7 +125,8 @@
                         <!-- Student Identity -->
                         <div class="d-flex align-items-center">
                             {% set thumb = "https://ui-avatars.com/api/?name=" ~ kid.first_name ~ "+" ~ kid.last_name ~ "&background=random&color=fff&size=60" %}
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + kid.profile_picture) if kid.profile_picture else thumb }}" class="rounded-circle border border-2 shadow-sm me-3" style="width: 65px; height: 65px; object-fit: cover;">
+                            <!-- A11y Fix: Added alt text and used avatar-md CSS class -->
+                            <img src="{{ url_for('static', filename='uploads/profiles/' + kid.profile_picture) if kid.profile_picture else thumb }}" alt="Avatar for {{ kid.first_name }}" class="rounded-circle border border-2 shadow-sm me-3 avatar-md">
                             
                             <div>
                                 <a href="/student/{{ kid.id }}" class="text-decoration-none fw-bold text-dark fs-4">{{ kid.first_name }} {{ kid.last_name }}</a>
@@ -205,7 +206,8 @@
                     <div class="modal-content border-0 shadow-lg rounded-4">
                         <div class="modal-header bg-white border-bottom-0 pt-4 pb-2 px-4">
                             <h5 class="modal-title fw-bold text-dark"><i class="bi bi-diagram-3 text-info me-2"></i>Edit Kinship: <span class="text-primary">{{ kid.first_name }}</span></h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            <!-- A11y Fix: Added aria-label -->
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <form action="/household/{{ household.id }}" method="post">
                             <div class="modal-body p-4 text-start">
@@ -213,8 +215,9 @@
                                 <input type="hidden" name="student_id" value="{{ kid.id }}">
                                 
                                 <div class="mb-4">
-                                    <label class="form-label fw-bold small text-muted">Relationship to Head of House ({{ household.guardian_name }})</label>
-                                    <select class="form-select form-select-lg bg-light" name="caregiver_relationship">
+                                    <!-- A11y Fix: Dynamically generated ID for label linking -->
+                                    <label class="form-label fw-bold small text-muted" for="caregiver_relationship_{{ kid.id }}">Relationship to Head of House ({{ household.guardian_name }})</label>
+                                    <select class="form-select form-select-lg bg-light" name="caregiver_relationship" id="caregiver_relationship_{{ kid.id }}">
                                         <option value="" disabled {% if not kid.caregiver_relationship %}selected{% endif %}>Select Relationship...</option>
                                         <option value="Son" {% if kid.caregiver_relationship == 'Son' %}selected{% endif %}>Son</option>
                                         <option value="Daughter" {% if kid.caregiver_relationship == 'Daughter' %}selected{% endif %}>Daughter</option>
@@ -228,13 +231,13 @@
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold small text-muted">Biological Mother's Name</label>
-                                    <input type="text" list="household_mothers" class="form-control khmer-font bg-light" name="mother_name" value="{{ kid.mother_name if kid.mother_name else '' }}" placeholder="Type or select from list...">
+                                    <label class="form-label fw-bold small text-muted" for="mother_name_{{ kid.id }}">Biological Mother's Name</label>
+                                    <input type="text" list="household_mothers" class="form-control khmer-font bg-light" id="mother_name_{{ kid.id }}" name="mother_name" value="{{ kid.mother_name if kid.mother_name else '' }}" placeholder="Type or select from list...">
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold small text-muted">Biological Father's Name</label>
-                                    <input type="text" list="household_fathers" class="form-control khmer-font bg-light" name="father_name" value="{{ kid.father_name if kid.father_name else '' }}" placeholder="Type or select from list...">
+                                    <label class="form-label fw-bold small text-muted" for="father_name_{{ kid.id }}">Biological Father's Name</label>
+                                    <input type="text" list="household_fathers" class="form-control khmer-font bg-light" id="father_name_{{ kid.id }}" name="father_name" value="{{ kid.father_name if kid.father_name else '' }}" placeholder="Type or select from list...">
                                 </div>
                             </div>
                             <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
@@ -268,7 +271,8 @@
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header bg-white border-bottom-0 pt-4 pb-2 px-4">
                 <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Parent / Caregiver</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <!-- A11y Fix: Added aria-label -->
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="/household/{{ household.id }}" method="post" enctype="multipart/form-data">
                 <div class="modal-body p-4 text-start">
@@ -281,35 +285,35 @@
 
                     <!-- PHOTO UPLOAD -->
                     <div class="mb-3 p-3 bg-light rounded border border-secondary border-opacity-25">
-                        <label class="form-label fw-bold small text-primary"><i class="bi bi-camera-fill me-1"></i> Caregiver / Family Photo</label>
-                        <input type="file" class="form-control form-control-sm" name="caregiver_picture" accept="image/*">
+                        <label class="form-label fw-bold small text-primary" for="caregiver_picture"><i class="bi bi-camera-fill me-1"></i> Caregiver / Family Photo</label>
+                        <input type="file" class="form-control form-control-sm" id="caregiver_picture" name="caregiver_picture" accept="image/*">
                         <small class="text-muted d-block mt-1">Upload a photo of the parents/guardians (Optional).</small>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Primary Caregiver Name (Head of House)</label>
-                        <input type="text" class="form-control form-control-lg bg-light" name="guardian_name" value="{{ household.guardian_name }}" placeholder="e.g. Sokha" required>
+                        <label class="form-label fw-bold small text-muted" for="edit_guardian_name">Primary Caregiver Name (Head of House)</label>
+                        <input type="text" class="form-control form-control-lg bg-light" id="edit_guardian_name" name="guardian_name" value="{{ household.guardian_name }}" placeholder="e.g. Sokha" required>
                     </div>
 
                     <!-- BLENDED FAMILY FIELDS -->
                     <div class="row mb-3">
                         <div class="col-8">
-                            <label class="form-label fw-bold small text-muted">Adults Living in Home</label>
-                            <input type="text" class="form-control bg-light" name="adults_in_home" value="{{ household.adults_in_home if household.adults_in_home else '' }}" placeholder="e.g. Mother & Step-Father">
+                            <label class="form-label fw-bold small text-muted" for="edit_adults_in_home">Adults Living in Home</label>
+                            <input type="text" class="form-control bg-light" id="edit_adults_in_home" name="adults_in_home" value="{{ household.adults_in_home if household.adults_in_home else '' }}" placeholder="e.g. Mother & Step-Father">
                         </div>
                         <div class="col-4">
-                            <label class="form-label fw-bold small text-muted">Total Headcount</label>
-                            <input type="number" class="form-control bg-light" name="total_headcount" value="{{ household.total_headcount if household.total_headcount else '' }}" placeholder="e.g. 5" min="1">
+                            <label class="form-label fw-bold small text-muted" for="edit_total_headcount">Total Headcount</label>
+                            <input type="number" class="form-control bg-light" id="edit_total_headcount" name="total_headcount" value="{{ household.total_headcount if household.total_headcount else '' }}" placeholder="e.g. 5" min="1">
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Phone Number</label>
-                        <input type="text" class="form-control bg-light" name="phone_number" value="{{ household.phone_number if household.phone_number else '' }}">
+                        <label class="form-label fw-bold small text-muted" for="edit_phone_number">Phone Number</label>
+                        <input type="text" class="form-control bg-light" id="edit_phone_number" name="phone_number" value="{{ household.phone_number if household.phone_number else '' }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Slum Area</label>
-                        <input type="text" class="form-control bg-light" name="slum_area" value="{{ household.slum_area if household.slum_area else '' }}">
+                        <label class="form-label fw-bold small text-muted" for="edit_slum_area">Slum Area</label>
+                        <input type="text" class="form-control bg-light" id="edit_slum_area" name="slum_area" value="{{ household.slum_area if household.slum_area else '' }}">
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
