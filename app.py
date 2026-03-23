@@ -658,7 +658,7 @@ def household_profile(id):
         # GET: Fetch the household details
         household = db.execute("SELECT * FROM households WHERE id = ?", id)
         if not household:
-            return apology("Household not found", 404)
+            return render_template("apology.html", message="Household not found")
             
         # Fetch all the children currently living in this household (Now grabbing the new columns too!)
         kids = db.execute("SELECT * FROM students WHERE household_id = ? ORDER BY dob ASC", id)
