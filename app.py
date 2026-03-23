@@ -445,7 +445,16 @@ def add_student():
             return render_template("apology.html", message="A student with that NGO ID already exists. Please use your browser's BACK arrow to return without losing data.")
 
     else:
-        return render_template("add_student.html")
+        # GET: We need to pass the current date AND the list of households
+        today_date = datetime.now().strftime('%Y-%m-%d')
+        
+        households = db.execute("""
+            SELECT id, guardian_name, phone_number, slum_area
+            FROM households
+            ORDER BY guardian_name ASC
+        """)
+        
+        return render_template("add_student.html", today_date=today_date, households=households)
 
 
 @app.route("/edit_student/<int:id>", methods=["GET", "POST"])
@@ -521,16 +530,32 @@ def edit_student(id):
 @app.route("/update_avatar/<int:id>", methods=["POST"])
 @login_required
 def update_avatar(id):
-    file = request.files.get('profile_picture')
-    if file and file.filename != '' and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        saved_name = f"profile_{id}_{int(time.time())}_{filename}"
-        file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
+    """Handles updating a student's profile picture"""
+    # 1. Grab the file from the form
+    file = request.files.get("profile_picture")
+    
+    if file and file.filename != '':
+        # 2. Use our handy helper function to clean the name and save it safely
+        saved_name, original_name = handle_file_upload(file, id, "avatar", os.path.join('static', 'uploads', 'profiles'))
         
-        db.execute("UPDATE students SET profile_picture = ? WHERE id = ?", saved_name, id)
-        log_action(f"Updated profile picture for Student ID: {id}")
-        flash("Photo updated!", "success")
-    return redirect(f"/student/{id}")
+        if saved_name:
+            # Optional Cleanup: Delete their old photo so we don't waste hard drive space!
+            old_pic_query = db.execute("SELECT profile_picture FROM students WHERE id = ?", id)
+            if old_pic_query and old_pic_query[0]["profile_picture"]:
+                old_path = os.path.join('static', 'uploads', 'profiles', old_pic_query[0]["profile_picture"])
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+
+            # 3. Update the database with the new filename
+            db.execute("UPDATE students SET profile_picture = ? WHERE id = ?", saved_name, id)
+            log_action(f"Updated profile picture for Student ID {id}")
+            flash("Profile picture updated successfully!", "success")
+        else:
+            flash("Invalid file format. Please upload an image (JPG, PNG).", "danger")
+    else:
+        flash("No file selected.", "warning")
+
+    return redirect(f"/edit_student/{id}")
 
 
 @app.route("/manage_households", methods=["GET", "POST"])
