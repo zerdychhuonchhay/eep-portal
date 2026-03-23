@@ -421,6 +421,11 @@ def add_student():
         grade = request.form.get("grade_level")
         meal_plan = request.form.get("meal_plan")
         comment = request.form.get("comment")
+        
+        # NEW: Grab Kinship Data
+        caregiver_relationship = request.form.get("caregiver_relationship")
+        mother_name = request.form.get("mother_name")
+        father_name = request.form.get("father_name")
 
         if not ngo_id or not first_name or not last_name:
             return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
@@ -428,9 +433,9 @@ def add_student():
         try:
             db.execute("""
                 INSERT INTO students
-                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment)
+                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, caregiver_relationship, mother_name, father_name)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, caregiver_relationship, mother_name, father_name)
             
             log_action(f"Added new student profile: {first_name} {last_name}")
             flash(f"{first_name} added successfully!", "success")
@@ -463,9 +468,18 @@ def edit_student(id):
         grade = request.form.get("grade_level")
         meal_plan = request.form.get("meal_plan")
         comment = request.form.get("comment")
+        household_id = request.form.get("household_id")
+        
+        # NEW: Grab Kinship Data
+        caregiver_relationship = request.form.get("caregiver_relationship")
+        mother_name = request.form.get("mother_name")
+        father_name = request.form.get("father_name")
 
         if not ngo_id or not first_name or not last_name:
             return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
+
+        if not household_id:
+            household_id = None # If they selected "None", save it as NULL in the database
 
         try:
             db.execute("""
@@ -473,9 +487,10 @@ def edit_student(id):
                 ngo_id = ?, status = ?, first_name = ?, last_name = ?,
                 khmer_name = ?, gender = ?, dob = ?, joined_date = ?,
                 guardian_name = ?, phone_number = ?, slum_area = ?,
-                current_school = ?, grade_level = ?, meal_plan = ?, comment = ?
+                current_school = ?, grade_level = ?, meal_plan = ?, comment = ?, household_id = ?,
+                caregiver_relationship = ?, mother_name = ?, father_name = ?
                 WHERE id = ?
-            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, id)
+            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, id)
             
             log_action(f"Edited student profile: {first_name} {last_name}")
             flash("Student profile updated successfully!", "success")
@@ -490,7 +505,17 @@ def edit_student(id):
             return render_template("apology.html", message="Student not found")
 
         student = student_data[0]
-        return render_template("edit_student.html", student=student)
+        
+        # UPGRADED: Fetch households AND a list of kids currently in them!
+        households = db.execute("""
+            SELECT h.id, h.guardian_name, h.phone_number, GROUP_CONCAT(s.first_name, ', ') as kids
+            FROM households h
+            LEFT JOIN students s ON h.id = s.household_id
+            GROUP BY h.id
+            ORDER BY h.guardian_name ASC
+        """)
+        
+        return render_template("edit_student.html", student=student, households=households)
 
 
 @app.route("/update_avatar/<int:id>", methods=["POST"])
@@ -508,6 +533,139 @@ def update_avatar(id):
     return redirect(f"/student/{id}")
 
 
+@app.route("/manage_households", methods=["GET", "POST"])
+@login_required
+def manage_households():
+    """Enterprise view to manage all family units"""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        # ACTION 1: Add a brand new household
+        if action == "add":
+            guardian = request.form.get("guardian_name")
+            phone = request.form.get("phone_number")
+            slum = request.form.get("slum_area")
+            
+            if not guardian:
+                flash("Guardian Name is required.", "danger")
+            else:
+                db.execute("INSERT INTO households (guardian_name, phone_number, slum_area) VALUES (?, ?, ?)",
+                           guardian, phone, slum)
+                log_action(f"Created new household: {guardian}")
+                flash(f"Household for {guardian} created successfully!", "success")
+        
+        # ACTION 2: Edit an existing household
+        elif action == "edit":
+            hh_id = request.form.get("household_id")
+            guardian = request.form.get("guardian_name")
+            phone = request.form.get("phone_number")
+            slum = request.form.get("slum_area")
+            
+            db.execute("UPDATE households SET guardian_name = ?, phone_number = ?, slum_area = ? WHERE id = ?",
+                       guardian, phone, slum, hh_id)
+            log_action(f"Updated Household ID {hh_id}: {guardian}")
+            flash("Household updated successfully! All linked students will now show this new data.", "success")
+            
+        # ACTION 3: Delete an empty household
+        elif action == "delete":
+            hh_id = request.form.get("household_id")
+            
+            # SECURITY CHECK: Make sure no kids are living in this house before we bulldoze it!
+            linked_students = db.execute("SELECT COUNT(*) as count FROM students WHERE household_id = ?", hh_id)[0]['count']
+            if linked_students > 0:
+                flash(f"Cannot delete. There are {linked_students} students still linked to this household.", "danger")
+            else:
+                db.execute("DELETE FROM households WHERE id = ?", hh_id)
+                log_action(f"Deleted Household ID {hh_id}")
+                flash("Empty household deleted successfully.", "success")
+                
+        return redirect("/manage_households")
+
+    else:
+        # GET: Fetch all households and count how many kids are inside each one!
+        households = db.execute("""
+            SELECT h.id, h.guardian_name, h.phone_number, h.slum_area, 
+                   COUNT(s.id) as student_count,
+                   GROUP_CONCAT(s.first_name, ', ') as kids
+            FROM households h
+            LEFT JOIN students s ON h.id = s.household_id
+            GROUP BY h.id
+            ORDER BY h.guardian_name ASC
+        """)
+        return render_template("manage_households.html", households=households)
+
+
+@app.route("/household/<int:id>", methods=["GET", "POST"])
+@login_required
+def household_profile(id):
+    """Dedicated dashboard for a single family/household"""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        # ACTION 1: Unlink a student from this family
+        if action == "unlink":
+            student_id = request.form.get("student_id")
+            db.execute("UPDATE students SET household_id = NULL WHERE id = ?", student_id)
+            log_action(f"Unlinked Student ID {student_id} from Household ID {id}")
+            flash("Student successfully unlinked from this family.", "success")
+            
+        # ACTION 2: Edit the Caregiver's details (UPGRADED FOR PHOTOS & HEADCOUNT)
+        elif action == "edit_household":
+            guardian = request.form.get("guardian_name")
+            phone = request.form.get("phone_number")
+            slum = request.form.get("slum_area")
+            adults = request.form.get("adults_in_home")
+            headcount = request.form.get("total_headcount")
+            
+            # Handle Photo Upload
+            file = request.files.get('caregiver_picture')
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                saved_name = f"household_{id}_{int(time.time())}_{filename}"
+                file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
+                # Update DB with the new picture
+                db.execute("UPDATE households SET caregiver_picture = ? WHERE id = ?", saved_name, id)
+
+            # Update the rest of the text data
+            db.execute("""
+                UPDATE households 
+                SET guardian_name = ?, phone_number = ?, slum_area = ?, adults_in_home = ?, total_headcount = ? 
+                WHERE id = ?
+            """, guardian, phone, slum, adults, headcount, id)
+            
+            log_action(f"Updated Household ID {id} profile (Blended Family Data)")
+            flash("Caregiver and Household details updated successfully.", "success")
+
+        # ACTION 3: NEW - Edit Biological Parents & Kinship Link
+        elif action == "edit_kinship":
+            student_id = request.form.get("student_id")
+            caregiver_relation = request.form.get("caregiver_relationship")
+            mother = request.form.get("mother_name")
+            father = request.form.get("father_name")
+            
+            db.execute("""
+                UPDATE students 
+                SET caregiver_relationship = ?, mother_name = ?, father_name = ?
+                WHERE id = ?
+            """, caregiver_relation, mother, father, student_id)
+            
+            log_action(f"Updated biological parents & kinship for Student ID {student_id}")
+            flash("Kinship and biological parent details updated successfully!", "success")
+            
+        return redirect(f"/household/{id}")
+
+    else:
+        # GET: Fetch the household details
+        household = db.execute("SELECT * FROM households WHERE id = ?", id)
+        if not household:
+            return apology("Household not found", 404)
+            
+        # Fetch all the children currently living in this household (Now grabbing the new columns too!)
+        kids = db.execute("SELECT * FROM students WHERE household_id = ? ORDER BY dob ASC", id)
+        
+        return render_template("household_profile.html", household=household[0], kids=kids)
+
+
 # ==============================================================================
 # NEIGHBORHOOD: STUDENT PROFILES
 # ==============================================================================
@@ -516,6 +674,16 @@ def update_avatar(id):
 @login_required
 def student_profile(id):
     student = db.execute("SELECT * FROM students WHERE id = ?", id)[0]
+
+    # --- PHASE 4: FETCH LINKED SIBLINGS ---
+    siblings = []
+    if student.get("household_id"):
+        siblings = db.execute("""
+            SELECT id, first_name, last_name, profile_picture, status, caregiver_relationship 
+            FROM students 
+            WHERE household_id = ? AND id != ?
+            ORDER BY dob ASC
+        """, student["household_id"], id)
 
     academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
     unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
@@ -546,7 +714,7 @@ def student_profile(id):
             grades_by_report[g['report_id']] = []
         grades_by_report[g['report_id']].append(g)
 
-    return render_template("student_profile.html", student=student, reports=reports, grades_by_report=grades_by_report, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years)
+    return render_template("student_profile.html", student=student, reports=reports, grades_by_report=grades_by_report, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years, siblings=siblings)
 
 
 # ==============================================================================
@@ -979,6 +1147,55 @@ def edit_followup(followup_id):
 
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     return render_template("edit_followup.html", student=student, followup=followup)
+
+
+@app.route("/bulk_followup", methods=["GET", "POST"])
+@login_required
+def bulk_followup():
+    """Log a single follow-up note for multiple students at once"""
+    if request.method == "POST":
+        followup_date = request.form.get("followup_date")
+        completed_by = request.form.get("completed_by")
+        location = request.form.get("location")
+        general_notes = request.form.get("general_notes")
+        
+        # request.form.getlist grabs EVERY checked box and puts the IDs in a python list!
+        student_ids = request.form.getlist("student_ids")
+
+        if not followup_date or not completed_by:
+            flash("Date and Completed By are required.", "danger")
+            return redirect("/bulk_followup")
+
+        if not student_ids:
+            flash("You must select at least one student from the list.", "warning")
+            return redirect("/bulk_followup")
+
+        # Loop through the checked students and save the EXACT SAME record for each of them
+        for sid in student_ids:
+            db.execute("""
+                INSERT INTO followups (
+                    student_id, followup_date, location, completed_by, general_notes
+                ) VALUES (?, ?, ?, ?, ?)
+            """, sid, followup_date, location, completed_by, general_notes)
+
+        log_action(f"Logged Group Follow-Up ({location}) for {len(student_ids)} students")
+
+        flash(f"Successfully logged group follow-up for {len(student_ids)} students!", "success")
+        return redirect("/dashboard")
+
+    # For the GET request, grab all active kids
+    students = db.execute("""
+        SELECT id, first_name, last_name, khmer_name, ngo_id, grade_level 
+        FROM students 
+        WHERE status = 'Active' 
+        ORDER BY first_name ASC
+    """)
+    today_date = datetime.now().strftime('%Y-%m-%d')
+    
+    staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
+    current_user = staff_query[0]["username"] if staff_query else ""
+
+    return render_template("bulk_followup.html", students=students, today_date=today_date, current_user=current_user)
 
 
 # ==============================================================================

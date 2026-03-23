@@ -1,0 +1,216 @@
+{% extends "layout.html" %}
+
+{% block title %}Manage Households{% endblock %}
+
+{% block main %}
+<div class="container-fluid px-lg-5 mt-4 mb-5 text-start">
+    
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-houses-fill text-primary me-2"></i>Household Manager</h2>
+            <p class="text-muted small mb-0">Manage central caregivers, family contact info, and sibling links.</p>
+        </div>
+        <button type="button" class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
+            <i class="bi bi-house-add-fill me-1"></i> Add New Family
+        </button>
+    </div>
+
+    <!-- The Data Table Card -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive p-4">
+                <table id="householdsTable" class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th>Primary Caregiver (Guardian)</th>
+                            <th>Contact Information</th>
+                            <th>Slum Area</th>
+                            <th>Linked Siblings</th>
+                            <th class="text-end pe-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hh in households %}
+                        <tr>
+                            <!-- Guardian Name -->
+                            <td class="py-3">
+                                <a href="/household/{{ hh.id }}" class="text-decoration-none d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-fill fs-5"></i>
+                                    </div>
+                                    <span class="fw-bold text-dark fs-6">{{ hh.guardian_name }}</span>
+                                </a>
+                            </td>
+                            
+                            <!-- Phone -->
+                            <td>
+                                {% if hh.phone_number %}
+                                    <a href="tel:{{ hh.phone_number }}" class="text-decoration-none fw-bold"><i class="bi bi-telephone-fill small me-2 text-secondary"></i>{{ hh.phone_number }}</a>
+                                {% else %}
+                                    <span class="text-muted small fst-italic">No Phone Provided</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Area -->
+                            <td>
+                                <span class="khmer-font fw-bold text-secondary">
+                                    <i class="bi bi-geo-alt-fill small me-1"></i> {{ hh.slum_area if hh.slum_area else 'Unknown' }}
+                                </span>
+                            </td>
+                            
+                            <!-- Kids -->
+                            <td>
+                                {% if hh.student_count > 0 %}
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-1 mb-1">
+                                        <i class="bi bi-people-fill me-1"></i> {{ hh.student_count }} Children
+                                    </span>
+                                    <br>
+                                    <small class="text-muted fw-bold" style="font-size: 0.75rem;">{{ hh.kids }}</small>
+                                {% else %}
+                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill px-3 py-1">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> 0 Children (Empty)
+                                    </span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="text-end pe-3">
+                                <div class="btn-group shadow-sm">
+                                    <!-- View Family Dashboard -->
+                                    <a href="/household/{{ hh.id }}" class="btn btn-sm btn-outline-primary fw-bold" title="View Family Dashboard">
+                                        <i class="bi bi-eye-fill me-1"></i> View
+                                    </a>
+
+                                    <!-- Edit Button -->
+                                    <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" 
+                                            data-bs-toggle="modal" data-bs-target="#editHouseholdModal"
+                                            onclick="populateEditModal('{{ hh.id }}', '{{ hh.guardian_name|escape }}', '{{ hh.phone_number|escape }}', '{{ hh.slum_area|escape }}')">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    
+                                    <!-- Delete Button -->
+                                    {% if hh.student_count == 0 %}
+                                    <form action="/manage_households" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this empty household?');">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="household_id" value="{{ hh.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold"><i class="bi bi-trash-fill"></i></button>
+                                    </form>
+                                    {% else %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Cannot delete: Students are living here"><i class="bi bi-trash"></i></button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL 1: ADD NEW HOUSEHOLD                     -->
+<!-- ============================================== -->
+<div class="modal fade" id="addHouseholdModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-house-add-fill me-2"></i>Create Central Household</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/manage_households" method="post">
+                <div class="modal-body p-4 text-start">
+                    <input type="hidden" name="action" value="add">
+                    
+                    <div class="alert alert-info bg-info bg-opacity-10 border-info small py-3 mb-4 rounded-3 d-flex">
+                        <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i> 
+                        <span>Creating a household here allows you to quickly link multiple siblings to the exact same address and primary caregiver.</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Primary Caregiver / Guardian Name *</label>
+                        <input type="text" class="form-control form-control-lg bg-light" name="guardian_name" placeholder="e.g. Aunt Bopha" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Phone Number</label>
+                        <input type="text" class="form-control bg-light" name="phone_number">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Slum Area</label>
+                        <input type="text" class="form-control bg-light" name="slum_area" placeholder="e.g. Steung Meanchey">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
+                    <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold shadow-sm px-4">Create Family</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL 2: EDIT EXISTING HOUSEHOLD               -->
+<!-- ============================================== -->
+<div class="modal fade" id="editHouseholdModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Household Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/manage_households" method="post">
+                <div class="modal-body p-4 text-start">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="household_id" id="edit_id">
+                    
+                    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning small py-3 mb-4 text-dark rounded-3 d-flex">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i> 
+                        <span>Changing this information will instantly update the synced profiles of <strong>every student</strong> currently living in this household.</span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Primary Caregiver / Guardian Name</label>
+                        <input type="text" class="form-control form-control-lg bg-light" name="guardian_name" id="edit_guardian" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Phone Number</label>
+                        <input type="text" class="form-control bg-light" name="phone_number" id="edit_phone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Slum Area</label>
+                        <input type="text" class="form-control bg-light" name="slum_area" id="edit_slum">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
+                    <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold shadow-sm px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#householdsTable').DataTable({
+            "pageLength": 25,
+            "language": {
+                "search": "",
+                "searchPlaceholder": "🔍 Search Caregiver or Area..."
+            }
+        });
+    });
+
+    function populateEditModal(id, guardian, phone, slum) {
+        document.getElementById('edit_id').value = id;
+        document.getElementById('edit_guardian').value = guardian;
+        document.getElementById('edit_phone').value = phone;
+        document.getElementById('edit_slum').value = slum;
+    }
+</script>
+{% endblock %}

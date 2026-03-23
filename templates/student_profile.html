@@ -80,14 +80,76 @@
             </div>
 
             <!-- Family & Education Card -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-light fw-bold border-0 pt-3 pb-2 text-dark"><i class="bi bi-house-door me-2 text-primary"></i>Family & Geography</div>
+            <div class="card shadow-sm border-0 mb-4 border-top border-info border-4">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
+                    <span><i class="bi bi-house-heart-fill text-info me-2"></i>Household & Family Info</span>
+                    
+                    <!-- THE DOORWAY: Link to Central Household Profile -->
+                    {% if student.household_id %}
+                        <a href="/household/{{ student.household_id }}" class="btn btn-sm btn-info text-white fw-bold shadow-sm">
+                            <i class="bi bi-people-fill me-1"></i> View Full Family
+                        </a>
+                    {% endif %}
+                </div>
                 <div class="card-body py-2">
                     <ul class="list-group list-group-flush">
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Guardian Name</small> <span class="khmer-font">{{ student.guardian_name if student.guardian_name else '-' }}</span></li>
+                        {% if student.household_id %}
+                            <li class="list-group-item px-0 border-0 pb-2">
+                                <span class="badge bg-info bg-opacity-10 text-info border border-info mb-2"><i class="bi bi-link-45deg"></i> Linked to Central Household #{{ student.household_id }}</span>
+                            </li>
+                        {% else %}
+                            <li class="list-group-item px-0 border-0 pb-2">
+                                <span class="badge bg-warning text-dark border border-warning mb-2"><i class="bi bi-exclamation-triangle-fill me-1"></i> Unlinked Student</span>
+                            </li>
+                        {% endif %}
+
+                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Primary Caregiver</small> <span class="khmer-font fs-6 fw-bold text-dark">{{ student.guardian_name if student.guardian_name else '-' }}</span></li>
                         <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Phone Number</small> <a href="tel:{{ student.phone_number }}" class="text-decoration-none fw-bold">{{ student.phone_number if student.phone_number else '-' }}</a></li>
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Slum Area</small> {{ student.slum_area if student.slum_area else '-' }}</li>
-                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Current School/Uni</small> <span class="khmer-font">{{ student.current_school if student.current_school else '-' }}</span></li>
+                        <li class="list-group-item px-0 border-0"><small class="text-muted d-block fw-bold">Slum Area</small> <span class="khmer-font">{{ student.slum_area if student.slum_area else '-' }}</span></li>
+                        
+                        <!-- NEW: BIOLOGICAL & KINSHIP PREVIEW -->
+                        <li class="list-group-item px-0 border-0 border-top mt-2 pt-3">
+                            <div class="bg-light p-3 rounded border">
+                                <h6 class="fw-bold text-dark small mb-3"><i class="bi bi-diagram-3-fill text-secondary me-1"></i> Biological & Kinship Info</h6>
+                                <div class="row">
+                                    <div class="col-12 mb-2">
+                                        <small class="text-muted fw-bold">Relation to Caregiver:</small>
+                                        <span class="badge bg-secondary ms-1">{{ student.caregiver_relationship if student.caregiver_relationship else 'Not Specified' }}</span>
+                                    </div>
+                                    <div class="col-6 border-end">
+                                        <small class="text-muted fw-bold d-block">Mother:</small>
+                                        <span class="khmer-font small fw-bold text-dark">{{ student.mother_name if student.mother_name else 'Unknown/Abandoned' }}</span>
+                                    </div>
+                                    <div class="col-6 ps-3">
+                                        <small class="text-muted fw-bold d-block">Father:</small>
+                                        <span class="khmer-font small fw-bold text-dark">{{ student.father_name if student.father_name else 'Unknown/Abandoned' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+
+                        <!-- SIBLINGS PREVIEW LIST -->
+                        {% if siblings %}
+                        <li class="list-group-item px-0 border-0 border-top mt-3 pt-3">
+                            <small class="text-info d-block fw-bold mb-2"><i class="bi bi-people-fill me-1"></i> Siblings in EEP</small>
+                            <div class="d-flex flex-column gap-2">
+                                {% for sibling in siblings %}
+                                <a href="/student/{{ sibling.id }}" class="text-decoration-none d-flex align-items-center bg-white p-2 rounded border shadow-sm text-dark table-hover transition" style="transition: all 0.2s;">
+                                    {% set thumb = "https://ui-avatars.com/api/?name=" ~ sibling.first_name ~ "+" ~ sibling.last_name ~ "&background=random&color=fff&size=30" %}
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + sibling.profile_picture) if sibling.profile_picture else thumb }}" class="rounded-circle border me-2" style="width: 30px; height: 30px; object-fit: cover;">
+                                    <span class="fw-bold fs-6">{{ sibling.first_name }} {{ sibling.last_name }}</span>
+                                    
+                                    <!-- Show how the sibling is related to the caregiver too! -->
+                                    {% if sibling.caregiver_relationship %}
+                                        <span class="badge bg-light text-dark border ms-2" style="font-size: 0.6rem;">{{ sibling.caregiver_relationship }}</span>
+                                    {% endif %}
+                                    
+                                    <i class="bi bi-arrow-right-short ms-auto text-info fs-5"></i>
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
