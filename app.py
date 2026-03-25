@@ -93,173 +93,117 @@ def log_action(description):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    # AUDIT FIX: Enforce timeframe as an integer so the database doesn't crash!
-    try:
-        months = int(request.args.get('timeframe', 1))
-    except ValueError:
-        months = 1
+    """Smart Dashboard Router based on Active Hat"""
+    
+    # Check which hat the user is currently wearing (Default to 1: EEP)
+    program_id = session.get("program_id", 1) 
+    
+    # ==============================================================
+    # HAT 1: GOVT AFFAIRS & GLOBAL ADMIN (program_id == 0)
+    # ==============================================================
+    if program_id == 0:
+        # We will build the real Government stats in Phase 8!
+        # For now, we just load the template so you can see the layout.
+        from datetime import datetime
+        today_date = datetime.now().strftime('%Y-%m-%d')
+        
+        return render_template("dashboard_global.html", date_now=today_date)
+        
+    # ==============================================================
+    # HAT 2: EEP MANAGEMENT (program_id == 1)
+    # ==============================================================
+    elif program_id == 1:
+        # --- YOUR EXISTING EEP DASHBOARD LOGIC GOES HERE ---
+        # Get timeframe from URL (default 1 month)
+        months = request.args.get('timeframe', 1)
+        
+        # Stats: Student Breakdown
+        active_query = db.execute("SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
+        boys = 0
+        girls = 0
+        for row in active_query:
+            if row['gender'] == 'Male': boys = row['count']
+            if row['gender'] == 'Female': girls = row['count']
+            
+        total_active = boys + girls
+        uni_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
+        vocal_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
+        
+        # Stats: Hot Meals & Meetings (Timebound)
+        meals = db.execute("""
+            SELECT SUM(attendance_count) as total FROM activities 
+            WHERE activity_type = 'Hot Meal' 
+            AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+        
+        meetings = db.execute("""
+            SELECT COUNT(*) as total FROM activities 
+            WHERE activity_type = 'Parent Meeting' 
+            AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
 
-    # 2. Stats: Enrollment Breakdown
-    active_kids = db.execute(
-        "SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
-    total_active = sum(row['count'] for row in active_kids)
-    boys = next((row['count'] for row in active_kids if row['gender'] == 'Male'), 0)
-    girls = next((row['count'] for row in active_kids if row['gender'] == 'Female'), 0)
+        # Stats: Impact
+        housing_supports = db.execute("""
+            SELECT COUNT(*) as total FROM activities 
+            WHERE activity_type = 'Housing Support' 
+            AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+        
+        other_activities = db.execute("""
+            SELECT COUNT(*) as total FROM activities 
+            WHERE activity_type NOT IN ('Hot Meal', 'Parent Meeting', 'Housing Support') 
+            AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
 
-    uni_kids = db.execute(
-        "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
-    vocal_kids = db.execute(
-        "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
+        # Achievements: Top 10 & Graduates
+        top_performers = db.execute("SELECT COUNT(*) as count FROM monthly_reports WHERE class_rank <= 10")[0]['count']
+        graduates = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
 
-    # 3. Stats: Services (Filtered by Time)
-    # SMART LUNCH CALCULATION (Exception-Based)
-
-    # A. How many kids are currently assigned to get Hot Lunch?
-    lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND meal_plan = 'Daily Hot Lunch'")[0]['count']
-
-    # B. How many "Workdays" roughly happened in this timeframe? (Assuming ~22 school days a month)
-    estimated_workdays = months * 22
-
-    # C. What is the maximum possible meals we could have served?
-    max_possible_meals = lunch_kids_count * estimated_workdays
-
-    # D. How many times did someone specific miss a meal in this timeframe?
-    missed_meals = db.execute("""
-        SELECT COUNT(*) as total FROM student_services
-        WHERE service_type = 'Missed Hot Lunch'
-        AND service_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    # E. How many holiday skips happened? (1 holiday logged = missed meal for EVERY lunch kid)
-    holidays_logged = db.execute("""
-        SELECT COUNT(*) as total FROM student_services
-        WHERE service_type = 'Holiday - No Meals'
-        AND service_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-    holiday_missed_meals = holidays_logged * lunch_kids_count
-
-    # F. The Final Math!
-    calculated_meals = max_possible_meals - missed_meals - holiday_missed_meals
-
-    # Ensure it doesn't go below 0 just in case
-    meals = max(0, calculated_meals)
-
-
-    parent_meetings = db.execute("""
-        SELECT COUNT(*) as total FROM activities
-        WHERE activity_type = 'Parent Meeting' AND activity_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    # 4. Stats: Impact (Filtered by Time)
-    housing_supports = db.execute("""
-        SELECT SUM(attendance_count) as total FROM activities
-        WHERE activity_type = 'Housing Support' AND activity_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    other_activities = db.execute("""
-        SELECT COUNT(*) as total FROM activities
-        WHERE activity_type NOT IN ('Hot Meal', 'Parent Meeting', 'Housing Support')
-        AND activity_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    # 5. Stats: Academic Excellence
-    top_performers = db.execute(
-        "SELECT COUNT(*) as count FROM monthly_reports WHERE CAST(class_rank AS INTEGER) <= 10 AND CAST(class_rank AS INTEGER) > 0")[0]['count']
-
-    graduates = db.execute(
-        "SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
-
-    # 6. Priority Alerts (BUGFIXED)
-    academic_alerts = db.execute("""
-        SELECT s.first_name, s.last_name, s.id, r.overall_average, r.academic_year, r.month
-        FROM students s JOIN monthly_reports r ON s.id = r.student_id
-        WHERE r.overall_average < 50 AND r.overall_average IS NOT NULL
-        AND s.status = 'Active'
-        ORDER BY r.academic_year DESC, r.id DESC LIMIT 5
-    """)
-
-    protection_alerts = db.execute("""
-        SELECT s.first_name, s.last_name, s.id, f.id as followup_id, f.child_protection_concerns
-        FROM students s JOIN followups f ON s.id = f.student_id
-        WHERE f.child_protection_concerns NOT IN ('No', 'None', 'N/A', '')
-        AND f.child_protection_concerns IS NOT NULL
-        AND (f.alert_status IS NULL OR f.alert_status = 'Active')
-        AND s.status = 'Active'
-        ORDER BY f.followup_date DESC LIMIT 5
-    """)
-
-    # 7. Smart Sponsor Letters Logic
-    current_month = datetime.now().month
-    current_year = str(datetime.now().year)
-    if current_month <= 3: current_quarter = 'Q1'
-    elif current_month <= 6: current_quarter = 'Q2'
-    elif current_month <= 9: current_quarter = 'Q3'
-    else: current_quarter = 'Q4'
-
-    # Fetch ALL checkboxes using MAX() and group by student so we don't get duplicates
-    missing_letters_raw = db.execute("""
-        SELECT s.id, s.first_name, s.last_name,
-               MAX(f.letter_given) as given,
-               MAX(f.letter_translated) as translated,
-               MAX(f.letter_scanned) as scanned,
-               MAX(f.letter_sent) as sent,
-               MAX(f.id) as followup_id
-        FROM students s
-        LEFT JOIN followups f ON s.id = f.student_id AND f.letter_quarter = ? AND f.letter_year = ?
-        WHERE s.status = 'Active'
-        GROUP BY s.id
-        HAVING sent IS NULL OR sent != 'Yes'
-        ORDER BY s.first_name ASC
-    """, current_quarter, current_year)
-
-    # Apply the "Smart" Status Logic
-    missing_letters = []
-    for student in missing_letters_raw:
-        if student['scanned'] == 'Yes':
-            student['status_badge'] = "Ready to Send"
-            student['status_color'] = "primary"
-        elif student['translated'] == 'Yes':
-            student['status_badge'] = "Waiting to Scan"
-            student['status_color'] = "info"
-        elif student['given'] == 'Yes':
-            student['status_badge'] = "Needs Translation"
-            student['status_color'] = "warning"
-        else:
-            student['status_badge'] = "Not Started"
-            student['status_color'] = "danger"
-
-        missing_letters.append(student)
-
-    # 8. NEW: Audit Log Feed (Only for Admins)
-    recent_activity = []
-    if session.get("role") == "Admin":
-        # CRASH-PROOF FIX: Try to select device_info, fallback to 'Unknown' if the column doesn't exist yet!
-        try:
+        # Alerts (Mocked/Safeguarded for now based on your DB)
+        academic_alerts = db.execute("""
+            SELECT s.id, s.first_name, s.last_name, r.overall_average, r.month, r.academic_year
+            FROM students s
+            JOIN monthly_reports r ON s.id = r.student_id
+            WHERE s.status = 'Active' AND r.overall_average < 50
+            ORDER BY r.id DESC LIMIT 5
+        """)
+        
+        protection_alerts = db.execute("""
+            SELECT s.id, s.first_name, s.last_name, f.child_protection_concerns, f.id as followup_id
+            FROM students s
+            JOIN followups f ON s.id = f.student_id
+            WHERE s.status = 'Active' AND f.alert_status = 'Active' 
+            AND f.child_protection_concerns IS NOT NULL 
+            AND f.child_protection_concerns != '' 
+            AND f.child_protection_concerns != 'None'
+            ORDER BY f.followup_date DESC LIMIT 5
+        """)
+        
+        # Admin Audit Log
+        recent_activity = []
+        if session.get("role") in ["Admin", "System PM"]:
             recent_activity = db.execute("""
-                SELECT a.action, a.timestamp, a.device_info, s.username 
-                FROM audit_logs a
-                JOIN staff s ON a.staff_id = s.id
-                ORDER BY a.timestamp DESC LIMIT 15
-            """)
-        except Exception:
-            recent_activity = db.execute("""
-                SELECT a.action, a.timestamp, 'Unknown' as device_info, s.username 
+                SELECT s.username, a.action, a.timestamp, a.device_info 
                 FROM audit_logs a
                 JOIN staff s ON a.staff_id = s.id
                 ORDER BY a.timestamp DESC LIMIT 15
             """)
 
-    date_now = datetime.now().strftime('%Y-%m-%d')
+        from datetime import datetime
+        today_date = datetime.now().strftime('%Y-%m-%d')
+        
+        # Fetch Missing Letters (Safeguard)
+        missing_letters = []
 
-    return render_template("executive_dashboard.html",
-                           total_active=total_active, boys=boys, girls=girls,
-                           uni_kids=uni_kids, vocal_kids=vocal_kids,
-                           meals=meals, meetings=parent_meetings,
-                           housing_supports=housing_supports, other_activities=other_activities,
-                           top_performers=top_performers, graduates=graduates,
-                           academic_alerts=academic_alerts, protection_alerts=protection_alerts,
-                           missing_letters=missing_letters, current_quarter=current_quarter, current_year=current_year,
-                           timeframe=months, date_now=date_now, recent_activity=recent_activity)
+        return render_template("executive_dashboard.html", 
+                               total_active=total_active, boys=boys, girls=girls,
+                               uni_kids=uni_kids, vocal_kids=vocal_kids, 
+                               meals=meals, meetings=meetings,
+                               housing_supports=housing_supports, other_activities=other_activities,
+                               top_performers=top_performers, graduates=graduates,
+                               academic_alerts=academic_alerts, protection_alerts=protection_alerts,
+                               recent_activity=recent_activity, timeframe=months, date_now=today_date,
+                               missing_letters=missing_letters, current_quarter="Q1", current_year="2026")
 
 
 @app.route("/log_activity", methods=["POST"])
@@ -384,9 +328,26 @@ def academics():
 @app.route("/")
 @login_required
 def index():
-    """Show active roster"""
-    students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' ORDER BY first_name")
-    return render_template("index.html", students=students, title="Active Roster")
+    """Smart Homepage that changes based on the user's active program view"""
+    
+    # 1. Check which hat the user is currently wearing
+    program_id = session.get("program_id", 1) # Defaults to EEP (1) if missing
+    
+    # ==============================================================
+    # HAT 1: GOVT AFFAIRS & GLOBAL ADMIN (program_id == 0)
+    # ==============================================================
+    if program_id == 0:
+        # Instead of students, we fetch the NGO's Staff List
+        staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
+        return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
+        
+    # ==============================================================
+    # HAT 2: EEP MANAGEMENT (program_id == 1)
+    # ==============================================================
+    elif program_id == 1:
+        # Fetch the active EEP students
+        students = db.execute("SELECT * FROM students WHERE status = 'Active' ORDER BY first_name")
+        return render_template("index.html", students=students, title="EEP Active Roster")
 
 @app.route("/archive")
 @login_required
@@ -1362,47 +1323,105 @@ def settings():
 # NEIGHBORHOOD: AUTHENTICATION
 # ==============================================================================
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    """Register new EEP staff member"""
-    staff_count = db.execute("SELECT COUNT(*) as count FROM staff")[0]["count"]
-    if staff_count > 0:
-        if "user_id" not in session:
-            flash("You must be logged in as an Admin to register new staff.", "danger")
-            return redirect("/login")
-
-        current_user_role = db.execute("SELECT role FROM staff WHERE id = ?", session["user_id"])[0]["role"]
-        if current_user_role != "Admin":
-            flash("Unauthorized: Only Admins can register new staff.", "danger")
-            return redirect("/")
-
+@app.route("/manage_staff", methods=["GET", "POST"])
+@login_required
+@admin_required
+def manage_staff():
+    """Enterprise dashboard to add, edit, and reset staff accounts."""
     if request.method == "POST":
-        username = request.form.get("username")
-        role = request.form.get("role")
-        password = request.form.get("password")
+        action = request.form.get("action")
+        
+        # ACTION 1: Add a new staff member
+        if action == "add":
+            username = request.form.get("username")
+            password = request.form.get("password")
+            role = request.form.get("role")
+            program_scope = request.form.get("program_scope")
+            
+            if not username or not password or not role or not program_scope:
+                flash("Error: All fields are required to create an account.", "danger")
+                return redirect("/manage_staff")
+                
+            hash_pass = generate_password_hash(password)
+            try:
+                db.execute("INSERT INTO staff (username, hash, role, program_scope) VALUES (?, ?, ?, ?)", 
+                           username, hash_pass, role, program_scope)
+                log_action(f"Registered new staff member: {username} ({role})")
+                flash(f"Account created successfully for {username}!", "success")
+            except ValueError:
+                flash("Error: Username already exists.", "danger")
+                
+        # ACTION 2: Edit permissions
+        elif action == "edit":
+            staff_id = request.form.get("staff_id")
+            new_role = request.form.get("role")
+            new_scope = request.form.get("program_scope")
+            
+            # Prevent the PM from accidentally locking themselves out!
+            if int(staff_id) == session["user_id"] and new_role != "Admin":
+                flash("Security Warning: You cannot remove your own Admin privileges.", "warning")
+            else:
+                db.execute("UPDATE staff SET role = ?, program_scope = ? WHERE id = ?", new_role, new_scope, staff_id)
+                log_action(f"Updated permissions for Staff ID {staff_id} to {new_role}/{new_scope}")
+                flash("Staff permissions updated successfully.", "success")
+                
+        # ACTION 3: Reset Password
+        elif action == "reset_password":
+            staff_id = request.form.get("staff_id")
+            # Force reset the password to '123456'
+            new_hash = generate_password_hash("123456")
+            db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, staff_id)
+            
+            # Get username for the log
+            staff_name = db.execute("SELECT username FROM staff WHERE id = ?", staff_id)[0]['username']
+            log_action(f"Forced password reset for {staff_name}")
+            flash(f"Password for {staff_name} has been reset to '123456'. Tell them to log in and change it immediately.", "info")
+
+        return redirect("/manage_staff")
+
+    else:
+        # GET: Show the dashboard
+        staff_members = db.execute("SELECT id, username, role, program_scope FROM staff ORDER BY role ASC, username ASC")
+        return render_template("manage_staff.html", staff_members=staff_members)
+
+
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    """Allow users to securely change their own password"""
+    if request.method == "POST":
+        old_password = request.form.get("old_password")
+        new_password = request.form.get("new_password")
         confirmation = request.form.get("confirmation")
 
-        if not username or not role or not password or not confirmation:
-            flash("Error: All fields are required!", "danger")
-            return redirect("/register")
+        # 1. Basic Validation
+        if not old_password or not new_password or not confirmation:
+            flash("Error: All fields are required.", "danger")
+            return redirect("/change_password")
 
-        if password != confirmation:
-            flash("Error: Passwords do not match!", "danger")
-            return redirect("/register")
+        if new_password != confirmation:
+            flash("Error: New passwords do not match.", "danger")
+            return redirect("/change_password")
 
-        hash_password = generate_password_hash(password)
+        # 2. Security Check: Verify Old Password
+        user = db.execute("SELECT hash FROM staff WHERE id = ?", session["user_id"])
+        if not check_password_hash(user[0]["hash"], old_password):
+            flash("Error: Incorrect current password.", "danger")
+            return redirect("/change_password")
 
-        try:
-            db.execute("INSERT INTO staff (username, hash, role) VALUES (?, ?, ?)", username, hash_password, role)
-        except ValueError:
-            flash("Error: Username already exists!", "danger")
-            return redirect("/register")
-
-        log_action(f"Created new staff account: {username} ({role})")
-        flash("Account created successfully!", "success")
+        # 3. Update the Vault
+        new_hash = generate_password_hash(new_password)
+        db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, session["user_id"])
+        
+        # Log the action for accountability
+        log_action("Changed their account password")
+        
+        flash("Success! Your password has been securely updated.", "success")
         return redirect("/")
 
-    return render_template("register.html")
+    else:
+        # GET: Show the form
+        return render_template("change_password.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -1426,14 +1445,56 @@ def login():
 
         # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
-        # Hand them their Role badge so the Bouncer and HTML can see it!
         session["role"] = rows[0]["role"]
+        
+        # --------------------------------------------------------
+        # THE PROGRAM SCOPE MATRIX
+        # --------------------------------------------------------
+        # Grab the scope from the DB (Default to EEP if empty)
+        user_scope = rows[0].get("program_scope", "EEP")
+        session["program_scope"] = user_scope
+        
+        if user_scope == "Global":
+            # Global Admins default to the Administrative View
+            session["program_id"] = 0
+            session["program_name"] = "Administrative View"
+            session["program_icon"] = "bi-globe-americas"
+        else:
+            # Regular staff default to their assigned program (EEP)
+            session["program_id"] = 1
+            session["program_name"] = f"{user_scope} Program"
+            session["program_icon"] = "bi-book-fill"
         
         log_action("Logged into the system")
         return redirect("/")
 
     return render_template("login.html")
 
+
+@app.route("/switch_program/<int:pid>")
+@login_required
+def switch_program(pid):
+    """Allows Global users to switch between Administrative and specific program views"""
+    
+    # --------------------------------------------------------
+    # SECURITY: THE SCOPE BOUNCER
+    # --------------------------------------------------------
+    # Only people with "Global" scope in the database can use the switcher!
+    if session.get("program_scope") != "Global":
+        flash("Unauthorized: Your account is locked to a specific program.", "danger")
+        return redirect(request.referrer or "/")
+        
+    if pid == 0:
+        session["program_id"] = 0
+        session["program_name"] = "Administrative View"
+        session["program_icon"] = "bi-globe-americas"
+    elif pid == 1:
+        session["program_id"] = 1
+        session["program_name"] = "EEP Program"
+        session["program_icon"] = "bi-book-fill"
+            
+    flash(f"Switched context to: {session['program_name']}", "info")
+    return redirect(request.referrer or "/")
 
 @app.route("/logout")
 def logout():
