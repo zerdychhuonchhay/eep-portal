@@ -113,97 +113,175 @@ def dashboard():
     # HAT 2: EEP MANAGEMENT (program_id == 1)
     # ==============================================================
     elif program_id == 1:
-        # --- YOUR EXISTING EEP DASHBOARD LOGIC GOES HERE ---
-        # Get timeframe from URL (default 1 month)
-        months = request.args.get('timeframe', 1)
-        
-        # Stats: Student Breakdown
-        active_query = db.execute("SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
-        boys = 0
-        girls = 0
-        for row in active_query:
-            if row['gender'] == 'Male': boys = row['count']
-            if row['gender'] == 'Female': girls = row['count']
-            
-        total_active = boys + girls
-        uni_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
-        vocal_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
-        
-        # Stats: Hot Meals & Meetings (Timebound)
-        meals = db.execute("""
-            SELECT SUM(attendance_count) as total FROM activities 
-            WHERE activity_type = 'Hot Meal' 
-            AND activity_date >= date('now', ?)
-        """, f'-{months} month')[0]['total'] or 0
-        
-        meetings = db.execute("""
-            SELECT COUNT(*) as total FROM activities 
-            WHERE activity_type = 'Parent Meeting' 
-            AND activity_date >= date('now', ?)
+        # --- YOUR ADVANCED EEP DASHBOARD LOGIC ---
+        # AUDIT FIX: Enforce timeframe as an integer so the database doesn't crash!
+        try:
+            months = int(request.args.get('timeframe', 1))
+        except ValueError:
+            months = 1
+
+        # 2. Stats: Enrollment Breakdown
+        active_kids = db.execute(
+            "SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
+        total_active = sum(row['count'] for row in active_kids)
+        boys = next((row['count'] for row in active_kids if row['gender'] == 'Male'), 0)
+        girls = next((row['count'] for row in active_kids if row['gender'] == 'Female'), 0)
+
+        uni_kids = db.execute(
+            "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
+        vocal_kids = db.execute(
+            "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
+
+        # 3. Stats: Services (Filtered by Time)
+        # SMART LUNCH CALCULATION (Exception-Based)
+
+        # A. How many kids are currently assigned to get Hot Lunch?
+        lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND meal_plan = 'Daily Hot Lunch'")[0]['count']
+
+        # B. How many "Workdays" roughly happened in this timeframe? (Assuming ~22 school days a month)
+        estimated_workdays = months * 22
+
+        # C. What is the maximum possible meals we could have served?
+        max_possible_meals = lunch_kids_count * estimated_workdays
+
+        # D. How many times did someone specific miss a meal in this timeframe?
+        missed_meals = db.execute("""
+            SELECT COUNT(*) as total FROM student_services
+            WHERE service_type = 'Missed Hot Lunch'
+            AND service_date >= date('now', ?)
         """, f'-{months} month')[0]['total'] or 0
 
-        # Stats: Impact
+        # E. How many holiday skips happened? (1 holiday logged = missed meal for EVERY lunch kid)
+        holidays_logged = db.execute("""
+            SELECT COUNT(*) as total FROM student_services
+            WHERE service_type = 'Holiday - No Meals'
+            AND service_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+        holiday_missed_meals = holidays_logged * lunch_kids_count
+
+        # F. The Final Math!
+        calculated_meals = max_possible_meals - missed_meals - holiday_missed_meals
+
+        # Ensure it doesn't go below 0 just in case
+        meals = max(0, calculated_meals)
+
+
+        parent_meetings = db.execute("""
+            SELECT COUNT(*) as total FROM activities
+            WHERE activity_type = 'Parent Meeting' AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+
+        # 4. Stats: Impact (Filtered by Time)
         housing_supports = db.execute("""
-            SELECT COUNT(*) as total FROM activities 
-            WHERE activity_type = 'Housing Support' 
-            AND activity_date >= date('now', ?)
+            SELECT SUM(attendance_count) as total FROM activities
+            WHERE activity_type = 'Housing Support' AND activity_date >= date('now', ?)
         """, f'-{months} month')[0]['total'] or 0
-        
+
         other_activities = db.execute("""
-            SELECT COUNT(*) as total FROM activities 
-            WHERE activity_type NOT IN ('Hot Meal', 'Parent Meeting', 'Housing Support') 
+            SELECT COUNT(*) as total FROM activities
+            WHERE activity_type NOT IN ('Hot Meal', 'Parent Meeting', 'Housing Support')
             AND activity_date >= date('now', ?)
         """, f'-{months} month')[0]['total'] or 0
 
-        # Achievements: Top 10 & Graduates
-        top_performers = db.execute("SELECT COUNT(*) as count FROM monthly_reports WHERE class_rank <= 10")[0]['count']
-        graduates = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
+        # 5. Stats: Academic Excellence
+        top_performers = db.execute(
+            "SELECT COUNT(*) as count FROM monthly_reports WHERE CAST(class_rank AS INTEGER) <= 10 AND CAST(class_rank AS INTEGER) > 0")[0]['count']
 
-        # Alerts (Mocked/Safeguarded for now based on your DB)
+        graduates = db.execute(
+            "SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
+
+        # 6. Priority Alerts (BUGFIXED)
         academic_alerts = db.execute("""
-            SELECT s.id, s.first_name, s.last_name, r.overall_average, r.month, r.academic_year
-            FROM students s
-            JOIN monthly_reports r ON s.id = r.student_id
-            WHERE s.status = 'Active' AND r.overall_average < 50
-            ORDER BY r.id DESC LIMIT 5
+            SELECT s.first_name, s.last_name, s.id, r.overall_average, r.academic_year, r.month
+            FROM students s JOIN monthly_reports r ON s.id = r.student_id
+            WHERE r.overall_average < 50 AND r.overall_average IS NOT NULL
+            AND s.status = 'Active'
+            ORDER BY r.academic_year DESC, r.id DESC LIMIT 5
         """)
-        
+
         protection_alerts = db.execute("""
-            SELECT s.id, s.first_name, s.last_name, f.child_protection_concerns, f.id as followup_id
-            FROM students s
-            JOIN followups f ON s.id = f.student_id
-            WHERE s.status = 'Active' AND f.alert_status = 'Active' 
-            AND f.child_protection_concerns IS NOT NULL 
-            AND f.child_protection_concerns != '' 
-            AND f.child_protection_concerns != 'None'
+            SELECT s.first_name, s.last_name, s.id, f.id as followup_id, f.child_protection_concerns
+            FROM students s JOIN followups f ON s.id = f.student_id
+            WHERE f.child_protection_concerns NOT IN ('No', 'None', 'N/A', '')
+            AND f.child_protection_concerns IS NOT NULL
+            AND (f.alert_status IS NULL OR f.alert_status = 'Active')
+            AND s.status = 'Active'
             ORDER BY f.followup_date DESC LIMIT 5
         """)
-        
-        # Admin Audit Log
+
+        # 7. Smart Sponsor Letters Logic
+        from datetime import datetime
+        current_month = datetime.now().month
+        current_year = str(datetime.now().year)
+        if current_month <= 3: current_quarter = 'Q1'
+        elif current_month <= 6: current_quarter = 'Q2'
+        elif current_month <= 9: current_quarter = 'Q3'
+        else: current_quarter = 'Q4'
+
+        # Fetch ALL checkboxes using MAX() and group by student so we don't get duplicates
+        missing_letters_raw = db.execute("""
+            SELECT s.id, s.first_name, s.last_name,
+                   MAX(f.letter_given) as given,
+                   MAX(f.letter_translated) as translated,
+                   MAX(f.letter_scanned) as scanned,
+                   MAX(f.letter_sent) as sent,
+                   MAX(f.id) as followup_id
+            FROM students s
+            LEFT JOIN followups f ON s.id = f.student_id AND f.letter_quarter = ? AND f.letter_year = ?
+            WHERE s.status = 'Active'
+            GROUP BY s.id
+            HAVING sent IS NULL OR sent != 'Yes'
+            ORDER BY s.first_name ASC
+        """, current_quarter, current_year)
+
+        # Apply the "Smart" Status Logic
+        missing_letters = []
+        for student in missing_letters_raw:
+            if student['scanned'] == 'Yes':
+                student['status_badge'] = "Ready to Send"
+                student['status_color'] = "primary"
+            elif student['translated'] == 'Yes':
+                student['status_badge'] = "Waiting to Scan"
+                student['status_color'] = "info"
+            elif student['given'] == 'Yes':
+                student['status_badge'] = "Needs Translation"
+                student['status_color'] = "warning"
+            else:
+                student['status_badge'] = "Not Started"
+                student['status_color'] = "danger"
+
+            missing_letters.append(student)
+
+        # 8. NEW: Audit Log Feed (Only for Admins)
         recent_activity = []
         if session.get("role") in ["Admin", "System PM"]:
-            recent_activity = db.execute("""
-                SELECT s.username, a.action, a.timestamp, a.device_info 
-                FROM audit_logs a
-                JOIN staff s ON a.staff_id = s.id
-                ORDER BY a.timestamp DESC LIMIT 15
-            """)
+            # CRASH-PROOF FIX: Try to select device_info, fallback to 'Unknown' if the column doesn't exist yet!
+            try:
+                recent_activity = db.execute("""
+                    SELECT a.action, a.timestamp, a.device_info, s.username 
+                    FROM audit_logs a
+                    JOIN staff s ON a.staff_id = s.id
+                    ORDER BY a.timestamp DESC LIMIT 15
+                """)
+            except Exception:
+                recent_activity = db.execute("""
+                    SELECT a.action, a.timestamp, 'Unknown' as device_info, s.username 
+                    FROM audit_logs a
+                    JOIN staff s ON a.staff_id = s.id
+                    ORDER BY a.timestamp DESC LIMIT 15
+                """)
 
-        from datetime import datetime
-        today_date = datetime.now().strftime('%Y-%m-%d')
-        
-        # Fetch Missing Letters (Safeguard)
-        missing_letters = []
+        date_now = datetime.now().strftime('%Y-%m-%d')
 
-        return render_template("executive_dashboard.html", 
+        return render_template("executive_dashboard.html",
                                total_active=total_active, boys=boys, girls=girls,
-                               uni_kids=uni_kids, vocal_kids=vocal_kids, 
-                               meals=meals, meetings=meetings,
+                               uni_kids=uni_kids, vocal_kids=vocal_kids,
+                               meals=meals, meetings=parent_meetings,
                                housing_supports=housing_supports, other_activities=other_activities,
                                top_performers=top_performers, graduates=graduates,
                                academic_alerts=academic_alerts, protection_alerts=protection_alerts,
-                               recent_activity=recent_activity, timeframe=months, date_now=today_date,
-                               missing_letters=missing_letters, current_quarter="Q1", current_year="2026")
+                               missing_letters=missing_letters, current_quarter=current_quarter, current_year=current_year,
+                               timeframe=months, date_now=date_now, recent_activity=recent_activity)
 
 
 @app.route("/log_activity", methods=["POST"])
