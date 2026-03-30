@@ -3,203 +3,107 @@
 {% block title %}Roster Dashboard{% endblock %}
 
 {% block main %}
-<div class="container mt-4 mb-5">
-    
-    <!-- Top Action Bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <h2 class="text-center text-md-start fw-bold">
-            <i class="bi bi-people-fill text-primary me-2"></i>{{ title if title else 'Student Roster' }}
-        </h2>
-        
-        <div class="d-flex flex-wrap justify-content-center gap-2">
-            <a href="/" class="btn btn-outline-primary shadow-sm fw-bold">
-                <i class="bi bi-people-fill me-1"></i> Active
-            </a>
-            <a href="/archive" class="btn btn-outline-secondary shadow-sm fw-bold">
-                <i class="bi bi-archive-fill me-1"></i> Archive
-            </a>
-            <a href="/export_students" class="btn btn-outline-success shadow-sm fw-bold d-none d-md-inline-block">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
-            </a>
-            <a href="/add_student" class="btn btn-primary shadow-sm fw-bold">
-                <i class="bi bi-person-plus-fill me-1"></i> Add New
-            </a>
-        </div>
-    </div>
-
-    <!-- The Data Container -->
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body p-0">
-            
-            <div class="table-responsive p-0 p-md-3">
-                <table id="rosterTable" class="table table-hover align-middle mb-0 mobile-cards-table" style="width: 100%;">
-                    <thead class="table-light text-muted small text-uppercase">
-                        <tr>
-                            <th>Student</th>
-                            <th>Khmer Name</th>
-                            <th>Gender</th>
-                            <th>Grade Level</th>
-                            <th>Status</th>
-                            <th class="text-end pe-3">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students %}
-                            <tr>
-                                <!-- Core Identity (Avatar + Name + NGO ID) -->
-                                <td class="student-identity-cell border-bottom-md">
-                                    <div class="d-flex align-items-center">
-                                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=60" %}
-                                        <a href="/student/{{ student.id }}" class="text-decoration-none position-relative">
-                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border border-2 shadow-sm" style="width: 55px; height: 55px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=60';">
-                                        </a>
-                                        
-                                        <div class="ms-3 lh-sm text-start">
-                                            <a href="/student/{{ student.id }}" class="text-decoration-none fw-bold text-dark fs-5">
-                                                {{ student.first_name }} {{ student.last_name }}
-                                            </a>
-                                            <!-- NGO ID is tucked cleanly underneath the name -->
-                                            <span class="d-block text-muted small mt-1 fw-bold">
-                                                <i class="bi bi-tag-fill text-secondary me-1"></i>{{ student.ngo_id }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-                                
-                                <!-- Khmer Name -->
-                                <td data-label="Khmer Name" class="khmer-font text-muted fw-semibold border-bottom-md">
-                                    {{ student.khmer_name if student.khmer_name else '-' }}
-                                </td>
-                                
-                                <!-- Gender -->
-                                <td data-label="Gender" class="text-muted border-bottom-md">{{ student.gender }}</td>
-                                
-                                <!-- Grade -->
-                                <td data-label="Grade Level" class="fw-bold text-dark border-bottom-md">{{ student.grade_level }}</td>
-                                
-                                <!-- Status -->
-                                <td data-label="Status" class="border-bottom-md">
-                                    <span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if student.status == 'Active' %}success{% else %}secondary{% endif %} border rounded-pill px-3 py-2">
-                                        {{ student.status }}
-                                    </span>
-                                </td>
-                                
-                                <!-- Action Buttons -->
-                                <td class="action-cell text-end pe-2 pe-md-3 border-bottom-md">
-                                    <div class="btn-group shadow-sm w-100 w-md-auto">
-                                        <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold" title="Add Report">
-                                            <i class="bi bi-journal-plus"></i> <span class="ms-1">Grades</span>
-                                        </a>
-                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-danger fw-bold" title="Add Follow-Up">
-                                            <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1">Notes</span>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="container mt-4 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <!-- Dynamically show if we are in the Archive or Main Roster -->
+            <h2>{{ title if title else 'Student Roster' }}</h2>
+            <div class="d-flex gap-2">
+                <a href="/" class="btn btn-outline-primary shadow-sm fw-bold">
+                    <i class="bi bi-people-fill me-1"></i> Active
+                </a>
+                <a href="/archive" class="btn btn-outline-secondary shadow-sm fw-bold">
+                    <i class="bi bi-archive-fill me-1"></i> Archive
+                </a>
+                <a href="/export_students" class="btn btn-outline-success shadow-sm fw-bold">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Export to Excel
+                </a>
+                <a href="/add_student" class="btn btn-primary shadow-sm fw-bold">
+                    <i class="bi bi-person-plus-fill me-1"></i> Add New Student
+                </a>
             </div>
+        </div>
 
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive p-3">
+                    <table id="rosterTable" class="table table-hover align-middle mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>NGO ID</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Khmer Name</th>
+                                <th>Gender</th>
+                                <th>Grade Level</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Quick Log</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                                <tr>
+                                    <td><strong>{{ student.ngo_id }}</strong></td>
+                                    
+                                    <!-- First Name (with Avatar linked to profile) -->
+                                    <td>
+                                        <a href="/student/{{ student.id }}" class="d-flex align-items-center text-decoration-none text-dark">
+                                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=38" %}
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-2 shadow-sm" style="width: 38px; height: 38px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=38';">
+                                            <span class="fw-bold text-primary">{{ student.first_name }}</span>
+                                        </a>
+                                    </td>
+                                    
+                                    <!-- Last Name -->
+                                    <td><span class="fw-bold">{{ student.last_name }}</span></td>
+                                    
+                                    <!-- Khmer Name (Isolated in its own column) -->
+                                    <td class="khmer-font text-muted fw-semibold">
+                                        {{ student.khmer_name if student.khmer_name else '-' }}
+                                    </td>
+                                    
+                                    <td>{{ student.gender }}</td>
+                                    <td>{{ student.grade_level }}</td>
+                                    <td>
+                                        <span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ student.status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <div class="btn-group shadow-sm">
+                                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold" title="Add Report">
+                                                <i class="bi bi-journal-plus"></i>
+                                            </a>
+                                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold" title="Add Follow-Up">
+                                                <i class="bi bi-clipboard2-heart-fill"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-
-<!-- BEAUTIFUL MOBILE CARDS CSS -->
-<style>
-    /* Desktop table borders */
-    @media (min-width: 768px) {
-        .border-bottom-md {
-            border-bottom: 1px solid #dee2e6;
-        }
-    }
-
-    /* Mobile Transformation */
-    @media (max-width: 767.98px) {
-        /* Hide DataTables Pagination on Mobile to save space */
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_info { display: none !important; }
-        
-        /* Make the search bar massive and sticky on mobile */
-        .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1.5rem; padding: 0 0.5rem; }
-        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; border-radius: 12px; padding: 0.75rem; border: 2px solid #0d6efd; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.1); }
-        
-        /* Force table elements to stack like cards */
-        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td { display: block; width: 100%; }
-        .mobile-cards-table thead { display: none !important; }
-        
-        /* Card Container Styling */
-        .mobile-cards-table tr { 
-            margin-bottom: 1.5rem; 
-            border: 1px solid rgba(0,0,0,0.05); 
-            border-radius: 16px; 
-            background-color: #ffffff; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04); 
-            padding: 1.25rem; 
-        }
-        
-        /* Row Data Styling */
-        .mobile-cards-table td { 
-            border: none !important; 
-            padding: 0.6rem 0 !important; 
-            text-align: right; 
-            border-bottom: 1px dashed #e9ecef !important;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .mobile-cards-table td:last-child { border-bottom: none !important; }
-        
-        /* Generate Left-Side Labels */
-        .mobile-cards-table td::before { 
-            content: attr(data-label); 
-            font-weight: 700; 
-            color: #6c757d; 
-            text-transform: uppercase; 
-            font-size: 0.75rem; 
-            letter-spacing: 0.5px;
-        }
-        
-        /* Special overrides for the Avatar/Name Header */
-        .student-identity-cell { 
-            border-bottom: 2px solid #f8f9fa !important; 
-            padding-bottom: 1rem !important; 
-            margin-bottom: 0.5rem; 
-            display: flex !important;
-            justify-content: flex-start !important;
-        }
-        .student-identity-cell::before { display: none; }
-        
-        /* Special overrides for the Buttons Footer */
-        .action-cell { 
-            display: flex !important; 
-            justify-content: center !important; 
-            padding-top: 1.25rem !important; 
-        }
-        .action-cell::before { display: none; }
-        .action-cell .btn-group { width: 100%; gap: 0.5rem; }
-        .action-cell .btn { border-radius: 10px !important; padding: 0.6rem; font-size: 0.95rem;}
-        
-        /* Remove the outer white card boundary so the inner cards pop against the grey background */
-        .card { border: none !important; background: transparent !important; box-shadow: none !important; }
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}
-<script>
-    $(document).ready(function() {
-        $('#rosterTable').DataTable({
-            "pageLength": 25,
-            "order": [[ 0, "asc" ]], // Sort by the Student Name column (now column 0)
-            "columnDefs": [
-                { "type": "custom-grade", "targets": 3 } // Grade sorting is now on column 3
-            ],
-            "language": {
-                "search": "",
-                "searchPlaceholder": "🔍 Search by Name, Khmer Name, or ID..."
-            }
+<!-- Initialize DataTables for Search & Sort -->
+    <script>
+        $(document).ready(function() {
+            $('#rosterTable').DataTable({
+                "pageLength": 25,
+                "order": [
+                    [1, "asc"] // Automatically sorts by First Name (Column index 1)
+                ], 
+                "columnDefs": [
+                    { "type": "custom-grade", "targets": 5 } // Apply our smart sorting to the 6th column (Grade Level)
+                ],
+                "language": {
+                    "search": "🔍 Search Roster:"
+                }
+            });
         });
-    });
-</script>
+    </script>
 {% endblock %}
