@@ -387,24 +387,26 @@ def index():
     """Smart Homepage that changes based on the user's active program view"""
     program_id = session.get("program_id", 1) 
     
-    # HAT 1: GOVT AFFAIRS & GLOBAL ADMIN
     if program_id == 0:
         staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
         return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
         
-    # HAT 2: EEP MANAGEMENT (The Master Hub)
     elif program_id == 1:
         staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
         username = staff[0]["username"] if staff else "Staff"
 
-        # Smart Feed: Get the 5 most recently added students
+        # For the Mobile Smart Feed
         recent_students = db.execute("""
             SELECT id, first_name, last_name, khmer_name, ngo_id, profile_picture 
             FROM students 
             WHERE status = 'Active' 
             ORDER BY id DESC LIMIT 5
         """)
-        return render_template("index.html", username=username, recent_students=recent_students)
+        
+        # For the PC Side-by-Side Roster
+        all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' ORDER BY first_name")
+        
+        return render_template("index.html", username=username, recent_students=recent_students, students=all_active_students)
 
 @app.route("/roster")
 @login_required
