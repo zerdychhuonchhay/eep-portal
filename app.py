@@ -1435,6 +1435,68 @@ def register():
     return render_template("register.html")
 
 
+@app.route("/manage_staff", methods=["GET", "POST"])
+@login_required
+@admin_required
+def manage_staff():
+    """Enterprise dashboard to add, edit, and reset staff accounts."""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        # ACTION 1: Add a new staff member
+        if action == "add":
+            username = request.form.get("username")
+            password = request.form.get("password")
+            role = request.form.get("role")
+            program_scope = request.form.get("program_scope")
+            
+            if not username or not password or not role or not program_scope:
+                flash("Error: All fields are required to create an account.", "danger")
+                return redirect("/manage_staff")
+                
+            hash_pass = generate_password_hash(password)
+            try:
+                db.execute("INSERT INTO staff (username, hash, role, program_scope) VALUES (?, ?, ?, ?)", 
+                           username, hash_pass, role, program_scope)
+                log_action(f"Registered new staff member: {username} ({role})")
+                flash(f"Account created successfully for {username}!", "success")
+            except ValueError:
+                flash("Error: Username already exists.", "danger")
+                
+        # ACTION 2: Edit permissions
+        elif action == "edit":
+            staff_id = request.form.get("staff_id")
+            new_role = request.form.get("role")
+            new_scope = request.form.get("program_scope")
+            
+            # Prevent the PM from accidentally locking themselves out!
+            if int(staff_id) == session["user_id"] and new_role != "Admin":
+                flash("Security Warning: You cannot remove your own Admin privileges.", "warning")
+            else:
+                db.execute("UPDATE staff SET role = ?, program_scope = ? WHERE id = ?", new_role, new_scope, staff_id)
+                log_action(f"Updated permissions for Staff ID {staff_id} to {new_role}/{new_scope}")
+                flash("Staff permissions updated successfully.", "success")
+                
+        # ACTION 3: Reset Password
+        elif action == "reset_password":
+            staff_id = request.form.get("staff_id")
+            # Force reset the password to '123456'
+            new_hash = generate_password_hash("123456")
+            db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, staff_id)
+            
+            # Get username for the log
+            staff_name = db.execute("SELECT username FROM staff WHERE id = ?", staff_id)[0]['username']
+            log_action(f"Forced password reset for {staff_name}")
+            flash(f"Password for {staff_name} has been reset to '123456'. Tell them to log in and change it immediately.", "info")
+
+        return redirect("/manage_staff")
+
+    else:
+        # GET: Show the dashboard
+        staff_members = db.execute("SELECT id, username, role, program_scope FROM staff ORDER BY role ASC, username ASC")
+        return render_template("manage_staff.html", staff_members=staff_members)
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
