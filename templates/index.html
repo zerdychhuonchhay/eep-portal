@@ -32,78 +32,66 @@
         <div class="card-body p-0">
             
             <div class="table-responsive p-0 p-md-3">
-                <!-- We removed the bulky custom CSS and are relying strictly on Bootstrap! -->
-                <table id="rosterTable" class="table table-hover align-middle mb-0" style="width: 100%;">
-                    <thead class="table-light text-muted small text-uppercase d-none d-md-table-header-group">
+                <table id="rosterTable" class="table table-hover align-middle mb-0 mobile-cards-table" style="width: 100%;">
+                    <thead class="table-light text-muted small text-uppercase">
                         <tr>
-                            <!-- We hide less critical columns on Mobile (d-none d-md-table-cell) -->
-                            <th class="d-none d-md-table-cell">NGO ID</th>
                             <th>Student</th>
-                            <th class="d-none d-md-table-cell">Khmer Name</th>
-                            <th class="d-none d-md-table-cell">Gender</th>
-                            <th class="d-none d-md-table-cell">Grade</th>
-                            <th class="d-none d-md-table-cell">Status</th>
+                            <th>Khmer Name</th>
+                            <th>Gender</th>
+                            <th>Grade Level</th>
+                            <th>Status</th>
                             <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for student in students %}
-                            <!-- Mobile layout has thicker bottom border for easy visual separation -->
-                            <tr class="border-bottom">
-                                <!-- NGO ID (PC Only) -->
-                                <td class="fw-bold text-secondary d-none d-md-table-cell">{{ student.ngo_id }}</td>
-                                
-                                <!-- Core Identity (Avatar + Name) -->
-                                <td class="py-2">
+                            <tr>
+                                <!-- Core Identity (Avatar + Name + NGO ID) -->
+                                <td class="student-identity-cell border-bottom-md">
                                     <div class="d-flex align-items-center">
-                                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=50" %}
-                                        <a href="/student/{{ student.id }}" class="text-decoration-none">
-                                            <!-- Slightly larger Avatar for easier mobile tapping -->
-                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border me-3 shadow-sm" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=50';">
+                                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=60" %}
+                                        <a href="/student/{{ student.id }}" class="text-decoration-none position-relative">
+                                            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border border-2 shadow-sm" style="width: 55px; height: 55px; object-fit: cover;" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=?&background=6c757d&color=fff&size=60';">
                                         </a>
                                         
-                                        <div class="lh-sm">
-                                            <!-- Primary Name -->
-                                            <a href="/student/{{ student.id }}" class="text-decoration-none fw-bold text-dark fs-6">
+                                        <div class="ms-3 lh-sm text-start">
+                                            <a href="/student/{{ student.id }}" class="text-decoration-none fw-bold text-dark fs-5">
                                                 {{ student.first_name }} {{ student.last_name }}
                                             </a>
-                                            
-                                            <!-- MOBILE ONLY STACK: We inject the Khmer name and Grade directly under the English name on phones! -->
-                                            <div class="d-md-none mt-1">
-                                                <span class="khmer-font text-muted small me-2">{{ student.khmer_name if student.khmer_name else '' }}</span>
-                                                <span class="badge bg-light text-dark border" style="font-size: 0.65rem;">{{ student.grade_level }}</span>
-                                            </div>
+                                            <!-- NGO ID is tucked cleanly underneath the name -->
+                                            <span class="d-block text-muted small mt-1 fw-bold">
+                                                <i class="bi bi-tag-fill text-secondary me-1"></i>{{ student.ngo_id }}
+                                            </span>
                                         </div>
                                     </div>
                                 </td>
                                 
-                                <!-- Khmer Name (PC Only) -->
-                                <td class="khmer-font text-muted fw-semibold d-none d-md-table-cell">
+                                <!-- Khmer Name -->
+                                <td data-label="Khmer Name" class="khmer-font text-muted fw-semibold border-bottom-md">
                                     {{ student.khmer_name if student.khmer_name else '-' }}
                                 </td>
                                 
-                                <!-- Gender (PC Only) -->
-                                <td class="text-muted d-none d-md-table-cell">{{ student.gender }}</td>
+                                <!-- Gender -->
+                                <td data-label="Gender" class="text-muted border-bottom-md">{{ student.gender }}</td>
                                 
-                                <!-- Grade (PC Only) -->
-                                <td class="fw-bold text-dark d-none d-md-table-cell">{{ student.grade_level }}</td>
+                                <!-- Grade -->
+                                <td data-label="Grade Level" class="fw-bold text-dark border-bottom-md">{{ student.grade_level }}</td>
                                 
-                                <!-- Status (PC Only) -->
-                                <td class="d-none d-md-table-cell">
+                                <!-- Status -->
+                                <td data-label="Status" class="border-bottom-md">
                                     <span class="badge {% if student.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if student.status == 'Active' %}success{% else %}secondary{% endif %} border rounded-pill px-3 py-2">
                                         {{ student.status }}
                                     </span>
                                 </td>
                                 
-                                <!-- Action Buttons (Both) -->
-                                <td class="text-end pe-2 pe-md-3">
-                                    <!-- Mobile: Small icons side-by-side. PC: Larger buttons -->
-                                    <div class="btn-group shadow-sm">
-                                        <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-outline-success fw-bold" title="Add Report">
-                                            <i class="bi bi-journal-plus"></i> <span class="d-none d-lg-inline ms-1">Grades</span>
+                                <!-- Action Buttons -->
+                                <td class="action-cell text-end pe-2 pe-md-3 border-bottom-md">
+                                    <div class="btn-group shadow-sm w-100 w-md-auto">
+                                        <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold" title="Add Report">
+                                            <i class="bi bi-journal-plus"></i> <span class="ms-1">Grades</span>
                                         </a>
-                                        <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-outline-danger fw-bold" title="Add Follow-Up">
-                                            <i class="bi bi-clipboard2-heart-fill"></i> <span class="d-none d-lg-inline ms-1">Notes</span>
+                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-danger fw-bold" title="Add Follow-Up">
+                                            <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1">Notes</span>
                                         </a>
                                     </div>
                                 </td>
@@ -117,41 +105,83 @@
     </div>
 </div>
 
-<!-- Mobile UI Tweaks for the Search Bar -->
+<!-- BEAUTIFUL MOBILE CARDS CSS -->
 <style>
+    /* Desktop table borders */
+    @media (min-width: 768px) {
+        .border-bottom-md {
+            border-bottom: 1px solid #dee2e6;
+        }
+    }
+
+    /* Mobile Transformation */
     @media (max-width: 767.98px) {
         /* Hide DataTables Pagination on Mobile to save space */
         .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_info {
-            display: none !important;
-        }
+        .dataTables_wrapper .dataTables_info { display: none !important; }
         
         /* Make the search bar massive and sticky on mobile */
-        .dataTables_wrapper .dataTables_filter {
-            text-align: left;
-            margin-bottom: 1rem;
-            padding: 0 1rem;
-        }
-        .dataTables_wrapper .dataTables_filter label {
-            width: 100%;
-            font-weight: bold;
-            color: #495057;
-        }
-        .dataTables_wrapper .dataTables_filter input {
-            width: 100%;
-            margin-left: 0;
-            margin-top: 0.5rem;
-            border-radius: 8px;
-            padding: 0.75rem;
-            border: 2px solid #0d6efd; /* Highlighted search bar */
-            font-size: 1rem;
+        .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1.5rem; padding: 0 0.5rem; }
+        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; border-radius: 12px; padding: 0.75rem; border: 2px solid #0d6efd; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.1); }
+        
+        /* Force table elements to stack like cards */
+        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td { display: block; width: 100%; }
+        .mobile-cards-table thead { display: none !important; }
+        
+        /* Card Container Styling */
+        .mobile-cards-table tr { 
+            margin-bottom: 1.5rem; 
+            border: 1px solid rgba(0,0,0,0.05); 
+            border-radius: 16px; 
+            background-color: #ffffff; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04); 
+            padding: 1.25rem; 
         }
         
-        /* Remove card borders to maximize screen real estate on phones */
-        .card {
-            border-radius: 0 !important;
-            box-shadow: none !important;
+        /* Row Data Styling */
+        .mobile-cards-table td { 
+            border: none !important; 
+            padding: 0.6rem 0 !important; 
+            text-align: right; 
+            border-bottom: 1px dashed #e9ecef !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        .mobile-cards-table td:last-child { border-bottom: none !important; }
+        
+        /* Generate Left-Side Labels */
+        .mobile-cards-table td::before { 
+            content: attr(data-label); 
+            font-weight: 700; 
+            color: #6c757d; 
+            text-transform: uppercase; 
+            font-size: 0.75rem; 
+            letter-spacing: 0.5px;
+        }
+        
+        /* Special overrides for the Avatar/Name Header */
+        .student-identity-cell { 
+            border-bottom: 2px solid #f8f9fa !important; 
+            padding-bottom: 1rem !important; 
+            margin-bottom: 0.5rem; 
+            display: flex !important;
+            justify-content: flex-start !important;
+        }
+        .student-identity-cell::before { display: none; }
+        
+        /* Special overrides for the Buttons Footer */
+        .action-cell { 
+            display: flex !important; 
+            justify-content: center !important; 
+            padding-top: 1.25rem !important; 
+        }
+        .action-cell::before { display: none; }
+        .action-cell .btn-group { width: 100%; gap: 0.5rem; }
+        .action-cell .btn { border-radius: 10px !important; padding: 0.6rem; font-size: 0.95rem;}
+        
+        /* Remove the outer white card boundary so the inner cards pop against the grey background */
+        .card { border: none !important; background: transparent !important; box-shadow: none !important; }
     }
 </style>
 {% endblock %}
@@ -161,9 +191,9 @@
     $(document).ready(function() {
         $('#rosterTable').DataTable({
             "pageLength": 25,
-            "order": [[ 1, "asc" ]], // Sort by the Student Name column
+            "order": [[ 0, "asc" ]], // Sort by the Student Name column (now column 0)
             "columnDefs": [
-                { "type": "custom-grade", "targets": 4 } // Grade sorting still works even when hidden!
+                { "type": "custom-grade", "targets": 3 } // Grade sorting is now on column 3
             ],
             "language": {
                 "search": "",
