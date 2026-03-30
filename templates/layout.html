@@ -246,6 +246,22 @@
             }
         </style>
 
+        <!-- PWA / Mobile App Links -->
+        <link rel="manifest" href="/static/manifest.json">
+        <meta name="theme-color" content="#212529">
+        <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3281/3281307.png">
+        
+        <!-- Service Worker Registration -->
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/static/sw.js')
+                        .then(reg => console.log('Service Worker Registered!', reg))
+                        .catch(err => console.log('Service Worker Failed!', err));
+                });
+            }
+        </script>
+
         <!-- Optional: Block for page-specific scripts -->
         {% block scripts %}{% endblock %}
     </body>

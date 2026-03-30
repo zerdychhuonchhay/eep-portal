@@ -1,0 +1,17 @@
+{
+  "name": "EEP Portal",
+  "short_name": "EEP Portal",
+  "description": "Extreme Love Ministries Field Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#212529",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3281/3281307.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
