@@ -27,15 +27,15 @@
                 </a>
             </div>
 
-            <!-- ZONE 2: Quick Action Grid (2x2) -->
+            <!-- ZONE 2: Quick Action Grid (Now 4 Dedicated Tools) -->
             <h6 class="fw-bold text-secondary text-uppercase small mb-3 text-start">Quick Actions</h6>
             <div class="row g-3 mb-4">
-                <div class="col-6 d-lg-none">
-                    <a href="/roster" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10 transition-hover">
-                            <div class="card-body text-center p-3">
-                                <i class="bi bi-people-fill text-primary mb-2 d-block fs-2"></i>
-                                <h6 class="fw-bold text-dark mb-0 small">Full Roster</h6>
+                <div class="col-6 col-lg-12">
+                    <a href="/add_student" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-success bg-opacity-10 transition-hover">
+                            <div class="card-body text-center p-3 d-lg-flex align-items-center justify-content-center gap-3">
+                                <i class="bi bi-person-plus-fill text-success mb-2 mb-lg-0 d-block fs-2"></i>
+                                <h6 class="fw-bold text-dark mb-0 small">Add Student</h6>
                             </div>
                         </div>
                     </a>
@@ -60,21 +60,22 @@
                         </div>
                     </a>
                 </div>
+                <!-- NEW: Dedicated Archive Button -->
                 <div class="col-6 col-lg-12">
-                    <a href="/add_student" class="text-decoration-none">
-                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-success bg-opacity-10 transition-hover">
+                    <a href="/archive" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 bg-secondary bg-opacity-10 transition-hover">
                             <div class="card-body text-center p-3 d-lg-flex align-items-center justify-content-center gap-3">
-                                <i class="bi bi-person-plus-fill text-success mb-2 mb-lg-0 d-block fs-2"></i>
-                                <h6 class="fw-bold text-dark mb-0 small">Add Student</h6>
+                                <i class="bi bi-archive-fill text-secondary mb-2 mb-lg-0 d-block fs-2"></i>
+                                <h6 class="fw-bold text-dark mb-0 small">View Archive</h6>
                             </div>
                         </div>
                     </a>
                 </div>
             </div>
 
-            <!-- ZONE 3: The Smart Feed (Recent Students) -->
+            <!-- ZONE 3: The Smart Feed (Recently Updated) -->
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold text-secondary text-uppercase small mb-0">Recently Added</h6>
+                <h6 class="fw-bold text-secondary text-uppercase small mb-0">Recently Updated</h6>
                 <a href="/roster" class="small text-decoration-none fw-bold text-primary d-lg-none">View All</a>
             </div>
             
@@ -94,7 +95,7 @@
                     {% else %}
                     <div class="p-4 text-center text-muted">
                         <i class="bi bi-person-x fs-2 d-block mb-2"></i>
-                        <small>No students added yet.</small>
+                        <small>No students updated yet.</small>
                     </div>
                     {% endfor %}
                 </div>
@@ -106,9 +107,9 @@
         <!-- ========================================== -->
         <div class="col-lg-8 col-xl-9 d-none d-lg-block text-start">
             <div class="card shadow-sm border-0 rounded-4 h-100">
+                <!-- Archive button removed from this header! -->
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Active EEP Roster</h5>
-                    <a href="/archive" class="btn btn-sm btn-outline-secondary fw-bold shadow-sm">View Archive</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive p-4">

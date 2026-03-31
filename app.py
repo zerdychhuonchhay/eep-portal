@@ -45,20 +45,6 @@ def allowed_file(filename):
 db = SQL("sqlite:///eep.db")
 
 # ==============================================================================
-# GLOBAL NOTIFICATION ENGINE
-# ==============================================================================
-@app.context_processor
-def inject_pending_staff():
-    """Globally injects the count of pending staff into all HTML templates"""
-    if session.get("role") in ["Admin", "Director"]:
-        try:
-            count = db.execute("SELECT COUNT(*) as count FROM staff WHERE role = 'Pending'")[0]['count']
-            return dict(pending_staff_count=count)
-        except Exception:
-            return dict(pending_staff_count=0)
-    return dict(pending_staff_count=0)
-
-# ==============================================================================
 # THE SPY: AUDIT LOG HELPER (Records actions silently)
 # ==============================================================================
 def log_action(description):
@@ -98,6 +84,19 @@ def log_action(description):
             db.execute("INSERT INTO audit_logs (staff_id, action, timestamp) VALUES (?, ?, datetime('now', 'localtime'))", 
                        session["user_id"], description)
 
+# ==============================================================================
+# GLOBAL NOTIFICATION ENGINE
+# ==============================================================================
+@app.context_processor
+def inject_pending_staff():
+    """Globally injects the count of pending staff into all HTML templates"""
+    if session.get("role") in ["Admin", "Director"]:
+        try:
+            count = db.execute("SELECT COUNT(*) as count FROM staff WHERE role = 'Pending'")[0]['count']
+            return dict(pending_staff_count=count)
+        except Exception:
+            return dict(pending_staff_count=0)
+    return dict(pending_staff_count=0)
 
 # ==============================================================================
 # NEIGHBORHOOD: DASHBOARD & STATS (Dashboard route, Impact logic, Activity logging)
@@ -143,25 +142,16 @@ def dashboard():
             "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
 
         # 3. Stats: Services (Filtered by Time)
-        # SMART LUNCH CALCULATION (Exception-Based)
-
-        # A. How many kids are currently assigned to get Hot Lunch?
         lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND meal_plan = 'Daily Hot Lunch'")[0]['count']
-
-        # B. How many "Workdays" roughly happened in this timeframe? (Assuming ~22 school days a month)
         estimated_workdays = months * 22
-
-        # C. What is the maximum possible meals we could have served?
         max_possible_meals = lunch_kids_count * estimated_workdays
 
-        # D. How many times did someone specific miss a meal in this timeframe?
         missed_meals = db.execute("""
             SELECT COUNT(*) as total FROM student_services
             WHERE service_type = 'Missed Hot Lunch'
             AND service_date >= date('now', ?)
         """, f'-{months} month')[0]['total'] or 0
 
-        # E. How many holiday skips happened? (1 holiday logged = missed meal for EVERY lunch kid)
         holidays_logged = db.execute("""
             SELECT COUNT(*) as total FROM student_services
             WHERE service_type = 'Holiday - No Meals'
@@ -169,12 +159,8 @@ def dashboard():
         """, f'-{months} month')[0]['total'] or 0
         holiday_missed_meals = holidays_logged * lunch_kids_count
 
-        # F. The Final Math!
         calculated_meals = max_possible_meals - missed_meals - holiday_missed_meals
-
-        # Ensure it doesn't go below 0 just in case
         meals = max(0, calculated_meals)
-
 
         parent_meetings = db.execute("""
             SELECT COUNT(*) as total FROM activities
@@ -200,7 +186,7 @@ def dashboard():
         graduates = db.execute(
             "SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
 
-        # 6. Priority Alerts (BUGFIXED)
+        # 6. Priority Alerts
         academic_alerts = db.execute("""
             SELECT s.first_name, s.last_name, s.id, r.overall_average, r.academic_year, r.month
             FROM students s JOIN monthly_reports r ON s.id = r.student_id
@@ -227,7 +213,6 @@ def dashboard():
         elif current_month <= 9: current_quarter = 'Q3'
         else: current_quarter = 'Q4'
 
-        # Fetch ALL checkboxes using MAX() and group by student so we don't get duplicates
         missing_letters_raw = db.execute("""
             SELECT s.id, s.first_name, s.last_name,
                    MAX(f.letter_given) as given,
@@ -243,7 +228,6 @@ def dashboard():
             ORDER BY s.first_name ASC
         """, current_quarter, current_year)
 
-        # Apply the "Smart" Status Logic
         missing_letters = []
         for student in missing_letters_raw:
             if student['scanned'] == 'Yes':
@@ -258,10 +242,9 @@ def dashboard():
             else:
                 student['status_badge'] = "Not Started"
                 student['status_color'] = "danger"
-
             missing_letters.append(student)
 
-        # 8. NEW: Audit Log Feed (Only for Admins)
+        # 8. Audit Log Feed (Only for Admins)
         recent_activity = []
         if session.get("role") in ["Admin", "System PM", "Director"]:
             try:
@@ -342,7 +325,6 @@ def log_services():
         flash(f"Successfully logged '{service_type}' for {len(student_ids)} students on {service_date}!", "success")
         return redirect("/dashboard")
 
-    # For the GET request, grab all active kids AND their grade/meal plan to power the Smart Filter
     students = db.execute("""
         SELECT id, first_name, last_name, khmer_name, grade_level, meal_plan
         FROM students
@@ -406,13 +388,11 @@ def field_calendar():
     """Renders the main Calendar UI"""
     program_id = session.get("program_id", 1)
     
-    # SCOPING FIX: Only show students in the dropdown who belong to the active program!
     if program_id == 0:
         students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name ASC")
     else:
         students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND program_id = ? ORDER BY first_name ASC", program_id)
     
-    # HYBRID FIX: The sidebar now ONLY shows YOUR personal pending tasks!
     pending_tasks = db.execute("""
         SELECT t.*, s.first_name, s.last_name, st.username as creator_name
         FROM tasks t 
@@ -433,14 +413,12 @@ def api_tasks():
     
     if view_mode == "team":
         if program_id == 0:
-            # Global Admins see the entire NGO's tasks combined
             tasks = db.execute("""
                 SELECT t.*, st.username as creator_name 
                 FROM tasks t 
                 LEFT JOIN staff st ON t.staff_id = st.id
             """)
         else:
-            # Show everyone's tasks, but ONLY for the specific program we are viewing
             tasks = db.execute("""
                 SELECT t.*, st.username as creator_name 
                 FROM tasks t 
@@ -448,7 +426,6 @@ def api_tasks():
                 WHERE t.program_id = ?
             """, program_id)
     else:
-        # Show ONLY tasks created by the logged-in user
         tasks = db.execute("""
             SELECT t.*, st.username as creator_name 
             FROM tasks t 
@@ -524,7 +501,6 @@ def complete_task(task_id):
 @login_required
 def delete_task(task_id):
     """Deletes a task from the calendar"""
-    # Security: ensure user owns the task or is an admin
     task = db.execute("SELECT staff_id, title FROM tasks WHERE id = ?", task_id)
     if not task:
         flash("Task not found.", "danger")
@@ -559,7 +535,6 @@ def academics():
         ORDER BY r.id DESC
     """)
 
-    # UPGRADED: We use LEFT JOIN and COALESCE so it fetches both standard subjects AND wildcard custom subjects!
     all_grades = db.execute("""
         SELECT g.report_id, COALESCE(s.name, g.custom_subject_name) as subject_name, g.score, g.max_score
         FROM grades g
@@ -664,13 +639,12 @@ def add_report(student_id):
                 except ValueError:
                     pass
 
-        # NEW: The Wildcard Row Logic
+        # Wildcard Row Logic
         custom_name = request.form.get("custom_subject_name")
         custom_score = request.form.get("custom_score")
         custom_max = request.form.get("custom_max_score")
 
         if custom_score:
-            # We use subject_id = 0 for the custom wildcard subject!
             db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
                        report_id, custom_score, custom_max, custom_name)
             try:
@@ -906,6 +880,11 @@ def index():
     """Smart Homepage that changes based on the user's active program view"""
     program_id = session.get("program_id", 1) 
     
+    try:
+        db.execute("ALTER TABLE students ADD COLUMN updated_at DATETIME")
+    except Exception:
+        pass
+
     if program_id == 0:
         staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
         return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
@@ -914,13 +893,13 @@ def index():
         staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
         username = staff[0]["username"] if staff else "Staff"
 
-        # Smart Feed: Get the 5 most recently added students
         recent_students = db.execute("""
             SELECT id, first_name, last_name, khmer_name, ngo_id, profile_picture 
             FROM students 
             WHERE status = 'Active' 
-            ORDER BY id DESC LIMIT 5
+            ORDER BY COALESCE(updated_at, joined_date, id) DESC LIMIT 5
         """)
+        
         all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' ORDER BY first_name")
         return render_template("index.html", username=username, recent_students=recent_students, students=all_active_students)
 
@@ -979,14 +958,12 @@ def add_student():
         try:
             db.execute("""
                 INSERT INTO students
-                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
             """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name)
             
-            # Fetch the ID of the student we just inserted to save their profile picture
             student_id = db.execute("SELECT id FROM students WHERE ngo_id = ?", ngo_id)[0]['id']
             
-            # Handle Profile Picture Upload
             file = request.files.get('profile_picture')
             if file and file.filename != '' and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
@@ -1051,7 +1028,8 @@ def edit_student(id):
                 SET ngo_id = ?, first_name = ?, last_name = ?, khmer_name = ?, gender = ?, 
                     dob = ?, joined_date = ?, guardian_name = ?, phone_number = ?, 
                     slum_area = ?, current_school = ?, grade_level = ?, meal_plan = ?, 
-                    comment = ?, status = ?, household_id = ?, caregiver_relationship = ?, mother_name = ?, father_name = ?
+                    comment = ?, status = ?, household_id = ?, caregiver_relationship = ?, 
+                    mother_name = ?, father_name = ?, updated_at = datetime('now', 'localtime')
                 WHERE id = ?
             """, ngo_id, first_name, last_name, khmer_name, gender, dob, joined_date, 
                  guardian_name, phone, slum, current_school, grade, 
@@ -1644,7 +1622,6 @@ def manage_staff():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Public registration: Users create account, but stay 'Pending' until Admin approves"""
-    # If they are already logged in, they don't need this page
     if session.get("user_id"):
         return redirect("/")
 
@@ -1659,7 +1636,6 @@ def register():
 
         hash_pass = generate_password_hash(password)
         try:
-            # 🚨 THE FIX: They are hardcoded to 'Pending' and 'None' so they can't see any data yet!
             db.execute("INSERT INTO staff (username, hash, role, program_scope) VALUES (?, ?, 'Pending', 'None')", 
                        username, hash_pass)
             
@@ -1691,12 +1667,10 @@ def login():
             flash("Error: Invalid username and/or password", "danger")
             return redirect("/login")
             
-        # 🚨 THE BOUNCER FIX: Reject them if they are still 'Pending'
         if rows[0]["role"] == "Pending":
             flash("Your account is currently pending. Please ask your Administrator to approve your access.", "warning")
             return redirect("/login")
 
-        # Standard Login Success
         session["user_id"] = rows[0]["id"]
         session["role"] = rows[0]["role"]
         
@@ -1720,6 +1694,7 @@ def login():
         return redirect("/")
 
     return render_template("login.html")
+
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():
