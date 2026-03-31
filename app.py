@@ -45,6 +45,20 @@ def allowed_file(filename):
 db = SQL("sqlite:///eep.db")
 
 # ==============================================================================
+# GLOBAL NOTIFICATION ENGINE
+# ==============================================================================
+@app.context_processor
+def inject_pending_staff():
+    """Globally injects the count of pending staff into all HTML templates"""
+    if session.get("role") in ["Admin", "Director"]:
+        try:
+            count = db.execute("SELECT COUNT(*) as count FROM staff WHERE role = 'Pending'")[0]['count']
+            return dict(pending_staff_count=count)
+        except Exception:
+            return dict(pending_staff_count=0)
+    return dict(pending_staff_count=0)
+
+# ==============================================================================
 # THE SPY: AUDIT LOG HELPER (Records actions silently)
 # ==============================================================================
 def log_action(description):
@@ -1627,6 +1641,37 @@ def manage_staff():
         staff_members = db.execute("SELECT id, username, role, program_scope FROM staff ORDER BY role ASC, username ASC")
         return render_template("manage_staff.html", staff_members=staff_members)
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    """Public registration: Users create account, but stay 'Pending' until Admin approves"""
+    # If they are already logged in, they don't need this page
+    if session.get("user_id"):
+        return redirect("/")
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        confirmation = request.form.get("confirmation")
+
+        if not username or not password or password != confirmation:
+            flash("Invalid input or passwords do not match.", "danger")
+            return redirect("/register")
+
+        hash_pass = generate_password_hash(password)
+        try:
+            # 🚨 THE FIX: They are hardcoded to 'Pending' and 'None' so they can't see any data yet!
+            db.execute("INSERT INTO staff (username, hash, role, program_scope) VALUES (?, ?, 'Pending', 'None')", 
+                       username, hash_pass)
+            
+            log_action(f"New public account request submitted: {username}")
+            flash("Account requested! Please wait for an Administrator to approve your access.", "success")
+            return redirect("/login")
+        except ValueError:
+            flash("That username already exists.", "danger")
+            return redirect("/register")
+    else:
+        return render_template("register.html")
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Log user in"""
@@ -1645,13 +1690,17 @@ def login():
         if len(rows) != 1 or not check_password_hash(rows[0]["hash"], password):
             flash("Error: Invalid username and/or password", "danger")
             return redirect("/login")
+            
+        # 🚨 THE BOUNCER FIX: Reject them if they are still 'Pending'
+        if rows[0]["role"] == "Pending":
+            flash("Your account is currently pending. Please ask your Administrator to approve your access.", "warning")
+            return redirect("/login")
 
+        # Standard Login Success
         session["user_id"] = rows[0]["id"]
         session["role"] = rows[0]["role"]
         
-        # Handle the custom Context Switcher fallback
-        program_id = rows[0].get("program_id", 1) # Default to EEP (1) if no program_id
-        
+        program_id = rows[0].get("program_id", 1) 
         try:
             program_info = db.execute("SELECT name, icon FROM programs WHERE id = ?", program_id)
             if program_info:
@@ -1663,7 +1712,6 @@ def login():
                 session["program_name"] = "Central Administration"
                 session["program_icon"] = "bi-buildings-fill"
         except Exception:
-            # Fallback if the programs table isn't fully set up yet
             session["program_id"] = 1
             session["program_name"] = "EEP Program"
             session["program_icon"] = "bi-book-fill"
@@ -1672,7 +1720,6 @@ def login():
         return redirect("/")
 
     return render_template("login.html")
-
 @app.route("/change_password", methods=["GET", "POST"])
 @login_required
 def change_password():

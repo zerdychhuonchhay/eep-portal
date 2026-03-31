@@ -5,17 +5,27 @@
         <meta charset="utf-8">
         <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
 
+        <!-- Bootstrap 5 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+
+        <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+        <!-- DataTables Bootstrap 5 CSS -->
         <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+        
+        <!-- DataTables Responsive CSS -->
         <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
 
+        <!-- FullCalendar.js Core Integration (Required for the Calendar to render!) -->
         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
+        <!-- PWA / Mobile App Links -->
         <link rel="manifest" href="/static/manifest.json">
         <meta name="theme-color" content="#212529">
         <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3281/3281307.png">
 
+        <!-- Global Dual-Font Application & UI Tweaks -->
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kantumruy+Pro:wght@400;600;700&display=swap');
 
@@ -48,6 +58,7 @@
                🚀 SIDEBAR & TOP NAVBAR STYLING
                ================================================================= */
             
+            /* Sidebar Links (Unified for PC and Mobile) */
             .app-drawer-link {
                 display: flex; 
                 align-items: center; 
@@ -70,6 +81,7 @@
                 background-color: rgba(13, 110, 253, 0.15) !important; color: #fff !important;
             }
 
+            /* Top Bar Quick Links (PC Only) */
             .top-nav-link {
                 color: rgba(255, 255, 255, 0.75) !important;
                 border-radius: 8px;
@@ -117,13 +129,20 @@
 
     <body class="bg-light">
         
+        <!-- =========================================================
+             1. THE TOP NAVBAR (Clean Top Action Bar)
+             ========================================================= -->
         <nav class="navbar navbar-expand navbar-dark bg-dark mb-4 shadow-sm sticky-top border-bottom border-primary border-opacity-25">
             <div class="container-fluid px-lg-4 d-flex justify-content-between align-items-center">
                 
+                <!-- Left Side: Sidebar Toggle & Brand -->
                 <div class="d-flex align-items-center">
+                    <!-- FIXED: Menu Button Only Visible if Logged In -->
+                    {% if session.get("user_id") %}
                     <button class="btn btn-dark border-0 shadow-none me-2 d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#appOffcanvasMenu" aria-controls="appOffcanvasMenu">
                         <i class="bi bi-list fs-4"></i>
                     </button>
+                    {% endif %}
                     
                     <a class="navbar-brand fw-bold d-flex align-items-center flex-shrink-0" href="/">
                         <div class="bg-primary bg-opacity-25 rounded p-1 me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -133,31 +152,85 @@
                     </a>
                 </div>
 
+                <!-- Right Side: Important Top Links -->
                 {% if session.get("user_id") %}
                 <ul class="navbar-nav ms-auto align-items-center flex-row gap-1 gap-lg-2">
                     
+                    <!-- Quick Hub, Roster & Calendar (Hidden on Mobile) -->
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-link top-nav-link {% if request.path == '/' %}active{% endif %}" href="/">
                             <i class="bi bi-house-door-fill me-1"></i> Hub
                         </a>
                     </li>
-
-                    <!-- EEP ONLY: Roster -->
-                    {% if session.get("program_id", 1) == 1 %}
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-link top-nav-link {% if request.path == '/roster' %}active{% endif %}" href="/roster">
                             <i class="bi bi-people-fill me-1"></i> Roster
                         </a>
                     </li>
-                    {% endif %}
-
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-link top-nav-link {% if request.path == '/calendar' %}active{% endif %}" href="/calendar">
                             <i class="bi bi-calendar-check-fill me-1" style="color: #6f42c1;"></i> Calendar
                         </a>
                     </li>
 
+                    <!-- ADMIN/DIRECTOR SWITCHER & NOTIFICATIONS -->
                     {% if session.get("role") in ["Admin", "Director"] %}
+                    
+                    <!-- FACEBOOK-STYLE ADMIN NOTIFICATION DROPDOWN -->
+                    <li class="nav-item dropdown me-1 d-none d-lg-block">
+                        <a class="nav-link top-nav-link text-warning position-relative d-flex align-items-center" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Pending Approvals & Alerts">
+                            <i class="bi bi-bell-fill fs-5"></i>
+                            
+                            <!-- DYNAMIC: Only show the red dot if there are pending staff -->
+                            {% if pending_staff_count and pending_staff_count > 0 %}
+                            <span class="position-absolute top-25 start-75 translate-middle p-1 bg-danger border border-dark rounded-circle" style="margin-top: -2px;">
+                                <span class="visually-hidden">New alerts</span>
+                            </span>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg border-0 position-absolute p-0" aria-labelledby="alertsDropdown" style="width: 320px; border-radius: 12px; overflow: hidden; margin-top: 10px;">
+                            <!-- Dropdown Header -->
+                            <li class="p-3 border-bottom border-secondary border-opacity-50 d-flex justify-content-between align-items-center bg-dark">
+                                <h6 class="mb-0 text-white fw-bold">Notifications</h6>
+                                {% if pending_staff_count and pending_staff_count > 0 %}
+                                    <span class="badge bg-danger rounded-pill">{{ pending_staff_count }} New</span>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill">0 New</span>
+                                {% endif %}
+                            </li>
+                            
+                            <!-- DYNAMIC: Alert Item: Pending Staff -->
+                            {% if pending_staff_count and pending_staff_count > 0 %}
+                            <li>
+                                <a class="dropdown-item py-3 px-3 border-bottom border-secondary border-opacity-50 d-flex align-items-start text-wrap" href="/manage_staff">
+                                    <div class="bg-info bg-opacity-25 text-info rounded-circle d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-fill-lock fs-5"></i>
+                                    </div>
+                                    <div>
+                                        <span class="d-block fw-bold text-light mb-1" style="font-size: 0.9rem;">Pending Staff Requests</span>
+                                        <span class="d-block text-muted small lh-sm mb-2">{{ pending_staff_count }} staff member(s) waiting for account approval.</span>
+                                        <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50">Review Access</span>
+                                    </div>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li>
+                                <div class="py-4 px-3 text-center text-muted">
+                                    <i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>
+                                    <span class="small fw-bold text-light">You're all caught up!</span><br>
+                                    <span class="small">No pending requests.</span>
+                                </div>
+                            </li>
+                            {% endif %}
+                            
+                            <!-- View All Footer -->
+                            <li class="bg-dark text-center p-2">
+                                <a href="/manage_staff" class="small text-decoration-none text-info fw-bold">Open Security Manager</a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Context Switcher -->
                     <li class="nav-item dropdown ms-2">
                         <a class="nav-link dropdown-toggle btn btn-dark border-secondary px-2 px-lg-3 text-start d-flex align-items-center" href="#" id="contextDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi {{ session.get('program_icon', 'bi-book-fill') }} me-1 text-info"></i>
@@ -171,6 +244,7 @@
                     </li>
                     {% endif %}
 
+                    <!-- Logout Button -->
                     <li class="nav-item ms-2">
                         <a class="nav-link text-danger fw-bold d-flex align-items-center" href="/logout" title="Logout">
                             <i class="bi bi-box-arrow-right fs-4 fs-lg-5"></i>
@@ -179,6 +253,7 @@
                     </li>
                 </ul>
                 {% else %}
+                <!-- Logged Out Links -->
                 <ul class="navbar-nav ms-auto align-items-center flex-row">
                     <li class="nav-item">
                         <a class="nav-link fw-bold text-white" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Log In</a>
@@ -188,8 +263,14 @@
             </div>
         </nav>
 
+        <!-- =========================================================
+             2. THE UNIVERSAL SIDEBAR (Offcanvas Drawer)
+             ========================================================= -->
+        <!-- FIXED: Sidebar wrapper entirely hidden if not logged in -->
+        {% if session.get("user_id") %}
         <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="appOffcanvasMenu" aria-labelledby="appOffcanvasMenuLabel">
             
+            <!-- Drawer Header (Always Visible) -->
             <div class="offcanvas-header border-bottom border-secondary border-opacity-50 pb-3 mt-2">
                 <h5 class="offcanvas-title fw-bold d-flex align-items-center" id="appOffcanvasMenuLabel">
                     <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm" style="width: 45px; height: 45px;">
@@ -197,82 +278,87 @@
                     </div>
                     <div>
                         <span class="d-block fs-5 text-white">Main Menu</span>
-                        {% if session.get("user_id") %}
-                            <span class="badge bg-success bg-opacity-25 text-success fw-bold border border-success" style="font-size: 0.65rem;"><i class="bi bi-shield-check me-1"></i>Secure</span>
-                        {% endif %}
+                        <span class="badge bg-success bg-opacity-25 text-success fw-bold border border-success" style="font-size: 0.65rem;"><i class="bi bi-shield-check me-1"></i>Secure</span>
                     </div>
                 </h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             
+            <!-- Drawer Links -->
             <div class="offcanvas-body d-flex flex-column">
-                {% if session.get("user_id") %}
+                <!-- Vertical Links List -->
+                <ul class="navbar-nav flex-column w-100 mb-auto gap-1">
                     
-                    <ul class="navbar-nav flex-column w-100 mb-auto gap-1">
-                        
-                        <li class="nav-item mb-2 mt-2"><span class="text-muted small fw-bold text-uppercase px-3">Navigation</span></li>
+                    <li class="nav-item mb-2 mt-2"><span class="text-muted small fw-bold text-uppercase px-3">Navigation</span></li>
 
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/dashboard' %}active{% endif %}" href="/dashboard">
-                                <i class="bi bi-bar-chart-fill text-warning"></i> <span>Dashboard</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/' %}active{% endif %}" href="/">
-                                <i class="bi bi-house-door-fill text-light"></i> <span>Field Hub</span>
-                            </a>
-                        </li>
-                        
-                        <!-- EEP ONLY: Roster, Nutrition, Add Student, Settings -->
-                        {% if session.get("program_id", 1) == 1 %}
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/roster' %}active{% endif %}" href="/roster">
-                                <i class="bi bi-people-fill text-info"></i> <span>Roster</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/log_services' %}active{% endif %}" href="/log_services">
-                                <i class="bi bi-basket2-fill text-success"></i> <span>Log Nutrition</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/add_student' %}active{% endif %}" href="/add_student">
-                                <i class="bi bi-person-plus-fill text-primary"></i> <span>Add Student</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/settings' %}active{% endif %}" href="/settings">
-                                <i class="bi bi-gear-fill text-secondary"></i> <span>Settings</span>
-                            </a>
-                        </li>
-                        {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/dashboard' %}active{% endif %}" href="/dashboard">
+                            <i class="bi bi-bar-chart-fill text-warning"></i> <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/' %}active{% endif %}" href="/">
+                            <i class="bi bi-house-door-fill text-light"></i> <span>Field Hub</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/roster' %}active{% endif %}" href="/roster">
+                            <i class="bi bi-people-fill text-info"></i> <span>Roster</span>
+                        </a>
+                    </li>
+                    
+                    <!-- CALENDAR SIDEBAR LINK -->
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/calendar' %}active{% endif %}" href="/calendar">
+                            <i class="bi bi-calendar-check-fill" style="color: #6f42c1;"></i> <span>Calendar & Tasks</span>
+                        </a>
+                    </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link {% if request.path == '/calendar' %}active{% endif %}" href="/calendar">
-                                <i class="bi bi-calendar-check-fill" style="color: #6f42c1;"></i> <span>Calendar & Tasks</span>
-                            </a>
-                        </li>
-                        
-                        <li class="nav-item mb-2 mt-4"><span class="text-muted small fw-bold text-uppercase px-3">System & Security</span></li>
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/log_services' %}active{% endif %}" href="/log_services">
+                            <i class="bi bi-basket2-fill text-success"></i> <span>Log Nutrition</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/add_student' %}active{% endif %}" href="/add_student">
+                            <i class="bi bi-person-plus-fill text-primary"></i> <span>Add Student</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link {% if request.path == '/settings' %}active{% endif %}" href="/settings">
+                            <i class="bi bi-gear-fill text-secondary"></i> <span>Settings</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item mb-2 mt-4"><span class="text-muted small fw-bold text-uppercase px-3">System & Security</span></li>
 
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link" href="/guide" style="color: #ffc107 !important;">
-                                <i class="bi bi-bug-fill text-warning"></i> <span>Test Guide</span>
-                            </a>
-                        </li>
-                        
-                        {% if session.get("role") == "Admin" %}
-                        <li class="nav-item">
-                            <a class="nav-link app-drawer-link" href="/manage_staff" style="color: #0dcaf0 !important;">
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link" href="/guide" style="color: #ffc107 !important;">
+                            <i class="bi bi-bug-fill text-warning"></i> <span>Test Guide</span>
+                        </a>
+                    </li>
+                    
+                    {% if session.get("role") in ["Admin", "Director"] %}
+                    <li class="nav-item">
+                        <a class="nav-link app-drawer-link d-flex justify-content-between align-items-center" href="/manage_staff" style="color: #0dcaf0 !important;">
+                            <div>
                                 <i class="bi bi-shield-lock-fill text-info"></i> <span>Manage Staff</span>
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                {% endif %}
+                            </div>
+                            <!-- DYNAMIC: Mobile Notification Badge -->
+                            {% if pending_staff_count and pending_staff_count > 0 %}
+                            <span class="badge bg-danger rounded-pill">{{ pending_staff_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
             </div>
         </div>
+        {% endif %}
 
+        <!-- =========================================================
+             3. THE MAIN CONTENT AREA
+             ========================================================= -->
         <main class="container">
             {% if get_flashed_messages(with_categories=true) %}
                 <header>
@@ -288,45 +374,64 @@
             {% block main %}{% endblock %}
         </main>
 
+        <!-- =========================================================
+             4. THE NATIVE BOTTOM APP BAR (Mobile Only < 992px)
+             ========================================================= -->
         {% if session.get("user_id") %}
         <nav class="bottom-app-bar">
+            <!-- Hub Tab -->
             <a href="/" class="app-tab {% if request.path == '/' %}active{% endif %}">
                 <i class="bi {% if request.path == '/' %}bi-house-door-fill{% else %}bi-house-door{% endif %}"></i>
                 <span>Hub</span>
             </a>
             
-            <!-- EEP ONLY: Bottom Bar Links -->
-            {% if session.get("program_id", 1) == 1 %}
+            <!-- Roster Tab -->
             <a href="/roster" class="app-tab {% if request.path == '/roster' %}active{% endif %}">
                 <i class="bi {% if request.path == '/roster' %}bi-people-fill{% else %}bi-people{% endif %}"></i>
                 <span>Roster</span>
             </a>
             
+            <!-- Central Action (Add Kid) -->
             <a href="/add_student" class="app-tab {% if request.path == '/add_student' %}active{% endif %}">
                 <i class="bi {% if request.path == '/add_student' %}bi-person-plus-fill text-primary fs-3{% else %}bi-person-plus fs-3{% endif %}"></i>
             </a>
-            {% endif %}
 
+            <!-- CALENDAR BOTTOM TAB -->
             <a href="/calendar" class="app-tab {% if request.path == '/calendar' %}active{% endif %}">
                 <i class="bi {% if request.path == '/calendar' %}bi-calendar-check-fill{% else %}bi-calendar-check{% endif %}"></i>
                 <span>Tasks</span>
             </a>
             
-            <a href="#appOffcanvasMenu" data-bs-toggle="offcanvas" role="button" aria-controls="appOffcanvasMenu" class="app-tab">
+            <!-- Menu Trigger -->
+            <a href="#appOffcanvasMenu" data-bs-toggle="offcanvas" role="button" aria-controls="appOffcanvasMenu" class="app-tab position-relative">
                 <i class="bi bi-list"></i>
                 <span>Menu</span>
+                <!-- DYNAMIC: Bottom bar red dot -->
+                {% if session.get("role") in ["Admin", "Director"] and pending_staff_count and pending_staff_count > 0 %}
+                <span class="position-absolute top-0 start-50 translate-middle p-1 bg-danger border border-light rounded-circle mt-1 ms-2"></span>
+                {% endif %}
             </a>
         </nav>
         {% endif %}
 
+        <!-- Bootstrap 5 JS Bundle -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+        <!-- jQuery (Required for DataTables) -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+        <!-- DataTables Core & Bootstrap 5 Integration JS -->
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+        <!-- DataTables Responsive JS -->
         <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
+        <!-- DataTables Natural Sort Plugin -->
         <script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
 
+        <!-- Custom DataTables Sorter for NGO Grade Levels -->
         <script>
             $.fn.dataTable.ext.type.order['custom-grade-pre'] = function(d) {
                 if (!d) return 9999;
@@ -341,6 +446,7 @@
             };
         </script>
         
+        <!-- Service Worker Registration -->
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
