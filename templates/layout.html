@@ -5,24 +5,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
 
-        <!-- Bootstrap 5 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-
-        <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-        <!-- DataTables Bootstrap 5 CSS -->
         <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-        
-        <!-- DataTables Responsive CSS -->
         <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
 
-        <!-- PWA / Mobile App Links -->
-        <link rel="manifest" href="/manifest.json">
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+        <link rel="manifest" href="/static/manifest.json">
         <meta name="theme-color" content="#212529">
         <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3281/3281307.png">
 
-        <!-- Global Dual-Font Application & UI Tweaks -->
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kantumruy+Pro:wght@400;600;700&display=swap');
 
@@ -55,7 +48,6 @@
                🚀 SIDEBAR & TOP NAVBAR STYLING
                ================================================================= */
             
-            /* Sidebar Links (Unified for PC and Mobile) */
             .app-drawer-link {
                 display: flex; 
                 align-items: center; 
@@ -78,7 +70,6 @@
                 background-color: rgba(13, 110, 253, 0.15) !important; color: #fff !important;
             }
 
-            /* Top Bar Quick Links (PC Only) */
             .top-nav-link {
                 color: rgba(255, 255, 255, 0.75) !important;
                 border-radius: 8px;
@@ -126,16 +117,10 @@
 
     <body class="bg-light">
         
-        <!-- =========================================================
-             1. THE TOP NAVBAR (Clean Top Action Bar)
-             ========================================================= -->
-        <!-- 'navbar-expand' ensures right-side items don't collapse into a hamburger menu -->
         <nav class="navbar navbar-expand navbar-dark bg-dark mb-4 shadow-sm sticky-top border-bottom border-primary border-opacity-25">
             <div class="container-fluid px-lg-4 d-flex justify-content-between align-items-center">
                 
-                <!-- Left Side: Sidebar Toggle & Brand -->
                 <div class="d-flex align-items-center">
-                    <!-- PC Hamburger Button (Opens the sidebar) -->
                     <button class="btn btn-dark border-0 shadow-none me-2 d-none d-lg-block" type="button" data-bs-toggle="offcanvas" data-bs-target="#appOffcanvasMenu" aria-controls="appOffcanvasMenu">
                         <i class="bi bi-list fs-4"></i>
                     </button>
@@ -148,23 +133,30 @@
                     </a>
                 </div>
 
-                <!-- Right Side: Important Top Links -->
                 {% if session.get("user_id") %}
                 <ul class="navbar-nav ms-auto align-items-center flex-row gap-1 gap-lg-2">
                     
-                    <!-- Quick Hub & Roster (Hidden on Mobile, they use Bottom Bar) -->
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-link top-nav-link {% if request.path == '/' %}active{% endif %}" href="/">
                             <i class="bi bi-house-door-fill me-1"></i> Hub
                         </a>
                     </li>
+
+                    <!-- EEP ONLY: Roster -->
+                    {% if session.get("program_id", 1) == 1 %}
                     <li class="nav-item d-none d-lg-block">
                         <a class="nav-link top-nav-link {% if request.path == '/roster' %}active{% endif %}" href="/roster">
                             <i class="bi bi-people-fill me-1"></i> Roster
                         </a>
                     </li>
+                    {% endif %}
 
-                    <!-- ADMIN/DIRECTOR SWITCHER -->
+                    <li class="nav-item d-none d-lg-block">
+                        <a class="nav-link top-nav-link {% if request.path == '/calendar' %}active{% endif %}" href="/calendar">
+                            <i class="bi bi-calendar-check-fill me-1" style="color: #6f42c1;"></i> Calendar
+                        </a>
+                    </li>
+
                     {% if session.get("role") in ["Admin", "Director"] %}
                     <li class="nav-item dropdown ms-2">
                         <a class="nav-link dropdown-toggle btn btn-dark border-secondary px-2 px-lg-3 text-start d-flex align-items-center" href="#" id="contextDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -172,14 +164,13 @@
                             <span class="d-none d-md-inline">{{ session.get("program_name", "EEP Program") }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-sm border-0 position-absolute" aria-labelledby="contextDropdown">
-                            <li><h6 class="dropdown-header text-muted">Switch Program View</h6></li>
-                            <li><a class="dropdown-item fw-bold text-primary py-2" href="/switch_program/0"><i class="bi bi-globe-americas me-2"></i>Global View</a></li>
+                            <li><h6 class="dropdown-header text-muted">Switch Workspace</h6></li>
+                            <li><a class="dropdown-item fw-bold text-primary py-2" href="/switch_program/0"><i class="bi bi-buildings-fill me-2"></i>Central Administration</a></li>
                             <li><a class="dropdown-item fw-bold text-success py-2" href="/switch_program/1"><i class="bi bi-book-fill me-2"></i>EEP Management</a></li>
                         </ul>
                     </li>
                     {% endif %}
 
-                    <!-- Logout Button -->
                     <li class="nav-item ms-2">
                         <a class="nav-link text-danger fw-bold d-flex align-items-center" href="/logout" title="Logout">
                             <i class="bi bi-box-arrow-right fs-4 fs-lg-5"></i>
@@ -188,7 +179,6 @@
                     </li>
                 </ul>
                 {% else %}
-                <!-- Logged Out Links -->
                 <ul class="navbar-nav ms-auto align-items-center flex-row">
                     <li class="nav-item">
                         <a class="nav-link fw-bold text-white" href="/login"><i class="bi bi-box-arrow-in-right me-1"></i> Log In</a>
@@ -198,13 +188,8 @@
             </div>
         </nav>
 
-        <!-- =========================================================
-             2. THE UNIVERSAL SIDEBAR (Offcanvas Drawer)
-             ========================================================= -->
-        <!-- Changing to just 'offcanvas' forces it to ALWAYS be a sidebar on every screen size -->
         <div class="offcanvas offcanvas-start bg-dark text-white" tabindex="-1" id="appOffcanvasMenu" aria-labelledby="appOffcanvasMenuLabel">
             
-            <!-- Drawer Header (Always Visible) -->
             <div class="offcanvas-header border-bottom border-secondary border-opacity-50 pb-3 mt-2">
                 <h5 class="offcanvas-title fw-bold d-flex align-items-center" id="appOffcanvasMenuLabel">
                     <div class="bg-primary bg-opacity-25 text-primary rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm" style="width: 45px; height: 45px;">
@@ -220,11 +205,9 @@
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
             </div>
             
-            <!-- Drawer Links -->
             <div class="offcanvas-body d-flex flex-column">
                 {% if session.get("user_id") %}
                     
-                    <!-- Vertical Links List -->
                     <ul class="navbar-nav flex-column w-100 mb-auto gap-1">
                         
                         <li class="nav-item mb-2 mt-2"><span class="text-muted small fw-bold text-uppercase px-3">Navigation</span></li>
@@ -239,6 +222,9 @@
                                 <i class="bi bi-house-door-fill text-light"></i> <span>Field Hub</span>
                             </a>
                         </li>
+                        
+                        <!-- EEP ONLY: Roster, Nutrition, Add Student, Settings -->
+                        {% if session.get("program_id", 1) == 1 %}
                         <li class="nav-item">
                             <a class="nav-link app-drawer-link {% if request.path == '/roster' %}active{% endif %}" href="/roster">
                                 <i class="bi bi-people-fill text-info"></i> <span>Roster</span>
@@ -257,6 +243,13 @@
                         <li class="nav-item">
                             <a class="nav-link app-drawer-link {% if request.path == '/settings' %}active{% endif %}" href="/settings">
                                 <i class="bi bi-gear-fill text-secondary"></i> <span>Settings</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <li class="nav-item">
+                            <a class="nav-link app-drawer-link {% if request.path == '/calendar' %}active{% endif %}" href="/calendar">
+                                <i class="bi bi-calendar-check-fill" style="color: #6f42c1;"></i> <span>Calendar & Tasks</span>
                             </a>
                         </li>
                         
@@ -280,9 +273,6 @@
             </div>
         </div>
 
-        <!-- =========================================================
-             3. THE MAIN CONTENT AREA
-             ========================================================= -->
         <main class="container">
             {% if get_flashed_messages(with_categories=true) %}
                 <header>
@@ -298,9 +288,6 @@
             {% block main %}{% endblock %}
         </main>
 
-        <!-- =========================================================
-             4. THE NATIVE BOTTOM APP BAR (Mobile Only < 992px)
-             ========================================================= -->
         {% if session.get("user_id") %}
         <nav class="bottom-app-bar">
             <a href="/" class="app-tab {% if request.path == '/' %}active{% endif %}">
@@ -308,14 +295,21 @@
                 <span>Hub</span>
             </a>
             
+            <!-- EEP ONLY: Bottom Bar Links -->
+            {% if session.get("program_id", 1) == 1 %}
             <a href="/roster" class="app-tab {% if request.path == '/roster' %}active{% endif %}">
                 <i class="bi {% if request.path == '/roster' %}bi-people-fill{% else %}bi-people{% endif %}"></i>
                 <span>Roster</span>
             </a>
             
             <a href="/add_student" class="app-tab {% if request.path == '/add_student' %}active{% endif %}">
-                <i class="bi {% if request.path == '/add_student' %}bi-person-plus-fill text-primary{% else %}bi-person-plus{% endif %}"></i>
-                <span class="{% if request.path == '/add_student' %}text-primary{% endif %}">Add Kid</span>
+                <i class="bi {% if request.path == '/add_student' %}bi-person-plus-fill text-primary fs-3{% else %}bi-person-plus fs-3{% endif %}"></i>
+            </a>
+            {% endif %}
+
+            <a href="/calendar" class="app-tab {% if request.path == '/calendar' %}active{% endif %}">
+                <i class="bi {% if request.path == '/calendar' %}bi-calendar-check-fill{% else %}bi-calendar-check{% endif %}"></i>
+                <span>Tasks</span>
             </a>
             
             <a href="#appOffcanvasMenu" data-bs-toggle="offcanvas" role="button" aria-controls="appOffcanvasMenu" class="app-tab">
@@ -325,24 +319,14 @@
         </nav>
         {% endif %}
 
-        <!-- Bootstrap 5 JS Bundle -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
-        <!-- jQuery (Required for DataTables) -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-
-        <!-- DataTables Core & Bootstrap 5 Integration JS -->
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-        <!-- DataTables Responsive JS -->
         <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
         <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-
-        <!-- DataTables Natural Sort Plugin -->
         <script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
 
-        <!-- Custom DataTables Sorter for NGO Grade Levels -->
         <script>
             $.fn.dataTable.ext.type.order['custom-grade-pre'] = function(d) {
                 if (!d) return 9999;
@@ -357,7 +341,6 @@
             };
         </script>
         
-        <!-- Service Worker Registration -->
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {

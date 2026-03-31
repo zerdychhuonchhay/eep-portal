@@ -15,7 +15,7 @@ import os
 import time
 from datetime import datetime
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory
+from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from helpers import login_required, admin_required
@@ -66,7 +66,6 @@ def log_action(description):
         else:
             os_name = "Unknown OS"
 
-        # FIXED: Corrected the missing indentation and logic flow here!
         if "Chrome" in user_agent_raw and "Edg" not in user_agent_raw:
             browser = "Chrome"
         elif "Edg" in user_agent_raw:
@@ -93,173 +92,190 @@ def log_action(description):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    # AUDIT FIX: Enforce timeframe as an integer so the database doesn't crash!
-    try:
-        months = int(request.args.get('timeframe', 1))
-    except ValueError:
-        months = 1
-
-    # 2. Stats: Enrollment Breakdown
-    active_kids = db.execute(
-        "SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
-    total_active = sum(row['count'] for row in active_kids)
-    boys = next((row['count'] for row in active_kids if row['gender'] == 'Male'), 0)
-    girls = next((row['count'] for row in active_kids if row['gender'] == 'Female'), 0)
-
-    uni_kids = db.execute(
-        "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
-    vocal_kids = db.execute(
-        "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
-
-    # 3. Stats: Services (Filtered by Time)
-    # SMART LUNCH CALCULATION (Exception-Based)
-
-    # A. How many kids are currently assigned to get Hot Lunch?
-    lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND meal_plan = 'Daily Hot Lunch'")[0]['count']
-
-    # B. How many "Workdays" roughly happened in this timeframe? (Assuming ~22 school days a month)
-    estimated_workdays = months * 22
-
-    # C. What is the maximum possible meals we could have served?
-    max_possible_meals = lunch_kids_count * estimated_workdays
-
-    # D. How many times did someone specific miss a meal in this timeframe?
-    missed_meals = db.execute("""
-        SELECT COUNT(*) as total FROM student_services
-        WHERE service_type = 'Missed Hot Lunch'
-        AND service_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    # E. How many holiday skips happened? (1 holiday logged = missed meal for EVERY lunch kid)
-    holidays_logged = db.execute("""
-        SELECT COUNT(*) as total FROM student_services
-        WHERE service_type = 'Holiday - No Meals'
-        AND service_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-    holiday_missed_meals = holidays_logged * lunch_kids_count
-
-    # F. The Final Math!
-    calculated_meals = max_possible_meals - missed_meals - holiday_missed_meals
-
-    # Ensure it doesn't go below 0 just in case
-    meals = max(0, calculated_meals)
-
-
-    parent_meetings = db.execute("""
-        SELECT COUNT(*) as total FROM activities
-        WHERE activity_type = 'Parent Meeting' AND activity_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    # 4. Stats: Impact (Filtered by Time)
-    housing_supports = db.execute("""
-        SELECT SUM(attendance_count) as total FROM activities
-        WHERE activity_type = 'Housing Support' AND activity_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    other_activities = db.execute("""
-        SELECT COUNT(*) as total FROM activities
-        WHERE activity_type NOT IN ('Hot Meal', 'Parent Meeting', 'Housing Support')
-        AND activity_date >= date('now', ?)
-    """, f'-{months} month')[0]['total'] or 0
-
-    # 5. Stats: Academic Excellence
-    top_performers = db.execute(
-        "SELECT COUNT(*) as count FROM monthly_reports WHERE CAST(class_rank AS INTEGER) <= 10 AND CAST(class_rank AS INTEGER) > 0")[0]['count']
-
-    graduates = db.execute(
-        "SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
-
-    # 6. Priority Alerts (BUGFIXED)
-    academic_alerts = db.execute("""
-        SELECT s.first_name, s.last_name, s.id, r.overall_average, r.academic_year, r.month
-        FROM students s JOIN monthly_reports r ON s.id = r.student_id
-        WHERE r.overall_average < 50 AND r.overall_average IS NOT NULL
-        AND s.status = 'Active'
-        ORDER BY r.academic_year DESC, r.id DESC LIMIT 5
-    """)
-
-    protection_alerts = db.execute("""
-        SELECT s.first_name, s.last_name, s.id, f.id as followup_id, f.child_protection_concerns
-        FROM students s JOIN followups f ON s.id = f.student_id
-        WHERE f.child_protection_concerns NOT IN ('No', 'None', 'N/A', '')
-        AND f.child_protection_concerns IS NOT NULL
-        AND (f.alert_status IS NULL OR f.alert_status = 'Active')
-        AND s.status = 'Active'
-        ORDER BY f.followup_date DESC LIMIT 5
-    """)
-
-    # 7. Smart Sponsor Letters Logic
-    current_month = datetime.now().month
-    current_year = str(datetime.now().year)
-    if current_month <= 3: current_quarter = 'Q1'
-    elif current_month <= 6: current_quarter = 'Q2'
-    elif current_month <= 9: current_quarter = 'Q3'
-    else: current_quarter = 'Q4'
-
-    # Fetch ALL checkboxes using MAX() and group by student so we don't get duplicates
-    missing_letters_raw = db.execute("""
-        SELECT s.id, s.first_name, s.last_name,
-               MAX(f.letter_given) as given,
-               MAX(f.letter_translated) as translated,
-               MAX(f.letter_scanned) as scanned,
-               MAX(f.letter_sent) as sent,
-               MAX(f.id) as followup_id
-        FROM students s
-        LEFT JOIN followups f ON s.id = f.student_id AND f.letter_quarter = ? AND f.letter_year = ?
-        WHERE s.status = 'Active'
-        GROUP BY s.id
-        HAVING sent IS NULL OR sent != 'Yes'
-        ORDER BY s.first_name ASC
-    """, current_quarter, current_year)
-
-    # Apply the "Smart" Status Logic
-    missing_letters = []
-    for student in missing_letters_raw:
-        if student['scanned'] == 'Yes':
-            student['status_badge'] = "Ready to Send"
-            student['status_color'] = "primary"
-        elif student['translated'] == 'Yes':
-            student['status_badge'] = "Waiting to Scan"
-            student['status_color'] = "info"
-        elif student['given'] == 'Yes':
-            student['status_badge'] = "Needs Translation"
-            student['status_color'] = "warning"
-        else:
-            student['status_badge'] = "Not Started"
-            student['status_color'] = "danger"
-
-        missing_letters.append(student)
-
-    # 8. NEW: Audit Log Feed (Only for Admins)
-    recent_activity = []
-    if session.get("role") == "Admin":
-        # CRASH-PROOF FIX: Try to select device_info, fallback to 'Unknown' if the column doesn't exist yet!
+    """Smart Dashboard Router based on Active Program Context"""
+    
+    # Check which hat the user is currently wearing (Default to 1: EEP)
+    program_id = session.get("program_id", 1) 
+    
+    # ==============================================================
+    # HAT 1: GOVT AFFAIRS & CENTRAL ADMIN (program_id == 0)
+    # ==============================================================
+    if program_id == 0:
+        # We will build the real Government stats in Phase 8!
+        # For now, we just load the template so you can see the layout.
+        today_date = datetime.now().strftime('%Y-%m-%d')
+        return render_template("dashboard_global.html", date_now=today_date)
+        
+    # ==============================================================
+    # HAT 2: EEP MANAGEMENT (program_id == 1)
+    # ==============================================================
+    elif program_id == 1:
+        # AUDIT FIX: Enforce timeframe as an integer so the database doesn't crash!
         try:
-            recent_activity = db.execute("""
-                SELECT a.action, a.timestamp, a.device_info, s.username 
-                FROM audit_logs a
-                JOIN staff s ON a.staff_id = s.id
-                ORDER BY a.timestamp DESC LIMIT 15
-            """)
-        except Exception:
-            recent_activity = db.execute("""
-                SELECT a.action, a.timestamp, 'Unknown' as device_info, s.username 
-                FROM audit_logs a
-                JOIN staff s ON a.staff_id = s.id
-                ORDER BY a.timestamp DESC LIMIT 15
-            """)
+            months = int(request.args.get('timeframe', 1))
+        except ValueError:
+            months = 1
 
-    date_now = datetime.now().strftime('%Y-%m-%d')
+        # 2. Stats: Enrollment Breakdown
+        active_kids = db.execute(
+            "SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
+        total_active = sum(row['count'] for row in active_kids)
+        boys = next((row['count'] for row in active_kids if row['gender'] == 'Male'), 0)
+        girls = next((row['count'] for row in active_kids if row['gender'] == 'Female'), 0)
 
-    return render_template("executive_dashboard.html",
-                           total_active=total_active, boys=boys, girls=girls,
-                           uni_kids=uni_kids, vocal_kids=vocal_kids,
-                           meals=meals, meetings=parent_meetings,
-                           housing_supports=housing_supports, other_activities=other_activities,
-                           top_performers=top_performers, graduates=graduates,
-                           academic_alerts=academic_alerts, protection_alerts=protection_alerts,
-                           missing_letters=missing_letters, current_quarter=current_quarter, current_year=current_year,
-                           timeframe=months, date_now=date_now, recent_activity=recent_activity)
+        uni_kids = db.execute(
+            "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
+        vocal_kids = db.execute(
+            "SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
+
+        # 3. Stats: Services (Filtered by Time)
+        # SMART LUNCH CALCULATION (Exception-Based)
+
+        # A. How many kids are currently assigned to get Hot Lunch?
+        lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND meal_plan = 'Daily Hot Lunch'")[0]['count']
+
+        # B. How many "Workdays" roughly happened in this timeframe? (Assuming ~22 school days a month)
+        estimated_workdays = months * 22
+
+        # C. What is the maximum possible meals we could have served?
+        max_possible_meals = lunch_kids_count * estimated_workdays
+
+        # D. How many times did someone specific miss a meal in this timeframe?
+        missed_meals = db.execute("""
+            SELECT COUNT(*) as total FROM student_services
+            WHERE service_type = 'Missed Hot Lunch'
+            AND service_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+
+        # E. How many holiday skips happened? (1 holiday logged = missed meal for EVERY lunch kid)
+        holidays_logged = db.execute("""
+            SELECT COUNT(*) as total FROM student_services
+            WHERE service_type = 'Holiday - No Meals'
+            AND service_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+        holiday_missed_meals = holidays_logged * lunch_kids_count
+
+        # F. The Final Math!
+        calculated_meals = max_possible_meals - missed_meals - holiday_missed_meals
+
+        # Ensure it doesn't go below 0 just in case
+        meals = max(0, calculated_meals)
+
+
+        parent_meetings = db.execute("""
+            SELECT COUNT(*) as total FROM activities
+            WHERE activity_type = 'Parent Meeting' AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+
+        # 4. Stats: Impact (Filtered by Time)
+        housing_supports = db.execute("""
+            SELECT SUM(attendance_count) as total FROM activities
+            WHERE activity_type = 'Housing Support' AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+
+        other_activities = db.execute("""
+            SELECT COUNT(*) as total FROM activities
+            WHERE activity_type NOT IN ('Hot Meal', 'Parent Meeting', 'Housing Support')
+            AND activity_date >= date('now', ?)
+        """, f'-{months} month')[0]['total'] or 0
+
+        # 5. Stats: Academic Excellence
+        top_performers = db.execute(
+            "SELECT COUNT(*) as count FROM monthly_reports WHERE CAST(class_rank AS INTEGER) <= 10 AND CAST(class_rank AS INTEGER) > 0")[0]['count']
+
+        graduates = db.execute(
+            "SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
+
+        # 6. Priority Alerts (BUGFIXED)
+        academic_alerts = db.execute("""
+            SELECT s.first_name, s.last_name, s.id, r.overall_average, r.academic_year, r.month
+            FROM students s JOIN monthly_reports r ON s.id = r.student_id
+            WHERE r.overall_average < 50 AND r.overall_average IS NOT NULL
+            AND s.status = 'Active'
+            ORDER BY r.academic_year DESC, r.id DESC LIMIT 5
+        """)
+
+        protection_alerts = db.execute("""
+            SELECT s.first_name, s.last_name, s.id, f.id as followup_id, f.child_protection_concerns
+            FROM students s JOIN followups f ON s.id = f.student_id
+            WHERE f.child_protection_concerns NOT IN ('No', 'None', 'N/A', '')
+            AND f.child_protection_concerns IS NOT NULL
+            AND (f.alert_status IS NULL OR f.alert_status = 'Active')
+            AND s.status = 'Active'
+            ORDER BY f.followup_date DESC LIMIT 5
+        """)
+
+        # 7. Smart Sponsor Letters Logic
+        current_month = datetime.now().month
+        current_year = str(datetime.now().year)
+        if current_month <= 3: current_quarter = 'Q1'
+        elif current_month <= 6: current_quarter = 'Q2'
+        elif current_month <= 9: current_quarter = 'Q3'
+        else: current_quarter = 'Q4'
+
+        # Fetch ALL checkboxes using MAX() and group by student so we don't get duplicates
+        missing_letters_raw = db.execute("""
+            SELECT s.id, s.first_name, s.last_name,
+                   MAX(f.letter_given) as given,
+                   MAX(f.letter_translated) as translated,
+                   MAX(f.letter_scanned) as scanned,
+                   MAX(f.letter_sent) as sent,
+                   MAX(f.id) as followup_id
+            FROM students s
+            LEFT JOIN followups f ON s.id = f.student_id AND f.letter_quarter = ? AND f.letter_year = ?
+            WHERE s.status = 'Active'
+            GROUP BY s.id
+            HAVING sent IS NULL OR sent != 'Yes'
+            ORDER BY s.first_name ASC
+        """, current_quarter, current_year)
+
+        # Apply the "Smart" Status Logic
+        missing_letters = []
+        for student in missing_letters_raw:
+            if student['scanned'] == 'Yes':
+                student['status_badge'] = "Ready to Send"
+                student['status_color'] = "primary"
+            elif student['translated'] == 'Yes':
+                student['status_badge'] = "Waiting to Scan"
+                student['status_color'] = "info"
+            elif student['given'] == 'Yes':
+                student['status_badge'] = "Needs Translation"
+                student['status_color'] = "warning"
+            else:
+                student['status_badge'] = "Not Started"
+                student['status_color'] = "danger"
+
+            missing_letters.append(student)
+
+        # 8. NEW: Audit Log Feed (Only for Admins)
+        recent_activity = []
+        if session.get("role") in ["Admin", "System PM", "Director"]:
+            try:
+                recent_activity = db.execute("""
+                    SELECT a.action, a.timestamp, a.device_info, s.username 
+                    FROM audit_logs a
+                    JOIN staff s ON a.staff_id = s.id
+                    ORDER BY a.timestamp DESC LIMIT 15
+                """)
+            except Exception:
+                recent_activity = db.execute("""
+                    SELECT a.action, a.timestamp, 'Unknown' as device_info, s.username 
+                    FROM audit_logs a
+                    JOIN staff s ON a.staff_id = s.id
+                    ORDER BY a.timestamp DESC LIMIT 15
+                """)
+
+        date_now = datetime.now().strftime('%Y-%m-%d')
+
+        return render_template("executive_dashboard.html",
+                               total_active=total_active, boys=boys, girls=girls,
+                               uni_kids=uni_kids, vocal_kids=vocal_kids,
+                               meals=meals, meetings=parent_meetings,
+                               housing_supports=housing_supports, other_activities=other_activities,
+                               top_performers=top_performers, graduates=graduates,
+                               academic_alerts=academic_alerts, protection_alerts=protection_alerts,
+                               missing_letters=missing_letters, current_quarter=current_quarter, current_year=current_year,
+                               timeframe=months, date_now=date_now, recent_activity=recent_activity)
 
 
 @app.route("/log_activity", methods=["POST"])
@@ -339,6 +355,181 @@ def resolve_alert(followup_id):
     return redirect("/dashboard")
 
 
+# ==============================================================================
+# NEIGHBORHOOD: FIELD CALENDAR & TASK MANAGEMENT
+# ==============================================================================
+
+@app.route("/setup_calendar")
+@login_required
+def setup_calendar():
+    """Run this ONCE to create the tasks table in your database!"""
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            due_date DATETIME NOT NULL,
+            priority TEXT DEFAULT 'Medium',
+            status TEXT DEFAULT 'Pending',
+            student_id INTEGER,
+            staff_id INTEGER,
+            program_id INTEGER DEFAULT 1
+        )
+    """)
+    
+    # SMART UPGRADE: Safely add the column if they already have the old table
+    try:
+        db.execute("ALTER TABLE tasks ADD COLUMN program_id INTEGER DEFAULT 1")
+    except Exception:
+        pass 
+
+    flash("Calendar Database Table successfully created/upgraded! You are ready to go.", "success")
+    return redirect("/calendar")
+
+@app.route("/calendar")
+@login_required
+def field_calendar():
+    """Renders the main Calendar UI"""
+    program_id = session.get("program_id", 1)
+    
+    # SCOPING FIX: Only show students in the dropdown who belong to the active program!
+    if program_id == 0:
+        students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name ASC")
+    else:
+        students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND program_id = ? ORDER BY first_name ASC", program_id)
+    
+    # HYBRID FIX: The sidebar now ONLY shows YOUR personal pending tasks!
+    pending_tasks = db.execute("""
+        SELECT t.*, s.first_name, s.last_name, st.username as creator_name
+        FROM tasks t 
+        LEFT JOIN students s ON t.student_id = s.id 
+        LEFT JOIN staff st ON t.staff_id = st.id
+        WHERE t.status = 'Pending' AND t.staff_id = ?
+        ORDER BY t.due_date ASC LIMIT 15
+    """, session["user_id"])
+    
+    return render_template("calendar.html", students=students, pending_tasks=pending_tasks)
+
+@app.route("/api/tasks")
+@login_required
+def api_tasks():
+    """Background API that feeds data to FullCalendar.js"""
+    view_mode = request.args.get("view", "my")
+    program_id = session.get("program_id", 1)
+    
+    if view_mode == "team":
+        if program_id == 0:
+            # Global Admins see the entire NGO's tasks combined
+            tasks = db.execute("""
+                SELECT t.*, st.username as creator_name 
+                FROM tasks t 
+                LEFT JOIN staff st ON t.staff_id = st.id
+            """)
+        else:
+            # Show everyone's tasks, but ONLY for the specific program we are viewing
+            tasks = db.execute("""
+                SELECT t.*, st.username as creator_name 
+                FROM tasks t 
+                LEFT JOIN staff st ON t.staff_id = st.id 
+                WHERE t.program_id = ?
+            """, program_id)
+    else:
+        # Show ONLY tasks created by the logged-in user
+        tasks = db.execute("""
+            SELECT t.*, st.username as creator_name 
+            FROM tasks t 
+            LEFT JOIN staff st ON t.staff_id = st.id 
+            WHERE t.staff_id = ?
+        """, session["user_id"])
+        
+    events = []
+    
+    for t in tasks:
+        color = "#0d6efd" 
+        
+        if t["status"] == "Completed":
+            color = "#198754" 
+        elif t["priority"] == "High":
+            color = "#dc3545" 
+        elif t["priority"] == "Low":
+            color = "#6c757d" 
+
+        events.append({
+            "id": t["id"],
+            "title": t["title"],
+            "start": t["due_date"],
+            "color": color,
+            "extendedProps": {
+                "description": t["description"],
+                "status": t["status"],
+                "priority": t["priority"],
+                "creator_name": t["creator_name"]
+            }
+        })
+        
+    return jsonify(events)
+
+@app.route("/add_task", methods=["POST"])
+@login_required
+def add_task():
+    """Saves a new task to the database"""
+    title = request.form.get("title")
+    due_date = request.form.get("due_date")
+    description = request.form.get("description")
+    priority = request.form.get("priority")
+    student_id = request.form.get("student_id")
+    
+    program_id = session.get("program_id", 1)
+    
+    if not student_id or student_id == "None":
+        student_id = None
+        
+    if not title or not due_date:
+        flash("Task Title and Date are required.", "danger")
+        return redirect("/calendar")
+        
+    db.execute("""
+        INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id, program_id)
+        VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?)
+    """, title, description, due_date, priority, student_id, session["user_id"], program_id)
+    
+    log_action(f"Created new task: {title}")
+    flash("Task successfully added to your calendar!", "success")
+    return redirect("/calendar")
+
+@app.route("/complete_task/<int:task_id>", methods=["POST"])
+@login_required
+def complete_task(task_id):
+    """Marks a task as completed"""
+    db.execute("UPDATE tasks SET status = 'Completed' WHERE id = ?", task_id)
+    log_action(f"Marked task #{task_id} as Completed")
+    flash("Task marked as completed! Great job.", "success")
+    return redirect("/calendar")
+
+@app.route("/delete_task/<int:task_id>", methods=["POST"])
+@login_required
+def delete_task(task_id):
+    """Deletes a task from the calendar"""
+    # Security: ensure user owns the task or is an admin
+    task = db.execute("SELECT staff_id, title FROM tasks WHERE id = ?", task_id)
+    if not task:
+        flash("Task not found.", "danger")
+        return redirect("/calendar")
+        
+    if session["role"] not in ["Admin", "Director"] and task[0]["staff_id"] != session["user_id"]:
+        flash("Unauthorized: You can only delete your own tasks.", "danger")
+        return redirect("/calendar")
+        
+    db.execute("DELETE FROM tasks WHERE id = ?", task_id)
+    log_action(f"Deleted task: {task[0]['title']}")
+    flash("Task successfully deleted.", "success")
+    return redirect("/calendar")
+
+
+# ==============================================================================
+# NEIGHBORHOOD: ACADEMICS
+# ==============================================================================
+
 @app.route("/academics")
 @login_required
 def academics():
@@ -377,377 +568,6 @@ def academics():
 
     return render_template("academics.html", academic_records=academic_records, active_students=active_students)
 
-# ==============================================================================
-# NEIGHBORHOOD: STUDENT MANAGEMENT (Index/Roster, Add Student, Edit Student)
-# ==============================================================================
-
-@app.route("/")
-@login_required
-def index():
-    """Smart Homepage that changes based on the user's active program view"""
-    program_id = session.get("program_id", 1) 
-    
-    if program_id == 0:
-        staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
-        return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
-        
-    elif program_id == 1:
-        staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
-        username = staff[0]["username"] if staff else "Staff"
-
-        # For the Mobile Smart Feed
-        recent_students = db.execute("""
-            SELECT id, first_name, last_name, khmer_name, ngo_id, profile_picture 
-            FROM students 
-            WHERE status = 'Active' 
-            ORDER BY id DESC LIMIT 5
-        """)
-        
-        # For the PC Side-by-Side Roster
-        all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' ORDER BY first_name")
-        
-        return render_template("index.html", username=username, recent_students=recent_students, students=all_active_students)
-
-@app.route("/roster")
-@login_required
-def roster():
-    """Show the full active roster (Moved from index)"""
-    students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' ORDER BY first_name")
-    return render_template("roster.html", students=students, title="Active Roster")
-
-@app.route("/archive")
-@login_required
-def archive():
-    """Show dropped out / graduated students"""
-    students = db.execute("SELECT * FROM students WHERE status = 'Dropped Out' OR status = 'Graduated' ORDER BY first_name")
-    return render_template("index.html", students=students, title="Archived Students")
-
-@app.route("/guide")
-@login_required
-def guide():
-    """Show the Beta Testing Instructions"""
-    return render_template("guide.html")
-
-@app.route("/add_student", methods=["GET", "POST"])
-@login_required
-def add_student():
-    """Add a new student to the database"""
-    if request.method == "POST":
-        ngo_id = request.form.get("ngo_id")
-        status = request.form.get("status")
-        first_name = request.form.get("first_name")
-        last_name = request.form.get("last_name")
-        khmer_name = request.form.get("khmer_name")
-        gender = request.form.get("gender")
-        dob = request.form.get("dob")
-        joined_date = request.form.get("joined_date")
-        guardian_name = request.form.get("guardian_name")
-        phone = request.form.get("phone_number")
-        slum = request.form.get("slum_area")
-        current_school = request.form.get("current_school")
-        grade = request.form.get("grade_level")
-        meal_plan = request.form.get("meal_plan")
-        comment = request.form.get("comment")
-        
-        # NEW: Grab Kinship Data
-        caregiver_relationship = request.form.get("caregiver_relationship")
-        mother_name = request.form.get("mother_name")
-        father_name = request.form.get("father_name")
-
-        if not ngo_id or not first_name or not last_name:
-            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
-
-        try:
-            db.execute("""
-                INSERT INTO students
-                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, caregiver_relationship, mother_name, father_name)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, caregiver_relationship, mother_name, father_name)
-            
-            log_action(f"Added new student profile: {first_name} {last_name}")
-            flash(f"{first_name} added successfully!", "success")
-            return redirect("/")
-
-        except ValueError:
-            return render_template("apology.html", message="A student with that NGO ID already exists. Please use your browser's BACK arrow to return without losing data.")
-
-    else:
-        return render_template("add_student.html")
-
-
-@app.route("/edit_student/<int:id>", methods=["GET", "POST"])
-@login_required
-def edit_student(id):
-    """Edit an existing student's profile"""
-    if request.method == "POST":
-        ngo_id = request.form.get("ngo_id")
-        status = request.form.get("status")
-        first_name = request.form.get("first_name")
-        last_name = request.form.get("last_name")
-        khmer_name = request.form.get("khmer_name")
-        gender = request.form.get("gender")
-        dob = request.form.get("dob")
-        joined_date = request.form.get("joined_date")
-        guardian_name = request.form.get("guardian_name")
-        phone = request.form.get("phone_number")
-        slum = request.form.get("slum_area")
-        current_school = request.form.get("current_school")
-        grade = request.form.get("grade_level")
-        meal_plan = request.form.get("meal_plan")
-        comment = request.form.get("comment")
-        household_id = request.form.get("household_id")
-        
-        # NEW: Grab Kinship Data
-        caregiver_relationship = request.form.get("caregiver_relationship")
-        mother_name = request.form.get("mother_name")
-        father_name = request.form.get("father_name")
-
-        if not ngo_id or not first_name or not last_name:
-            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
-
-        if not household_id:
-            household_id = None # If they selected "None", save it as NULL in the database
-
-        try:
-            db.execute("""
-                UPDATE students SET
-                ngo_id = ?, status = ?, first_name = ?, last_name = ?,
-                khmer_name = ?, gender = ?, dob = ?, joined_date = ?,
-                guardian_name = ?, phone_number = ?, slum_area = ?,
-                current_school = ?, grade_level = ?, meal_plan = ?, comment = ?, household_id = ?,
-                caregiver_relationship = ?, mother_name = ?, father_name = ?
-                WHERE id = ?
-            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, id)
-            
-            log_action(f"Edited student profile: {first_name} {last_name}")
-            flash("Student profile updated successfully!", "success")
-            return redirect(f"/student/{id}")
-
-        except ValueError:
-            return render_template("apology.html", message="Update failed. NGO ID might conflict with another student. Please use your browser's BACK arrow to return.")
-
-    else:
-        student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
-        if len(student_data) != 1:
-            return render_template("apology.html", message="Student not found")
-
-        student = student_data[0]
-        
-        # UPGRADED: Fetch households AND a list of kids currently in them!
-        households = db.execute("""
-            SELECT h.id, h.guardian_name, h.phone_number, GROUP_CONCAT(s.first_name, ', ') as kids
-            FROM households h
-            LEFT JOIN students s ON h.id = s.household_id
-            GROUP BY h.id
-            ORDER BY h.guardian_name ASC
-        """)
-        
-        return render_template("edit_student.html", student=student, households=households)
-
-
-@app.route("/update_avatar/<int:id>", methods=["POST"])
-@login_required
-def update_avatar(id):
-    file = request.files.get('profile_picture')
-    if file and file.filename != '' and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        saved_name = f"profile_{id}_{int(time.time())}_{filename}"
-        file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
-        
-        db.execute("UPDATE students SET profile_picture = ? WHERE id = ?", saved_name, id)
-        log_action(f"Updated profile picture for Student ID: {id}")
-        flash("Photo updated!", "success")
-    return redirect(f"/student/{id}")
-
-
-@app.route("/manage_households", methods=["GET", "POST"])
-@login_required
-def manage_households():
-    """Enterprise view to manage all family units"""
-    if request.method == "POST":
-        action = request.form.get("action")
-        
-        # ACTION 1: Add a brand new household
-        if action == "add":
-            guardian = request.form.get("guardian_name")
-            phone = request.form.get("phone_number")
-            slum = request.form.get("slum_area")
-            
-            if not guardian:
-                flash("Guardian Name is required.", "danger")
-            else:
-                db.execute("INSERT INTO households (guardian_name, phone_number, slum_area) VALUES (?, ?, ?)",
-                           guardian, phone, slum)
-                log_action(f"Created new household: {guardian}")
-                flash(f"Household for {guardian} created successfully!", "success")
-        
-        # ACTION 2: Edit an existing household
-        elif action == "edit":
-            hh_id = request.form.get("household_id")
-            guardian = request.form.get("guardian_name")
-            phone = request.form.get("phone_number")
-            slum = request.form.get("slum_area")
-            
-            db.execute("UPDATE households SET guardian_name = ?, phone_number = ?, slum_area = ? WHERE id = ?",
-                       guardian, phone, slum, hh_id)
-            log_action(f"Updated Household ID {hh_id}: {guardian}")
-            flash("Household updated successfully! All linked students will now show this new data.", "success")
-            
-        # ACTION 3: Delete an empty household
-        elif action == "delete":
-            hh_id = request.form.get("household_id")
-            
-            # SECURITY CHECK: Make sure no kids are living in this house before we bulldoze it!
-            linked_students = db.execute("SELECT COUNT(*) as count FROM students WHERE household_id = ?", hh_id)[0]['count']
-            if linked_students > 0:
-                flash(f"Cannot delete. There are {linked_students} students still linked to this household.", "danger")
-            else:
-                db.execute("DELETE FROM households WHERE id = ?", hh_id)
-                log_action(f"Deleted Household ID {hh_id}")
-                flash("Empty household deleted successfully.", "success")
-                
-        return redirect("/manage_households")
-
-    else:
-        # GET: Fetch all households and count how many kids are inside each one!
-        households = db.execute("""
-            SELECT h.id, h.guardian_name, h.phone_number, h.slum_area, 
-                   COUNT(s.id) as student_count,
-                   GROUP_CONCAT(s.first_name, ', ') as kids
-            FROM households h
-            LEFT JOIN students s ON h.id = s.household_id
-            GROUP BY h.id
-            ORDER BY h.guardian_name ASC
-        """)
-        return render_template("manage_households.html", households=households)
-
-
-@app.route("/household/<int:id>", methods=["GET", "POST"])
-@login_required
-def household_profile(id):
-    """Dedicated dashboard for a single family/household"""
-    if request.method == "POST":
-        action = request.form.get("action")
-        
-        # ACTION 1: Unlink a student from this family
-        if action == "unlink":
-            student_id = request.form.get("student_id")
-            db.execute("UPDATE students SET household_id = NULL WHERE id = ?", student_id)
-            log_action(f"Unlinked Student ID {student_id} from Household ID {id}")
-            flash("Student successfully unlinked from this family.", "success")
-            
-        # ACTION 2: Edit the Caregiver's details (UPGRADED FOR PHOTOS & HEADCOUNT)
-        elif action == "edit_household":
-            guardian = request.form.get("guardian_name")
-            phone = request.form.get("phone_number")
-            slum = request.form.get("slum_area")
-            adults = request.form.get("adults_in_home")
-            headcount = request.form.get("total_headcount")
-            
-            # Handle Photo Upload
-            file = request.files.get('caregiver_picture')
-            if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                saved_name = f"household_{id}_{int(time.time())}_{filename}"
-                file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
-                # Update DB with the new picture
-                db.execute("UPDATE households SET caregiver_picture = ? WHERE id = ?", saved_name, id)
-
-            # Update the rest of the text data
-            db.execute("""
-                UPDATE households 
-                SET guardian_name = ?, phone_number = ?, slum_area = ?, adults_in_home = ?, total_headcount = ? 
-                WHERE id = ?
-            """, guardian, phone, slum, adults, headcount, id)
-            
-            log_action(f"Updated Household ID {id} profile (Blended Family Data)")
-            flash("Caregiver and Household details updated successfully.", "success")
-
-        # ACTION 3: NEW - Edit Biological Parents & Kinship Link
-        elif action == "edit_kinship":
-            student_id = request.form.get("student_id")
-            caregiver_relation = request.form.get("caregiver_relationship")
-            mother = request.form.get("mother_name")
-            father = request.form.get("father_name")
-            
-            db.execute("""
-                UPDATE students 
-                SET caregiver_relationship = ?, mother_name = ?, father_name = ?
-                WHERE id = ?
-            """, caregiver_relation, mother, father, student_id)
-            
-            log_action(f"Updated biological parents & kinship for Student ID {student_id}")
-            flash("Kinship and biological parent details updated successfully!", "success")
-            
-        return redirect(f"/household/{id}")
-
-    else:
-        # GET: Fetch the household details
-        household = db.execute("SELECT * FROM households WHERE id = ?", id)
-        if not household:
-            return render_template("apology.html", message="Household not found")
-            
-        # Fetch all the children currently living in this household (Now grabbing the new columns too!)
-        kids = db.execute("SELECT * FROM students WHERE household_id = ? ORDER BY dob ASC", id)
-        
-        return render_template("household_profile.html", household=household[0], kids=kids)
-
-
-# ==============================================================================
-# NEIGHBORHOOD: STUDENT PROFILES
-# ==============================================================================
-
-@app.route("/student/<int:id>")
-@login_required
-def student_profile(id):
-    student = db.execute("SELECT * FROM students WHERE id = ?", id)[0]
-
-    # --- PHASE 4: FETCH LINKED SIBLINGS ---
-    siblings = []
-    if student.get("household_id"):
-        siblings = db.execute("""
-            SELECT id, first_name, last_name, profile_picture, status, caregiver_relationship 
-            FROM students 
-            WHERE household_id = ? AND id != ?
-            ORDER BY dob ASC
-        """, student["household_id"], id)
-
-    academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
-    unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
-
-    timeframe = request.args.get("timeframe")
-
-    if timeframe and timeframe.isdigit():
-        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC LIMIT ?", id, int(timeframe))
-    elif timeframe and "-" in timeframe:
-        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? AND academic_year = ? ORDER BY id DESC", id, timeframe)
-    else:
-        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC", id)
-
-    followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY id DESC", id)
-    documents = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY id DESC", id)
-
-    # UPGRADED: LEFT JOIN and COALESCE so we don't miss the Wildcard classes!
-    raw_grades = db.execute("""
-        SELECT g.*, COALESCE(s.name, g.custom_subject_name) as subject_name
-        FROM grades g LEFT JOIN subjects s ON g.subject_id = s.id
-        WHERE g.report_id IN (SELECT id FROM monthly_reports WHERE student_id = ?)
-        ORDER BY s.sort_order ASC, subject_name ASC
-    """, id)
-
-    grades_by_report = {}
-    for g in raw_grades:
-        if g['report_id'] not in grades_by_report:
-            grades_by_report[g['report_id']] = []
-        grades_by_report[g['report_id']].append(g)
-
-    return render_template("student_profile.html", student=student, reports=reports, grades_by_report=grades_by_report, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years, siblings=siblings)
-
-
-# ==============================================================================
-# NEIGHBORHOOD: ACADEMIC & CASE LOGIC
-# ==============================================================================
-
 @app.template_filter('get_badge')
 def get_badge_filter(score, max_score):
     if not max_score: return None
@@ -763,7 +583,6 @@ def get_badge_filter(score, max_score):
         else: return ('F', 'danger')
     except (ValueError, TypeError):
         return None
-
 
 @app.route("/add_report/<int:student_id>", methods=["GET", "POST"])
 @login_required
@@ -1041,10 +860,8 @@ def edit_report(report_id):
 
 @app.route("/delete_report/<int:report_id>", methods=["POST"])
 @login_required
-@admin_required  # NEW: We just use the decorator now!
+@admin_required 
 def delete_report(report_id):
-    # DELETED: We removed the manual 'if session.get("role") != "Admin"' check from here!
-
     report = db.execute("SELECT student_id, scanned_document FROM monthly_reports WHERE id = ?", report_id)
     if not report:
         flash("Report not found.", "danger")
@@ -1065,6 +882,376 @@ def delete_report(report_id):
     flash("Academic record deleted successfully.", "success")
     return redirect(request.referrer or f"/student/{student_id}")
 
+# ==============================================================================
+# NEIGHBORHOOD: STUDENT MANAGEMENT (Index/Roster, Add Student, Edit Student)
+# ==============================================================================
+
+@app.route("/")
+@login_required
+def index():
+    """Smart Homepage that changes based on the user's active program view"""
+    program_id = session.get("program_id", 1) 
+    
+    if program_id == 0:
+        staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
+        return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
+        
+    elif program_id == 1:
+        staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
+        username = staff[0]["username"] if staff else "Staff"
+
+        # Smart Feed: Get the 5 most recently added students
+        recent_students = db.execute("""
+            SELECT id, first_name, last_name, khmer_name, ngo_id, profile_picture 
+            FROM students 
+            WHERE status = 'Active' 
+            ORDER BY id DESC LIMIT 5
+        """)
+        all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' ORDER BY first_name")
+        return render_template("index.html", username=username, recent_students=recent_students, students=all_active_students)
+
+@app.route("/roster")
+@login_required
+def roster():
+    """Show the full active roster (Moved from index)"""
+    students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' ORDER BY first_name")
+    return render_template("roster.html", students=students, title="Active Roster")
+
+@app.route("/archive")
+@login_required
+def archive():
+    """Show dropped out / graduated students"""
+    students = db.execute("SELECT * FROM students WHERE status = 'Dropped Out' OR status = 'Graduated' ORDER BY first_name")
+    return render_template("roster.html", students=students, title="Archived Students")
+
+@app.route("/guide")
+@login_required
+def guide():
+    """Show the Beta Testing Instructions"""
+    return render_template("guide.html")
+
+@app.route("/add_student", methods=["GET", "POST"])
+@login_required
+def add_student():
+    """Add a new student to the database"""
+    if request.method == "POST":
+        ngo_id = request.form.get("ngo_id")
+        status = request.form.get("status")
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
+        khmer_name = request.form.get("khmer_name")
+        gender = request.form.get("gender")
+        dob = request.form.get("dob")
+        joined_date = request.form.get("joined_date")
+        guardian_name = request.form.get("guardian_name")
+        phone = request.form.get("phone_number")
+        slum = request.form.get("slum_area")
+        current_school = request.form.get("current_school")
+        grade = request.form.get("grade_level")
+        meal_plan = request.form.get("meal_plan")
+        comment = request.form.get("comment")
+        household_id = request.form.get("household_id")
+        
+        caregiver_relationship = request.form.get("caregiver_relationship")
+        mother_name = request.form.get("mother_name")
+        father_name = request.form.get("father_name")
+
+        if not ngo_id or not first_name or not last_name:
+            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
+
+        if not household_id:
+            household_id = None 
+
+        try:
+            db.execute("""
+                INSERT INTO students
+                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name)
+            
+            # Fetch the ID of the student we just inserted to save their profile picture
+            student_id = db.execute("SELECT id FROM students WHERE ngo_id = ?", ngo_id)[0]['id']
+            
+            # Handle Profile Picture Upload
+            file = request.files.get('profile_picture')
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                saved_name = f"profile_{student_id}_{int(time.time())}_{filename}"
+                file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
+                db.execute("UPDATE students SET profile_picture = ? WHERE id = ?", saved_name, student_id)
+            
+            log_action(f"Added new student profile: {first_name} {last_name}")
+            flash(f"{first_name} added successfully!", "success")
+            return redirect("/")
+
+        except ValueError:
+            return render_template("apology.html", message="A student with that NGO ID already exists. Please use your browser's BACK arrow to return without losing data.")
+
+    else:
+        today_date = datetime.now().strftime('%Y-%m-%d')
+        households = db.execute("""
+            SELECT h.id, h.guardian_name, h.phone_number, GROUP_CONCAT(s.first_name, ', ') as kids
+            FROM households h
+            LEFT JOIN students s ON h.id = s.household_id
+            GROUP BY h.id
+            ORDER BY h.guardian_name ASC
+        """)
+        return render_template("add_student.html", today_date=today_date, households=households)
+
+
+@app.route("/edit_student/<int:id>", methods=["GET", "POST"])
+@login_required
+def edit_student(id):
+    """Edit an existing student's profile"""
+    if request.method == "POST":
+        ngo_id = request.form.get("ngo_id")
+        status = request.form.get("status")
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
+        khmer_name = request.form.get("khmer_name")
+        gender = request.form.get("gender")
+        dob = request.form.get("dob")
+        joined_date = request.form.get("joined_date")
+        guardian_name = request.form.get("guardian_name")
+        phone = request.form.get("phone_number")
+        slum = request.form.get("slum_area")
+        current_school = request.form.get("current_school")
+        grade = request.form.get("grade_level")
+        meal_plan = request.form.get("meal_plan")
+        comment = request.form.get("comment")
+        
+        household_id = request.form.get("household_id")
+        if not household_id:
+            household_id = None 
+
+        caregiver_relationship = request.form.get("caregiver_relationship")
+        mother_name = request.form.get("mother_name")
+        father_name = request.form.get("father_name")
+
+        if not ngo_id or not first_name or not last_name:
+            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
+
+        try:
+            db.execute("""
+                UPDATE students 
+                SET ngo_id = ?, first_name = ?, last_name = ?, khmer_name = ?, gender = ?, 
+                    dob = ?, joined_date = ?, guardian_name = ?, phone_number = ?, 
+                    slum_area = ?, current_school = ?, grade_level = ?, meal_plan = ?, 
+                    comment = ?, status = ?, household_id = ?, caregiver_relationship = ?, mother_name = ?, father_name = ?
+                WHERE id = ?
+            """, ngo_id, first_name, last_name, khmer_name, gender, dob, joined_date, 
+                 guardian_name, phone, slum, current_school, grade, 
+                 meal_plan, comment, status, household_id, caregiver_relationship, mother_name, father_name, id)
+            
+            log_action(f"Edited student profile: {first_name} {last_name}")
+            flash("Student updated successfully!", "success")
+            return redirect(f"/student/{id}")
+
+        except ValueError:
+            return render_template("apology.html", message="Update failed. NGO ID might conflict with another student. Please use your browser's BACK arrow to return.")
+
+    else:
+        student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
+        if len(student_data) != 1:
+            return render_template("apology.html", message="Student not found")
+
+        student = student_data[0]
+        households = db.execute("""
+            SELECT h.id, h.guardian_name, h.phone_number, GROUP_CONCAT(s.first_name, ', ') as kids
+            FROM households h
+            LEFT JOIN students s ON h.id = s.household_id
+            GROUP BY h.id
+            ORDER BY h.guardian_name ASC
+        """)
+        
+        return render_template("edit_student.html", student=student, households=households)
+
+
+@app.route("/update_avatar/<int:id>", methods=["POST"])
+@login_required
+def update_avatar(id):
+    file = request.files.get('profile_picture')
+    if file and file.filename != '' and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        saved_name = f"profile_{id}_{int(time.time())}_{filename}"
+        file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
+        
+        db.execute("UPDATE students SET profile_picture = ? WHERE id = ?", saved_name, id)
+        log_action(f"Updated profile picture for Student ID: {id}")
+        flash("Photo updated!", "success")
+    return redirect(f"/student/{id}")
+
+
+@app.route("/manage_households", methods=["GET", "POST"])
+@login_required
+def manage_households():
+    """Enterprise view to manage all family units"""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action == "add":
+            guardian = request.form.get("guardian_name")
+            phone = request.form.get("phone_number")
+            slum = request.form.get("slum_area")
+            
+            if not guardian:
+                flash("Guardian Name is required.", "danger")
+            else:
+                db.execute("INSERT INTO households (guardian_name, phone_number, slum_area) VALUES (?, ?, ?)",
+                           guardian, phone, slum)
+                log_action(f"Created new household: {guardian}")
+                flash(f"Household for {guardian} created successfully!", "success")
+        
+        elif action == "edit":
+            hh_id = request.form.get("household_id")
+            guardian = request.form.get("guardian_name")
+            phone = request.form.get("phone_number")
+            slum = request.form.get("slum_area")
+            
+            db.execute("UPDATE households SET guardian_name = ?, phone_number = ?, slum_area = ? WHERE id = ?",
+                       guardian, phone, slum, hh_id)
+            log_action(f"Updated Household ID {hh_id}: {guardian}")
+            flash("Household updated successfully! All linked students will now show this new data.", "success")
+            
+        elif action == "delete":
+            hh_id = request.form.get("household_id")
+            linked_students = db.execute("SELECT COUNT(*) as count FROM students WHERE household_id = ?", hh_id)[0]['count']
+            if linked_students > 0:
+                flash(f"Cannot delete. There are {linked_students} students still linked to this household.", "danger")
+            else:
+                db.execute("DELETE FROM households WHERE id = ?", hh_id)
+                log_action(f"Deleted Household ID {hh_id}")
+                flash("Empty household deleted successfully.", "success")
+                
+        return redirect("/manage_households")
+
+    else:
+        households = db.execute("""
+            SELECT h.id, h.guardian_name, h.phone_number, h.slum_area, 
+                   COUNT(s.id) as student_count,
+                   GROUP_CONCAT(s.first_name, ', ') as kids
+            FROM households h
+            LEFT JOIN students s ON h.id = s.household_id
+            GROUP BY h.id
+            ORDER BY h.guardian_name ASC
+        """)
+        return render_template("manage_households.html", households=households)
+
+
+@app.route("/household/<int:id>", methods=["GET", "POST"])
+@login_required
+def household_profile(id):
+    """Dedicated dashboard for a single family/household"""
+    if request.method == "POST":
+        action = request.form.get("action")
+        
+        if action == "unlink":
+            student_id = request.form.get("student_id")
+            db.execute("UPDATE students SET household_id = NULL WHERE id = ?", student_id)
+            log_action(f"Unlinked Student ID {student_id} from Household ID {id}")
+            flash("Student successfully unlinked from this family.", "success")
+            
+        elif action == "edit_household":
+            guardian = request.form.get("guardian_name")
+            phone = request.form.get("phone_number")
+            slum = request.form.get("slum_area")
+            adults = request.form.get("adults_in_home")
+            headcount = request.form.get("total_headcount")
+            
+            file = request.files.get('caregiver_picture')
+            if file and file.filename != '' and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                saved_name = f"household_{id}_{int(time.time())}_{filename}"
+                file.save(os.path.join(app.config['PROFILE_UPLOAD_FOLDER'], saved_name))
+                db.execute("UPDATE households SET caregiver_picture = ? WHERE id = ?", saved_name, id)
+
+            db.execute("""
+                UPDATE households 
+                SET guardian_name = ?, phone_number = ?, slum_area = ?, adults_in_home = ?, total_headcount = ? 
+                WHERE id = ?
+            """, guardian, phone, slum, adults, headcount, id)
+            
+            log_action(f"Updated Household ID {id} profile (Blended Family Data)")
+            flash("Caregiver and Household details updated successfully.", "success")
+
+        elif action == "edit_kinship":
+            student_id = request.form.get("student_id")
+            caregiver_relation = request.form.get("caregiver_relationship")
+            mother = request.form.get("mother_name")
+            father = request.form.get("father_name")
+            
+            db.execute("""
+                UPDATE students 
+                SET caregiver_relationship = ?, mother_name = ?, father_name = ?
+                WHERE id = ?
+            """, caregiver_relation, mother, father, student_id)
+            
+            log_action(f"Updated biological parents & kinship for Student ID {student_id}")
+            flash("Kinship and biological parent details updated successfully!", "success")
+            
+        return redirect(f"/household/{id}")
+
+    else:
+        household = db.execute("SELECT * FROM households WHERE id = ?", id)
+        if not household:
+            return render_template("apology.html", message="Household not found")
+            
+        kids = db.execute("SELECT * FROM students WHERE household_id = ? ORDER BY dob ASC", id)
+        return render_template("household_profile.html", household=household[0], kids=kids)
+
+
+# ==============================================================================
+# NEIGHBORHOOD: STUDENT PROFILES
+# ==============================================================================
+
+@app.route("/student/<int:id>")
+@login_required
+def student_profile(id):
+    student = db.execute("SELECT * FROM students WHERE id = ?", id)[0]
+
+    siblings = []
+    if student.get("household_id"):
+        siblings = db.execute("""
+            SELECT id, first_name, last_name, profile_picture, status, caregiver_relationship 
+            FROM students 
+            WHERE household_id = ? AND id != ?
+            ORDER BY dob ASC
+        """, student["household_id"], id)
+
+    academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
+    unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
+
+    timeframe = request.args.get("timeframe")
+
+    if timeframe and timeframe.isdigit():
+        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC LIMIT ?", id, int(timeframe))
+    elif timeframe and "-" in timeframe:
+        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? AND academic_year = ? ORDER BY id DESC", id, timeframe)
+    else:
+        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC", id)
+
+    followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY id DESC", id)
+    documents = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY id DESC", id)
+
+    raw_grades = db.execute("""
+        SELECT g.*, COALESCE(s.name, g.custom_subject_name) as subject_name
+        FROM grades g LEFT JOIN subjects s ON g.subject_id = s.id
+        WHERE g.report_id IN (SELECT id FROM monthly_reports WHERE student_id = ?)
+        ORDER BY s.sort_order ASC, subject_name ASC
+    """, id)
+
+    grades_by_report = {}
+    for g in raw_grades:
+        if g['report_id'] not in grades_by_report:
+            grades_by_report[g['report_id']] = []
+        grades_by_report[g['report_id']].append(g)
+
+    return render_template("student_profile.html", student=student, reports=reports, grades_by_report=grades_by_report, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years, siblings=siblings)
+
+
+# ==============================================================================
+# NEIGHBORHOOD: CASE LOGIC (Follow Ups)
+# ==============================================================================
 
 @app.route("/add_followup/<int:student_id>", methods=["GET", "POST"])
 @login_required
@@ -1186,7 +1373,6 @@ def bulk_followup():
         location = request.form.get("location")
         general_notes = request.form.get("general_notes")
         
-        # request.form.getlist grabs EVERY checked box and puts the IDs in a python list!
         student_ids = request.form.getlist("student_ids")
 
         if not followup_date or not completed_by:
@@ -1197,7 +1383,6 @@ def bulk_followup():
             flash("You must select at least one student from the list.", "warning")
             return redirect("/bulk_followup")
 
-        # Loop through the checked students and save the EXACT SAME record for each of them
         for sid in student_ids:
             db.execute("""
                 INSERT INTO followups (
@@ -1210,7 +1395,6 @@ def bulk_followup():
         flash(f"Successfully logged group follow-up for {len(student_ids)} students!", "success")
         return redirect("/dashboard")
 
-    # For the GET request, grab all active kids
     students = db.execute("""
         SELECT id, first_name, last_name, khmer_name, ngo_id, grade_level 
         FROM students 
@@ -1218,7 +1402,6 @@ def bulk_followup():
         ORDER BY first_name ASC
     """)
     today_date = datetime.now().strftime('%Y-%m-%d')
-    
     staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
     current_user = staff_query[0]["username"] if staff_query else ""
 
@@ -1261,10 +1444,8 @@ def upload_document(student_id):
 
 @app.route("/delete_document/<int:doc_id>")
 @login_required
-@admin_required  # NEW: We just use the decorator now!
+@admin_required 
 def delete_document(doc_id):
-    # DELETED: We removed the manual Admin check from here too!
-
     doc = db.execute("SELECT * FROM documents WHERE id = ?", doc_id)
     if not doc:
         return "Document not found", 404
@@ -1357,7 +1538,7 @@ def settings():
         action = request.form.get("action")
         if action == "add_subject":
             new_subject = request.form.get("new_subject")
-            category = request.form.get("category", "General") # Default fallback
+            category = request.form.get("category", "General") 
             if not new_subject:
                 flash("Subject name cannot be empty", "danger")
                 return redirect("/settings")
@@ -1389,51 +1570,8 @@ def settings():
 
 
 # ==============================================================================
-# NEIGHBORHOOD: AUTHENTICATION
+# NEIGHBORHOOD: AUTHENTICATION & STAFF MANAGEMENT
 # ==============================================================================
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    """Register new EEP staff member"""
-    staff_count = db.execute("SELECT COUNT(*) as count FROM staff")[0]["count"]
-    if staff_count > 0:
-        if "user_id" not in session:
-            flash("You must be logged in as an Admin to register new staff.", "danger")
-            return redirect("/login")
-
-        current_user_role = db.execute("SELECT role FROM staff WHERE id = ?", session["user_id"])[0]["role"]
-        if current_user_role != "Admin":
-            flash("Unauthorized: Only Admins can register new staff.", "danger")
-            return redirect("/")
-
-    if request.method == "POST":
-        username = request.form.get("username")
-        role = request.form.get("role")
-        password = request.form.get("password")
-        confirmation = request.form.get("confirmation")
-
-        if not username or not role or not password or not confirmation:
-            flash("Error: All fields are required!", "danger")
-            return redirect("/register")
-
-        if password != confirmation:
-            flash("Error: Passwords do not match!", "danger")
-            return redirect("/register")
-
-        hash_password = generate_password_hash(password)
-
-        try:
-            db.execute("INSERT INTO staff (username, hash, role) VALUES (?, ?, ?)", username, hash_password, role)
-        except ValueError:
-            flash("Error: Username already exists!", "danger")
-            return redirect("/register")
-
-        log_action(f"Created new staff account: {username} ({role})")
-        flash("Account created successfully!", "success")
-        return redirect("/")
-
-    return render_template("register.html")
-
 
 @app.route("/manage_staff", methods=["GET", "POST"])
 @login_required
@@ -1443,7 +1581,6 @@ def manage_staff():
     if request.method == "POST":
         action = request.form.get("action")
         
-        # ACTION 1: Add a new staff member
         if action == "add":
             username = request.form.get("username")
             password = request.form.get("password")
@@ -1463,13 +1600,11 @@ def manage_staff():
             except ValueError:
                 flash("Error: Username already exists.", "danger")
                 
-        # ACTION 2: Edit permissions
         elif action == "edit":
             staff_id = request.form.get("staff_id")
             new_role = request.form.get("role")
             new_scope = request.form.get("program_scope")
             
-            # Prevent the PM from accidentally locking themselves out!
             if int(staff_id) == session["user_id"] and new_role != "Admin":
                 flash("Security Warning: You cannot remove your own Admin privileges.", "warning")
             else:
@@ -1477,14 +1612,11 @@ def manage_staff():
                 log_action(f"Updated permissions for Staff ID {staff_id} to {new_role}/{new_scope}")
                 flash("Staff permissions updated successfully.", "success")
                 
-        # ACTION 3: Reset Password
         elif action == "reset_password":
             staff_id = request.form.get("staff_id")
-            # Force reset the password to '123456'
             new_hash = generate_password_hash("123456")
             db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, staff_id)
             
-            # Get username for the log
             staff_name = db.execute("SELECT username FROM staff WHERE id = ?", staff_id)[0]['username']
             log_action(f"Forced password reset for {staff_name}")
             flash(f"Password for {staff_name} has been reset to '123456'. Tell them to log in and change it immediately.", "info")
@@ -1492,10 +1624,8 @@ def manage_staff():
         return redirect("/manage_staff")
 
     else:
-        # GET: Show the dashboard
         staff_members = db.execute("SELECT id, username, role, program_scope FROM staff ORDER BY role ASC, username ASC")
         return render_template("manage_staff.html", staff_members=staff_members)
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -1516,25 +1646,64 @@ def login():
             flash("Error: Invalid username and/or password", "danger")
             return redirect("/login")
 
-        # Remember which user has logged in
         session["user_id"] = rows[0]["id"]
         session["role"] = rows[0]["role"]
         
-        # NEW: Set their default program context!
-        program_info = db.execute("SELECT name, icon FROM programs WHERE id = ?", rows[0]["program_id"])
-        if program_info:
-            session["program_id"] = rows[0]["program_id"]
-            session["program_name"] = program_info[0]["name"]
-            session["program_icon"] = program_info[0]["icon"]
-        else:
-            session["program_id"] = 0
-            session["program_name"] = "Global View"
-            session["program_icon"] = "bi-globe-americas"
+        # Handle the custom Context Switcher fallback
+        program_id = rows[0].get("program_id", 1) # Default to EEP (1) if no program_id
+        
+        try:
+            program_info = db.execute("SELECT name, icon FROM programs WHERE id = ?", program_id)
+            if program_info:
+                session["program_id"] = program_id
+                session["program_name"] = program_info[0]["name"]
+                session["program_icon"] = program_info[0]["icon"]
+            else:
+                session["program_id"] = 0
+                session["program_name"] = "Central Administration"
+                session["program_icon"] = "bi-buildings-fill"
+        except Exception:
+            # Fallback if the programs table isn't fully set up yet
+            session["program_id"] = 1
+            session["program_name"] = "EEP Program"
+            session["program_icon"] = "bi-book-fill"
         
         log_action("Logged into the system")
         return redirect("/")
 
     return render_template("login.html")
+
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    """Allow users to securely change their own password"""
+    if request.method == "POST":
+        old_password = request.form.get("old_password")
+        new_password = request.form.get("new_password")
+        confirmation = request.form.get("confirmation")
+
+        if not old_password or not new_password or not confirmation:
+            flash("Error: All fields are required.", "danger")
+            return redirect("/change_password")
+
+        if new_password != confirmation:
+            flash("Error: New passwords do not match.", "danger")
+            return redirect("/change_password")
+
+        user = db.execute("SELECT hash FROM staff WHERE id = ?", session["user_id"])
+        if not check_password_hash(user[0]["hash"], old_password):
+            flash("Error: Incorrect current password.", "danger")
+            return redirect("/change_password")
+
+        new_hash = generate_password_hash(new_password)
+        db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, session["user_id"])
+        
+        log_action("Changed their account password")
+        flash("Success! Your password has been securely updated.", "success")
+        return redirect("/")
+
+    else:
+        return render_template("change_password.html")
 
 @app.route("/switch_program/<int:pid>")
 @login_required
@@ -1546,8 +1715,8 @@ def switch_program(pid):
         
     if pid == 0:
         session["program_id"] = 0
-        session["program_name"] = "Global View"
-        session["program_icon"] = "bi-globe-americas"
+        session["program_name"] = "Central Administration"
+        session["program_icon"] = "bi-buildings-fill"
     else:
         program = db.execute("SELECT name, icon FROM programs WHERE id = ?", pid)
         if program:
