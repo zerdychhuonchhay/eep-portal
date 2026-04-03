@@ -84,10 +84,12 @@
                                 <!-- Action Buttons -->
                                 <td class="action-cell text-end pe-2 pe-md-3 border-bottom-md">
                                     <div class="btn-group shadow-sm w-100 w-md-auto">
-                                        <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold" title="Add Report">
+                                        <!-- MOBILE UX FIX: Grading hidden on mobile -->
+                                        <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold d-none d-md-inline-flex align-items-center justify-content-center" title="Add Report">
                                             <i class="bi bi-journal-plus"></i> <span class="ms-1">Grades</span>
                                         </a>
-                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-danger fw-bold" title="Add Follow-Up">
+                                        <!-- Note: On mobile, this will automatically stretch to full width since Grades is hidden! -->
+                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-danger fw-bold d-flex align-items-center justify-content-center w-100" title="Add Follow-Up">
                                             <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1">Notes</span>
                                         </a>
                                     </div>

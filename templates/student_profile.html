@@ -130,7 +130,8 @@
                 <div class="tab-pane fade show active" id="academics" role="tabpanel" aria-labelledby="academics-tab">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="fw-bold text-dark mb-0">Academic History</h4>
-                        <a href="/add_report/{{ student.id }}" class="btn btn-primary fw-bold shadow-sm"><i class="bi bi-plus-circle me-1"></i> Add Report</a>
+                        <!-- MOBILE UX FIX: Grading hidden on mobile -->
+                        <a href="/add_report/{{ student.id }}" class="btn btn-primary fw-bold shadow-sm d-none d-md-inline-block"><i class="bi bi-plus-circle me-1"></i> Add Report</a>
                     </div>
                     
                     {% for report in reports %}
@@ -187,9 +188,10 @@
                             {% endif %}
                             
                             <div>
-                                <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-light border fw-bold text-dark me-2">Edit</a>
+                                <!-- MOBILE UX FIX: Grading edits hidden on mobile -->
+                                <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-light border fw-bold text-dark me-2 d-none d-md-inline-block">Edit</a>
                                 {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
-                                <form action="/delete_report/{{ report.id }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
+                                <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
                                     <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" aria-label="Delete Report"><i class="bi bi-trash-fill"></i></button>
                                 </form>
                                 {% endif %}
