@@ -19,7 +19,8 @@
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body p-0">
             <div class="table-responsive p-4">
-                <table id="staffTable" class="table table-hover align-middle mb-0">
+                <!-- ADDED: mobile-cards-table class -->
+                <table id="staffTable" class="table table-hover align-middle mb-0 mobile-cards-table">
                     <thead class="table-light text-muted small text-uppercase">
                         <tr>
                             <th>Username</th>
@@ -31,14 +32,15 @@
                     <tbody>
                         {% for st in staff_members %}
                         <tr>
-                            <td class="fw-bold">
+                            <!-- ADDED: data-label attributes to every td -->
+                            <td data-label="Username" class="fw-bold">
                                 <i class="bi bi-person-circle text-secondary me-2"></i>{{ st.username }}
                                 {% if st.id == session.user_id %}
                                     <span class="badge bg-success ms-2">You</span>
                                 {% endif %}
                             </td>
                             
-                            <td>
+                            <td data-label="Job Role">
                                 {% if st.role == 'Admin' %}
                                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="bi bi-key-fill me-1"></i> Admin / PM</span>
                                 {% elif st.role == 'Director' %}
@@ -50,7 +52,7 @@
                                 {% endif %}
                             </td>
                             
-                            <td>
+                            <td data-label="Scope">
                                 {% if st.program_scope == 'Global' %}
                                     <span class="fw-bold text-primary"><i class="bi bi-globe-americas me-1"></i> Global (All Data)</span>
                                 {% else %}
@@ -58,8 +60,8 @@
                                 {% endif %}
                             </td>
                             
-                            <td class="text-end pe-3">
-                                <div class="btn-group shadow-sm">
+                            <td data-label="Actions" class="text-md-end pe-3">
+                                <div class="btn-group shadow-sm w-100 w-md-auto">
                                     <!-- Edit Permissions -->
                                     <button type="button" class="btn btn-sm btn-outline-primary fw-bold" 
                                             data-bs-toggle="modal" data-bs-target="#editStaffModal"
@@ -68,10 +70,10 @@
                                     </button>
                                     
                                     <!-- Reset Password -->
-                                    <form action="/manage_staff" method="post" class="d-inline" onsubmit="return confirm('Force password reset for {{ st.username }}? Their password will become 123456.');">
+                                    <form action="/manage_staff" method="post" class="d-inline m-0" onsubmit="return confirm('Force password reset for {{ st.username }}? Their password will become 123456.');">
                                         <input type="hidden" name="action" value="reset_password">
                                         <input type="hidden" name="staff_id" value="{{ st.id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-warning fw-bold text-dark" title="Reset Password to 123456"><i class="bi bi-unlock-fill"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-warning fw-bold text-dark h-100" title="Reset Password to 123456"><i class="bi bi-unlock-fill"></i></button>
                                     </form>
                                 </div>
                             </td>
@@ -83,6 +85,25 @@
         </div>
     </div>
 </div>
+
+<!-- ADDED: Mobile Cards CSS -->
+<style>
+    @media (max-width: 767.98px) {
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info { display: none !important; }
+        .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1rem; }
+        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; border-radius: 8px; padding: 0.5rem; }
+        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table th, .mobile-cards-table td, .mobile-cards-table tr { display: block; width: 100%; }
+        .mobile-cards-table thead { display: none !important; }
+        .mobile-cards-table tr { margin-bottom: 1rem; border: 1px solid #dee2e6; border-radius: 12px; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 0.5rem; }
+        .mobile-cards-table td { position: relative; padding: 0.75rem 0.5rem 0.75rem 40% !important; border: none !important; border-bottom: 1px solid #f8f9fa !important; text-align: right; }
+        .mobile-cards-table td:last-child { border-bottom: none !important; }
+        .mobile-cards-table td::before { content: attr(data-label); position: absolute; left: 0.5rem; top: 0.75rem; width: 35%; text-align: left; font-weight: bold; font-size: 0.8rem; color: #6c757d; text-transform: uppercase; }
+        
+        /* Make button groups stack nicely on mobile cards */
+        .mobile-cards-table .btn-group { display: flex; width: 100%; gap: 0.25rem; }
+        .mobile-cards-table .btn-group .btn { border-radius: 6px !important; }
+    }
+</style>
 
 <!-- ============================================== -->
 <!-- MODAL 1: ADD NEW STAFF                         -->

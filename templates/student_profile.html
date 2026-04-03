@@ -1,434 +1,756 @@
 {% extends "layout.html" %}
 
-{% block title %}Student Profile - {{ student.first_name }}{% endblock %}
+{% block title %}{{ student.first_name }} {{ student.last_name }} - Profile{% endblock %}
 
 {% block main %}
-<div class="container-fluid px-lg-5 mt-4 mb-5 text-start">
-
-    <!-- Top Action Bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <div>
-            <h2 class="mb-0 fw-bold"><i class="bi bi-person-badge text-primary me-2"></i>Student Profile</h2>
-            <p class="text-muted small mb-0">Detailed record for {{ student.first_name }} {{ student.last_name }}</p>
-        </div>
+<div class="container-fluid px-lg-4 pt-3 pb-5">
+    
+    <!-- HEADER SECTION -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Roster</a></li>
+                <li class="breadcrumb-item active fw-bold text-primary" aria-current="page">Student Profile</li>
+            </ol>
+        </nav>
         <div class="d-flex gap-2">
-            <a href="/" class="btn btn-outline-secondary shadow-sm fw-bold">
-                <i class="bi bi-arrow-left"></i> Roster
-            </a>
-            {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
-            <a href="/edit_student/{{ student.id }}" class="btn btn-warning shadow-sm fw-bold">
-                <i class="bi bi-pencil-square me-1"></i> Edit Profile
-            </a>
-            {% endif %}
+            <!-- MOBILE UX FIX: Quick Note is allowed on mobile. Edit Profile is a desk job. -->
+            <a href="/add_followup/{{ student.id }}" class="btn btn-danger shadow-sm fw-bold rounded-pill px-3"><i class="bi bi-clipboard2-heart-fill me-1"></i> Quick Note</a>
+            <a href="/edit_student/{{ student.id }}" class="btn btn-white border shadow-sm fw-bold d-none d-md-inline-block rounded-pill px-3 text-dark"><i class="bi bi-pencil-square me-1"></i> Edit Profile</a>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row g-4">
         <!-- ========================================== -->
-        <!-- LEFT COLUMN: IDENTITY & KINSHIP CARD       -->
+        <!-- LEFT COLUMN: PROFILE & HOUSEHOLD CARDS     -->
         <!-- ========================================== -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 rounded-4 sticky-lg-top" style="top: 20px; z-index: 1;">
+        <div class="col-lg-4">
+            <!-- SMART SCROLL: Sticky positioning keeps this in view naturally while the whole page scrolls -->
+            <div class="sticky-lg-top" style="top: 20px; z-index: 5;">
                 
-                <div class="bg-primary bg-opacity-10 rounded-top-4 py-4 text-center">
-                    <div class="position-relative d-inline-block mb-3">
-                        {% set thumb = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=150" %}
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb }}" alt="Profile Avatar for {{ student.first_name }}" class="rounded-circle border border-4 border-white shadow avatar-xl">
-                        
-                        <span class="position-absolute bottom-0 end-0 p-2 border border-light border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-primary{% endif %}" title="{{ student.status }}"></span>
-                    </div>
-
-                    <h4 class="fw-bold text-dark mb-1 px-3">{{ student.first_name }} {{ student.last_name }}</h4>
-                    <p class="khmer-font text-muted fw-bold mb-2">{{ student.khmer_name if student.khmer_name else '' }}</p>
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary border px-3 py-2 rounded-pill fs-6">{{ student.ngo_id }}</span>
-                </div>
-                
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-uppercase text-muted small mb-3 border-bottom pb-2">Demographics</h6>
-                    <ul class="list-unstyled small mb-4">
-                        <li class="mb-2"><i class="bi bi-gender-ambiguous text-primary me-2"></i> <strong>Gender:</strong> {{ student.gender }}</li>
-                        <li class="mb-2"><i class="bi bi-calendar-event text-primary me-2"></i> <strong>DOB:</strong> {{ student.dob }}</li>
-                        <li class="mb-2"><i class="bi bi-box-arrow-in-right text-primary me-2"></i> <strong>Joined:</strong> {{ student.joined_date }}</li>
-                    </ul>
-
-                    <h6 class="fw-bold text-uppercase text-muted small mb-3 border-bottom pb-2">Education & Nutrition</h6>
-                    <ul class="list-unstyled small mb-4">
-                        <li class="mb-2"><i class="bi bi-building text-success me-2"></i> <strong>School:</strong> <span class="khmer-font">{{ student.current_school }}</span></li>
-                        <li class="mb-2"><i class="bi bi-mortarboard text-success me-2"></i> <strong>Grade:</strong> {{ student.grade_level }}</li>
-                        <li class="mb-2"><i class="bi bi-basket2 text-success me-2"></i> <strong>Meals:</strong> 
-                            {% if student.meal_plan == 'Daily Hot Lunch' %}
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success">Hot Lunch</span>
-                            {% elif student.meal_plan == 'Monthly Groceries' %}
-                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning">Groceries</span>
+                <!-- MODERN IDENTITY CARD -->
+                <div class="card shadow-sm border-0 rounded-4 text-center mb-4 overflow-hidden">
+                    <!-- Colored Gradient Header -->
+                    <div class="bg-primary bg-gradient w-100" style="height: 100px;"></div>
+                    
+                    <div class="card-body px-4 pb-4 position-relative" style="margin-top: -65px;">
+                        <div class="position-relative d-inline-block mx-auto mb-3">
+                            {% if student.profile_picture %}
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) }}" class="rounded-circle shadow avatar-xl border border-4 border-white" style="object-fit: cover; width: 130px; height: 130px;" alt="Profile Picture">
                             {% else %}
-                                <span class="badge bg-secondary opacity-50">None</span>
+                                {% set thumb = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=150" %}
+                                <img src="{{ thumb }}" class="rounded-circle shadow avatar-xl border border-4 border-white" style="width: 130px; height: 130px;" alt="Default Avatar">
                             {% endif %}
-                        </li>
-                    </ul>
-
-                    <h6 class="fw-bold text-uppercase text-muted small mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
-                        <span>Household & Kinship</span>
-                        {% if student.household_id %}
-                        <a href="/household/{{ student.household_id }}" class="badge bg-info text-decoration-none shadow-sm"><i class="bi bi-house-fill me-1"></i>View Family</a>
+                            
+                            <!-- Status Badge Indicator -->
+                            <span class="position-absolute bottom-0 end-0 p-2 bg-{% if student.status == 'Active' %}success{% elif student.status == 'Dropped Out' %}danger{% else %}secondary{% endif %} border border-light border-2 rounded-circle shadow-sm" title="{{ student.status }}">
+                                <span class="visually-hidden">Status: {{ student.status }}</span>
+                            </span>
+                        </div>
+                        
+                        <h4 class="fw-bold mb-1 text-dark">{{ student.first_name }} {{ student.last_name }}</h4>
+                        {% if student.first_name_kh or student.last_name_kh %}
+                            <p class="khmer-font text-muted mb-2 fs-6">{{ student.first_name_kh }} {{ student.last_name_kh }}</p>
                         {% endif %}
-                    </h6>
-                    <div class="list-unstyled small mb-4 bg-light p-3 rounded border">
-                        <div class="mb-2"><i class="bi bi-person-hearts text-info me-2"></i> <strong>Caregiver:</strong> <span class="khmer-font">{{ student.guardian_name }}</span></div>
-                        <div class="mb-2"><i class="bi bi-telephone text-info me-2"></i> <strong>Phone:</strong> {{ student.phone_number }}</div>
-                        <div class="mb-2"><i class="bi bi-geo-alt text-info me-2"></i> <strong>Area:</strong> <span class="khmer-font">{{ student.slum_area }}</span></div>
+
+                        <p class="text-muted mb-3 small fw-bold">
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1"><i class="bi bi-person-badge me-1"></i> {{ student.ngo_id }}</span>
+                        </p>
                         
-                        <hr class="my-2 opacity-25">
-                        
-                        <div class="mb-1 text-muted"><strong>Relation to Caregiver:</strong> {{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</div>
-                        <div class="mb-1 text-muted"><strong>Mother:</strong> <span class="khmer-font">{{ student.mother_name if student.mother_name else 'Unknown' }}</span></div>
-                        <div class="mb-1 text-muted"><strong>Father:</strong> <span class="khmer-font">{{ student.father_name if student.father_name else 'Unknown' }}</span></div>
-                        
-                        {% if siblings %}
-                        <hr class="my-2 opacity-25">
-                        <div class="mt-3">
-                            <strong class="d-block mb-2 text-dark">Siblings in EEP:</strong>
-                            <div class="d-flex flex-wrap gap-2">
-                            {% for sib in siblings %}
-                                <a href="/student/{{ sib.id }}" class="text-decoration-none" title="{{ sib.first_name }} {{ sib.last_name }}">
-                                    {% set s_thumb = "https://ui-avatars.com/api/?name=" ~ sib.first_name ~ "+" ~ sib.last_name ~ "&background=random&color=fff&size=40" %}
-                                    <img src="{{ url_for('static', filename='uploads/profiles/' + sib.profile_picture) if sib.profile_picture else s_thumb }}" alt="Avatar for sibling {{ sib.first_name }}" class="rounded-circle border shadow-sm avatar-sm">
-                                </a>
-                            {% endfor %}
+                        <div class="d-flex justify-content-center gap-2 mb-4">
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill"><i class="bi bi-mortarboard-fill me-1"></i> {{ student.grade_level }}</span>
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill"><i class="bi bi-calendar-event me-1"></i> Age: {{ student.age if student.age else '?' }}</span>
+                        </div>
+
+                        <!-- Data Grid -->
+                        <div class="text-start bg-light rounded-4 p-3 small border">
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted fw-bold"><i class="bi bi-building me-1"></i> Program</span>
+                                <span class="fw-bold text-dark">{{ student.program_name if student.program_name else 'Global' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted fw-bold"><i class="bi bi-geo-alt-fill me-1"></i> School</span>
+                                <span class="khmer-font fw-bold text-dark text-end ms-2">{{ student.current_school if student.current_school else 'N/A' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted fw-bold"><i class="bi bi-gender-ambiguous me-1"></i> Gender</span>
+                                <span class="fw-bold text-dark">{{ student.gender }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                                <span class="text-muted fw-bold"><i class="bi bi-calendar-plus me-1"></i> Joined Date</span>
+                                <span class="fw-bold text-dark">{{ student.joined_date if student.joined_date else 'Unknown' }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted fw-bold"><i class="bi bi-egg-fried me-1"></i> Nutrition</span>
+                                <span class="{% if student.meal_plan == 'Daily Hot Lunch' %}text-success bg-success bg-opacity-10 px-2 rounded{% elif student.meal_plan == 'Monthly Groceries' %}text-warning bg-warning bg-opacity-10 px-2 rounded text-darken{% else %}text-muted{% endif %} fw-bold">{{ student.meal_plan if student.meal_plan else 'None' }}</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- MODERN HOUSEHOLD & KINSHIP CARD -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-danger border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-house-heart-fill text-danger me-2"></i>Family & Kinship</h5>
+                        <!-- MOBILE UX FIX: Household linking hidden on mobile -->
+                        <button class="btn btn-sm btn-outline-danger rounded-pill d-none d-md-inline-block fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#kinshipModal">Link Family</button>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if household %}
+                            <!-- Central Household Info -->
+                            <div class="bg-danger bg-opacity-10 p-3 rounded-4 mb-3 border border-danger border-opacity-25">
+                                <h6 class="fw-bold mb-1 text-danger-emphasis">
+                                    {{ household.guardian_name }} 
+                                    <span class="badge bg-danger ms-1 rounded-pill" style="font-size: 0.65rem;">Head of House</span>
+                                </h6>
+                                <div class="small text-danger-emphasis fw-bold mb-1">
+                                    <i class="bi bi-telephone-fill me-1 opacity-75"></i> 
+                                    {% if household.phone_number %}
+                                        <a href="tel:{{ household.phone_number }}" class="text-decoration-none text-danger-emphasis">{{ household.phone_number }}</a>
+                                    {% else %}
+                                        No Phone
+                                    {% endif %}
+                                </div>
+                                <div class="small text-danger-emphasis fw-bold khmer-font"><i class="bi bi-geo-alt-fill me-1 opacity-75"></i> {{ household.slum_area if household.slum_area else 'Unknown Area' }}</div>
+                                <div class="mt-3 text-end border-top border-danger border-opacity-25 pt-2">
+                                    <a href="/household/{{ household.id }}" class="btn btn-sm btn-danger py-0 px-3 rounded-pill shadow-sm fw-bold" style="font-size: 0.75rem;">View Full Family</a>
+                                </div>
+                            </div>
+                            
+                            <!-- RESTORED: Biological Parents Block -->
+                            <div class="bg-light p-3 rounded-4 mb-3 border">
+                                <h6 class="fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-diagram-3-fill text-info me-1"></i> Biological Parents</h6>
+                                <div class="small">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted fw-bold">Mother:</span>
+                                        <span class="khmer-font fw-bold text-dark">{{ student.mother_name if student.mother_name else 'Unknown' }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted fw-bold">Father:</span>
+                                        <span class="khmer-font fw-bold text-dark">{{ student.father_name if student.father_name else 'Unknown' }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between border-top pt-1 mt-1">
+                                        <span class="text-muted fw-bold">Relation to Head:</span>
+                                        <span class="fw-bold text-info">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Siblings List -->
+                            {% if siblings %}
+                                <h6 class="fw-bold small text-muted text-uppercase mb-2 ms-1">Siblings in Program ({{ siblings|length }})</h6>
+                                <div class="list-group list-group-flush rounded-4 border shadow-sm">
+                                    {% for sib in siblings %}
+                                        <a href="/student/{{ sib.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 border-bottom">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px;">
+                                                    <i class="bi bi-person-fill text-secondary small"></i>
+                                                </div>
+                                                <span class="small fw-bold text-dark">{{ sib.first_name }} {{ sib.last_name }}</span>
+                                            </div>
+                                            <span class="badge bg-light text-dark border rounded-pill">{{ sib.grade_level }}</span>
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <!-- Legacy fallback if not linked to a central household -->
+                            <div class="bg-warning bg-opacity-10 p-3 rounded-4 mb-3 border border-warning border-opacity-50">
+                                <h6 class="fw-bold mb-1 text-dark">{{ student.guardian_name if student.guardian_name else 'Unknown' }} <span class="badge bg-warning text-dark ms-1 rounded-pill">Unlinked</span></h6>
+                                <div class="small text-muted mb-1 fw-bold"><i class="bi bi-telephone-fill me-1"></i> {{ student.phone_number if student.phone_number else 'No Phone' }}</div>
+                                <div class="small text-muted khmer-font fw-bold"><i class="bi bi-geo-alt-fill me-1"></i> {{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
+                            </div>
+                            
+                            <!-- RESTORED: Biological Parents Block (Legacy) -->
+                            <div class="bg-light p-3 rounded-4 mb-3 border">
+                                <h6 class="fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-diagram-3-fill text-info me-1"></i> Biological Parents</h6>
+                                <div class="small">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted fw-bold">Mother:</span>
+                                        <span class="khmer-font fw-bold text-dark">{{ student.mother_name if student.mother_name else 'Unknown' }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="text-muted fw-bold">Father:</span>
+                                        <span class="khmer-font fw-bold text-dark">{{ student.father_name if student.father_name else 'Unknown' }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between border-top pt-1 mt-1">
+                                        <span class="text-muted fw-bold">Relation to Guardian:</span>
+                                        <span class="fw-bold text-info">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center py-2 text-muted">
+                                <p class="small mb-0"><i class="bi bi-info-circle me-1"></i> No central household linked. Use a PC to link siblings together.</p>
+                            </div>
                         {% endif %}
                     </div>
-
-                    {% if student.comment %}
-                    <h6 class="fw-bold text-uppercase text-muted small mb-2 border-bottom pb-2">Notes</h6>
-                    <p class="small text-muted khmer-font mb-0">{{ student.comment }}</p>
-                    {% endif %}
                 </div>
-            </div>
+            </div> 
         </div>
 
         <!-- ========================================== -->
-        <!-- RIGHT COLUMN: TABS & ACTION AREAS          -->
+        <!-- RIGHT COLUMN: THE TABBED INTERFACE         -->
         <!-- ========================================== -->
         <div class="col-lg-8">
             
-            <ul class="nav nav-pills mb-4 gap-2" id="profileTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-bold rounded-pill shadow-sm" id="academics-tab" data-bs-toggle="pill" data-bs-target="#academics" type="button" role="tab" aria-selected="true"><i class="bi bi-mortarboard-fill me-1"></i> Academics</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold rounded-pill shadow-sm" id="followups-tab" data-bs-toggle="pill" data-bs-target="#followups" type="button" role="tab" aria-selected="false"><i class="bi bi-clipboard2-heart-fill me-1"></i> Social Work</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-bold rounded-pill shadow-sm" id="documents-tab" data-bs-toggle="pill" data-bs-target="#documents" type="button" role="tab" aria-selected="false"><i class="bi bi-folder-fill me-1"></i> Filing Cabinet</button>
-                </li>
-            </ul>
+            <!-- SMART SCROLL: Sticky Pill Navigation that acts like a dynamic header -->
+            <div class="sticky-lg-top pt-2 pb-1" style="top: 0px; z-index: 10; background-color: #f8f9fa;">
+                <ul class="nav nav-pills nav-fill fw-bold mb-3 bg-white rounded-pill shadow-sm border p-1" id="profileTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill text-dark" id="academics-tab" data-bs-toggle="tab" data-bs-target="#academics" type="button" role="tab">
+                            <i class="bi bi-journal-check me-1 text-success"></i> Academics
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill text-dark" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
+                            <i class="bi bi-clipboard-pulse me-1 text-danger"></i> Follow-Ups
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill text-dark" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab">
+                            <i class="bi bi-folder-fill me-1 text-warning"></i> Files & Funds
+                        </button>
+                    </li>
+                </ul>
+            </div>
 
+            <!-- TAB CONTENT -->
             <div class="tab-content" id="profileTabsContent">
                 
-                <!-- TAB: ACADEMICS -->
-                <div class="tab-pane fade show active" id="academics" role="tabpanel" aria-labelledby="academics-tab">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="fw-bold text-dark mb-0">Academic History</h4>
-                        <!-- MOBILE UX FIX: Grading hidden on mobile -->
-                        <a href="/add_report/{{ student.id }}" class="btn btn-primary fw-bold shadow-sm d-none d-md-inline-block"><i class="bi bi-plus-circle me-1"></i> Add Report</a>
+                <!-- ========================================== -->
+                <!-- TAB 1: ACADEMICS (UPGRADED UI)             -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade show active" id="academics" role="tabpanel">
+                    
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 px-2 gap-2 mt-2">
+                        <h5 class="fw-bold text-dark mb-0">Academic History</h5>
+                        
+                        <!-- Filter & Add Actions -->
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="reportYearFilter" class="form-select form-select-sm rounded-pill bg-white border shadow-sm fw-bold text-secondary" style="width: auto; min-width: 120px;" onchange="filterReports()">
+                                <option value="all">All Years</option>
+                                <!-- Years auto-populated by Javascript -->
+                            </select>
+                            
+                            <!-- MOBILE UX FIX: Grading hidden on mobile -->
+                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold shadow-sm d-none d-md-inline-block rounded-pill px-3 text-nowrap"><i class="bi bi-plus-lg me-1"></i> Add Report</a>
+                        </div>
                     </div>
                     
-                    {% for report in reports %}
-                    <div class="card shadow-sm border-0 rounded-4 mb-4">
-                        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
-                            <h5 class="text-primary fw-bold mb-0">{{ report.month }} {{ report.academic_year }}</h5>
-                            <span class="badge {% if report.overall_average and report.overall_average >= 85 %}bg-success{% elif report.overall_average and report.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6 px-3 rounded-pill shadow-sm">
-                                Avg: {{ report.overall_average if report.overall_average else 'N/A' }}%
-                            </span>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block fw-bold">Grade Level</small>
-                                    <span class="fw-bold">{{ report.grade_level }}</span>
-                                </div>
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block fw-bold">Class Rank</small>
-                                    <span class="fw-bold text-secondary">{{ report.class_rank if report.class_rank else '-' }}</span>
-                                </div>
-                                <div class="col-md-4">
-                                    <small class="text-muted d-block fw-bold">Attendance</small>
-                                    <span class="fw-bold text-secondary">{{ report.attendance_days if report.attendance_days else '-' }} Days</span>
-                                </div>
-                            </div>
+                    <div id="academicRecordsContainer">
+                        {% for report in reports %}
+                        <!-- Added data-year attribute for the Javascript filter -->
+                        <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-success border-4 overflow-hidden transition-hover report-card" data-year="{{ report.academic_year }}">
                             
-                            {% if report.id in grades_by_report %}
-                            <div class="d-flex flex-wrap gap-2 mb-3 bg-light p-3 rounded border">
-                                {% for grade in grades_by_report[report.id] %}
-                                    {% set badge_color = 'secondary' %}
-                                    {% if grade.max_score %}
-                                        {% set pct = (grade.score|float / grade.max_score|float * 100)|int %}
-                                        {% if pct >= 85 %}{% set badge_color = 'success' %}
-                                        {% elif pct >= 50 %}{% set badge_color = 'warning' %}
-                                        {% else %}{% set badge_color = 'danger' %}{% endif %}
+                            <!-- HEADER & SMART SUB-HEADER -->
+                            <div class="card-header bg-success bg-opacity-10 border-bottom-0 pt-3 pb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="badge bg-white text-dark border fs-6 me-2 shadow-sm">{{ report.academic_year }}</span>
+                                        <span class="fw-bold text-success-emphasis fs-5">{{ report.month }} {{ report.semester if report.semester else '' }}</span>
+                                    </div>
+                                    <!-- Smart Badging for GPA -->
+                                    {% if report.overall_average %}
+                                        <h3 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
+                                            {{ report.overall_average }}%
+                                        </h3>
+                                    {% else %}
+                                        <h4 class="mb-0 fw-bold text-muted">{{ report.overall_grade if report.overall_grade else 'N/A' }}</h4>
                                     {% endif %}
-                                    <span class="badge bg-white text-dark border shadow-sm px-3 py-2">
-                                        <span class="text-muted me-1">{{ grade.subject_name }}:</span> 
-                                        <strong class="text-{{ badge_color }}">{{ grade.score }}</strong><small class="text-muted">/{{ grade.max_score }}</small>
-                                    </span>
-                                {% endfor %}
+                                </div>
+
+                                <!-- THE FIX: Compact Sub-Header for Metadata -->
+                                <div class="d-flex flex-wrap gap-3 pt-2 border-top border-success border-opacity-25 mt-1">
+                                    {% if report.class_rank %}
+                                    <span class="text-success-emphasis small fw-bold"><i class="bi bi-trophy-fill text-warning me-1"></i>Rank: {{ report.class_rank }}</span>
+                                    {% endif %}
+                                    
+                                    {% if report.attendance_days %}
+                                    <span class="text-success-emphasis small fw-bold"><i class="bi bi-calendar-check-fill text-info me-1"></i>Attendance: {{ report.attendance_days }} days</span>
+                                    {% endif %}
+                                    
+                                    <!-- ONLY show school if it differs from their current baseline -->
+                                    {% if report.school_name and report.school_name != student.current_school %}
+                                    <span class="text-success-emphasis small fw-bold"><i class="bi bi-building-fill text-secondary me-1"></i>School: <span class="khmer-font">{{ report.school_name }}</span></span>
+                                    {% endif %}
+                                </div>
                             </div>
-                            {% endif %}
                             
-                            {% if report.teacher_comment %}
-                            <p class="small text-muted khmer-font mb-0 fst-italic">"{{ report.teacher_comment }}"</p>
-                            {% endif %}
-                        </div>
-                        <div class="card-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3 d-flex justify-content-between">
-                            {% if report.scanned_document %}
-                            <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-outline-secondary fw-bold"><i class="bi bi-file-earmark-image me-1"></i> View Scan</a>
-                            {% else %}
-                            <span></span>
-                            {% endif %}
-                            
-                            <div>
-                                <!-- MOBILE UX FIX: Grading edits hidden on mobile -->
-                                <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-light border fw-bold text-dark me-2 d-none d-md-inline-block">Edit</a>
-                                {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
-                                <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold" aria-label="Delete Report"><i class="bi bi-trash-fill"></i></button>
-                                </form>
+                            <div class="card-body p-4 bg-white">
+                                <!-- THE FIX: Direct, Beautiful Subject Grid -->
+                                {% if report.subjects %}
+                                    <h6 class="fw-bold text-dark small text-uppercase mb-3"><i class="bi bi-list-columns-reverse text-success me-1"></i> Subject Scores</h6>
+                                    <div class="row g-2">
+                                        {% for sub in report.subjects %}
+                                        <div class="col-12 col-md-6 col-xl-4">
+                                            <div class="d-flex justify-content-between align-items-center p-2 px-3 bg-light border border-secondary border-opacity-10 rounded-3 h-100">
+                                                <div class="d-flex flex-column" style="max-width: 65%;">
+                                                    <span class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.65rem;">{{ sub.category }}</span>
+                                                    <span class="fw-bold text-dark text-truncate khmer-font" title="{{ sub.name }}">{{ sub.name }}</span>
+                                                </div>
+                                                <div class="text-end">
+                                                    <span class="fw-bold fs-5 text-dark">{{ sub.score }}</span>
+                                                    <span class="text-muted small">/ {{ sub.max_score }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted small fst-italic mb-0"><i class="bi bi-info-circle me-1"></i> No individual subject scores recorded for this report.</p>
+                                {% endif %}
+
+                                {% if report.teacher_comment %}
+                                <div class="mt-4 p-3 bg-light border border-secondary border-opacity-10 rounded-4 position-relative">
+                                    <i class="bi bi-quote position-absolute top-0 start-0 text-muted opacity-25 ms-2 mt-1" style="font-size: 2rem;"></i>
+                                    <p class="small text-dark khmer-font mb-0 fst-italic position-relative z-1 ps-4">"{{ report.teacher_comment }}"</p>
+                                </div>
                                 {% endif %}
                             </div>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="card shadow-sm border-0 rounded-4 bg-light">
-                        <div class="card-body p-5 text-center text-muted">
-                            <i class="bi bi-journal-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
-                            <h5 class="fw-bold text-dark">No Reports Yet</h5>
-                            <p class="mb-0">Add the first academic report to start tracking progress.</p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- TAB: SOCIAL WORK FOLLOW-UPS -->
-                <div class="tab-pane fade" id="followups" role="tabpanel" aria-labelledby="followups-tab">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="fw-bold text-dark mb-0">Case Notes & Risk</h4>
-                        <a href="/add_followup/{{ student.id }}" class="btn btn-danger fw-bold shadow-sm"><i class="bi bi-plus-circle me-1"></i> Log Follow-Up</a>
-                    </div>
-                    
-                    {% for note in followups %}
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 {% if note.child_protection_concerns and note.child_protection_concerns != 'None' %}border-start border-danger border-4{% endif %}">
-                        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
-                            <h5 class="text-danger fw-bold mb-0">{{ note.followup_date }} <span class="badge bg-light text-secondary border ms-2 fs-6 fw-normal">{{ note.location }}</span></h5>
-                            <small class="text-muted fw-bold">By: {{ note.completed_by }}</small>
-                        </div>
-                        <div class="card-body p-4">
-                            {% if note.child_protection_concerns and note.child_protection_concerns != 'None' and note.child_protection_concerns != 'N/A' and note.child_protection_concerns != '' %}
-                            <div class="alert alert-danger bg-danger bg-opacity-10 border-danger p-3 mb-3 shadow-sm">
-                                <h6 class="fw-bold text-danger mb-1"><i class="bi bi-shield-exclamation me-1"></i> Protection Concern Flagged</h6>
-                                <p class="small text-dark mb-0 khmer-font">{{ note.child_protection_concerns }}</p>
-                            </div>
-                            {% endif %}
                             
-                            <!-- THE FIX: Only show Health & Edu block if there is actual data! -->
-                            {% if note.physical_health or note.home_life or note.social_interaction or note.behavior_in_class or note.learning_difficulties %}
-                            <div class="row mb-3">
-                                <div class="col-md-6 mb-2">
-                                    <small class="text-muted d-block fw-bold"><i class="bi bi-heart-pulse text-danger me-1"></i> Health & Home</small>
-                                    <span class="small fw-bold">{{ note.physical_health if note.physical_health else 'Not Evaluated' }} / {{ note.home_life if note.home_life else 'Not Evaluated' }}</span>
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <small class="text-muted d-block fw-bold"><i class="bi bi-book text-primary me-1"></i> Education</small>
-                                    <span class="small fw-bold">Behavior: {{ note.behavior_in_class if note.behavior_in_class else 'Not Evaluated' }}</span>
-                                </div>
-                            </div>
-                            {% endif %}
-                            
-                            {% if note.risk_factors and note.risk_factors != 'None' %}
-                            <div class="mb-3">
-                                <small class="text-muted d-block fw-bold mb-1">Identified Risk Factors</small>
-                                {% for risk in note.risk_factors.split(', ') %}
-                                    <span class="badge bg-warning text-dark border border-warning shadow-sm me-1 mb-1">{{ risk }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            
-                            {% if note.general_notes %}
-                            <p class="small text-muted khmer-font mt-3 mb-0 border-top pt-3 fst-italic">"{{ note.general_notes }}"</p>
-                            {% endif %}
-
-                            <!-- RESTORED: SPONSOR LETTER UPDATE TRACKING -->
-                            {% if note.letter_quarter and note.letter_year %}
-                            <div class="mt-4 pt-3 border-top bg-success bg-opacity-10 p-3 rounded border border-success border-opacity-25">
-                                <h6 class="fw-bold small text-success mb-2"><i class="bi bi-envelope-paper-heart-fill me-1"></i> Sponsor Letter Update: {{ note.letter_quarter }} {{ note.letter_year }}</h6>
-                                <div class="d-flex flex-wrap gap-2 small">
-                                    <span class="badge {% if note.letter_given == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
-                                        <i class="bi {% if note.letter_given == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 1. Given
-                                    </span>
-                                    <span class="badge {% if note.letter_translated == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
-                                        <i class="bi {% if note.letter_translated == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 2. Translated
-                                    </span>
-                                    <span class="badge {% if note.letter_scanned == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
-                                        <i class="bi {% if note.letter_scanned == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 3. Scanned
-                                    </span>
-                                    <span class="badge {% if note.letter_sent == 'Yes' %}bg-success text-white{% else %}bg-white text-muted{% endif %} border shadow-sm">
-                                        <i class="bi {% if note.letter_sent == 'Yes' %}bi-check-circle-fill{% else %}bi-circle{% endif %} me-1"></i> 4. Sent
-                                    </span>
-                                </div>
-                                {% if note.letter_notes %}
-                                <p class="small text-muted khmer-font mt-2 mb-0 fst-italic"><i class="bi bi-info-circle me-1"></i> {{ note.letter_notes }}</p>
+                            <div class="card-footer bg-light border-top rounded-bottom-4 px-4 py-3 d-flex justify-content-between align-items-center">
+                                {% if report.scanned_document %}
+                                <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-white border fw-bold shadow-sm text-dark"><i class="bi bi-file-earmark-image-fill text-primary me-1"></i> View Scan</a>
+                                {% else %}
+                                <span><i class="bi bi-dash-lg text-muted"></i></span>
                                 {% endif %}
+                                
+                                <div>
+                                    <!-- MOBILE UX FIX: Grading edits hidden on mobile -->
+                                    <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-white border fw-bold text-dark me-2 d-none d-md-inline-block shadow-sm">Edit Data</a>
+                                    
+                                    <!-- SECURITY FIX: Only Admins can delete reports -->
+                                    {% if session.get("role") in ["Admin", "Director"] %}
+                                    <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm" title="Delete Report"><i class="bi bi-trash-fill"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </div>
-                            {% endif %}
-
                         </div>
-                        <div class="card-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3 text-end">
-                            <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-light border fw-bold text-dark">Edit Notes</a>
+                        {% else %}
+                        <div class="text-center p-5 bg-white rounded-4 shadow-sm border border-2 border-dashed mt-4">
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-journal-x fs-1 text-muted opacity-50"></i>
+                            </div>
+                            <h5 class="text-dark fw-bold mb-1">No academic records</h5>
+                            <p class="small text-muted mb-0">Use a PC to enter the first report card for {{ student.first_name }}.</p>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Empty State for JS Filter -->
+                        <div id="noReportsMessage" class="text-center py-4 d-none">
+                            <p class="text-muted fw-bold mb-0">No records found for this selected year.</p>
                         </div>
                     </div>
-                    {% else %}
-                    <div class="card shadow-sm border-0 rounded-4 bg-light">
-                        <div class="card-body p-5 text-center text-muted">
-                            <i class="bi bi-clipboard-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
-                            <h5 class="fw-bold text-dark">No Case Notes</h5>
-                            <p class="mb-0">Log a home visit, school visit, or phone call to start the case history.</p>
-                        </div>
-                    </div>
-                    {% endfor %}
                 </div>
 
-                <!-- TAB: FILING CABINET & FINANCIALS -->
-                <div class="tab-pane fade" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                <!-- ========================================== -->
+                <!-- TAB 2: FOLLOW-UPS & NOTES                  -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="notes" role="tabpanel">
                     
-                    <!-- THE NEW FILING CABINET SECTION -->
-                    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-2 gap-2 mt-2">
+                        <h5 class="fw-bold text-dark mb-0">Social Work Timeline</h5>
+                        
+                        <!-- Filter & Add Actions -->
+                        <div class="d-flex align-items-center gap-2">
+                            <select id="noteYearFilter" class="form-select form-select-sm rounded-pill bg-white border shadow-sm fw-bold text-secondary" style="width: auto; min-width: 120px;" onchange="filterNotes()">
+                                <option value="all">All Years</option>
+                                <!-- Years auto-populated by Javascript -->
+                            </select>
+                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3 text-nowrap"><i class="bi bi-plus-lg me-1"></i> New Note</a>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline ps-4 ms-2" style="border-left: 3px solid #f8d7da;" id="notesContainer">
+                        {% for note in followups %}
+                        <!-- Added data-year attribute extracting the year from the date -->
+                        <div class="position-relative mb-4 ps-4 note-card" data-year="{{ note.followup_date[:4] }}">
+                            <!-- Timeline Dot colored by risk level -->
+                            {% set risk_color = 'success' %}
+                            {% if note.risk_factors or note.child_protection_concerns %}
+                                {% set risk_color = 'danger' %}
+                            {% elif note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention' %}
+                                {% set risk_color = 'warning' %}
+                            {% endif %}
+                            
+                            <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 20px; height: 20px; left: -11.5px; top: 0px; border: 4px solid #fff;"></div>
+                            
+                            <div class="card shadow-sm border-0 rounded-4 transition-hover">
+                                <div class="card-body p-4">
+                                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
+                                        <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar-event-fill text-muted me-2"></i>{{ note.followup_date }}</span>
+                                        <span class="badge bg-{{ risk_color }} bg-opacity-10 text-{{ risk_color }} border border-{{ risk_color }} rounded-pill px-3 py-1"><i class="bi bi-geo-alt-fill me-1"></i> {{ note.location }}</span>
+                                    </div>
+                                    
+                                    <div class="khmer-font text-dark mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                                        {{ note.general_notes if note.general_notes else 'No general notes provided.' }}
+                                    </div>
+
+                                    <!-- Quick tags for protection concerns -->
+                                    {% if note.child_protection_concerns %}
+                                        <div class="alert alert-danger py-3 px-4 small mb-4 border-danger rounded-4 fw-bold">
+                                            <i class="bi bi-shield-exclamation-fill fs-5 me-2 align-middle"></i> 
+                                            Protection Concern: <span class="fw-normal">{{ note.child_protection_concerns }}</span>
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="d-flex justify-content-between align-items-center mt-2 pt-3 border-top bg-light mx-n4 mb-n4 p-4 rounded-bottom-4">
+                                        <span class="small text-muted fw-bold"><i class="bi bi-person-badge-fill text-secondary me-2"></i>{{ note.completed_by }}</span>
+                                        <!-- MOBILE UX FIX: Edits hidden on mobile -->
+                                        <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-1 px-3 d-none d-md-inline-block shadow-sm rounded-pill">Edit Note</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center p-5 ms-n4 mt-4">
+                            <div class="bg-light border rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
+                                <i class="bi bi-clipboard-x fs-1 text-danger opacity-75"></i>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1">No timeline events</h5>
+                            <p class="small text-muted mb-0">Record a home visit or phone call to start the timeline.</p>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Empty State for JS Filter -->
+                        <div id="noNotesMessage" class="text-center py-4 ms-n4 d-none">
+                            <p class="text-muted fw-bold mb-0">No follow-ups recorded for this selected year.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- TAB 3: FILES & FINANCIALS                  -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="files" role="tabpanel">
+                    
+                    <!-- DIGITAL FILING CABINET -->
+                    <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-warning border-4 mt-2">
+                        <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                             <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder-fill text-warning me-2"></i>Digital Filing Cabinet</h5>
-                            <button type="button" class="btn btn-sm btn-outline-primary fw-bold shadow-sm" data-bs-toggle="collapse" data-bs-target="#uploadForm"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Add Document</button>
+                            <button class="btn btn-sm btn-outline-warning text-dark fw-bold shadow-sm rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#uploadForm">
+                                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload
+                            </button>
                         </div>
-
-                        <div id="uploadForm" class="collapse mb-4 bg-primary bg-opacity-10 border border-primary p-3 rounded-3 d-print-none shadow-sm">
-                            <form action="/upload_document/{{ student.id }}" method="POST" enctype="multipart/form-data">
-                                <div class="row g-2 align-items-center">
-                                    <div class="col-md-4">
-                                        <!-- A11y Fix: Added aria-label for Screen Readers -->
-                                        <select name="document_type" class="form-select form-select-sm fw-bold text-primary" aria-label="Select Document Type">
-                                            <option>Birth Certificate</option>
-                                            <option>Contract</option>
-                                            <option>Scanned Grade</option>
-                                            <option>Housing Photo</option>
-                                            <option>Sponsor Letter</option>
-                                            <option>Other</option>
-                                        </select>
+                        <div class="card-body px-4">
+                            
+                            <!-- Upload Form -->
+                            <div id="uploadForm" class="collapse mb-4 bg-warning bg-opacity-10 p-4 rounded-4 border border-warning border-opacity-25 d-print-none">
+                                <form action="/upload_document/{{ student.id }}" method="POST" enctype="multipart/form-data">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-4">
+                                            <label class="small fw-bold text-dark mb-1">Document Type</label>
+                                            <select name="document_type" class="form-select fw-bold border-warning" required>
+                                                <option value="" disabled selected>Select Type...</option>
+                                                <option>Birth Certificate</option>
+                                                <option>Contract</option>
+                                                <option>ID Card</option>
+                                                <option>Housing Photo</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="small fw-bold text-dark mb-1">Select File or Camera</label>
+                                            <!-- MOBILE UX FIX: capture="environment" added for native camera hook -->
+                                            <input type="file" name="document_file" class="form-control border-warning bg-white" accept="image/*,application/pdf" capture="environment" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-warning w-100 fw-bold shadow-sm text-dark">Save File</button>
+                                        </div>
                                     </div>
-                                    <div class="col-md-5">
-                                        <!-- A11y Fix: Added aria-label for Screen Readers -->
-                                        <input type="file" name="document_file" class="form-control form-control-sm" aria-label="Upload Document File" required>
-                                    </div>
-                                    <div class="col-md-3 text-end">
-                                        <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold shadow-sm">Upload</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light small text-muted text-uppercase">
-                                    <tr>
-                                        <th>Type</th>
-                                        <th>Filename</th>
-                                        <th>Upload Date</th>
-                                        <th class="d-print-none text-end pe-3">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for doc in documents %}
-                                    <tr>
-                                        <td><span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">{{ doc.document_type }}</span></td>
-                                        <td>
-                                            <a href="{{ url_for('static', filename='uploads/documents/' + doc.saved_filename) }}" target="_blank" class="text-decoration-none fw-bold text-primary">
-                                                <i class="bi bi-file-earmark-text me-1"></i>{{ doc.original_filename }}
-                                            </a>
-                                        </td>
-                                        <td class="small text-muted fw-bold">{{ doc.upload_date }}</td>
-                                        <td class="d-print-none text-end pe-3">
-                                            {% if session.get("role") == "Admin" or session.get("role") == "Director" %}
-                                            <!-- A11y Fix: Added aria-label to the icon-only link -->
-                                            <a href="/delete_document/{{ doc.id }}" onclick="return confirm('Permanently delete this file?')" class="btn btn-sm btn-outline-danger" aria-label="Delete Document"><i class="bi bi-trash-fill"></i></a>
-                                            {% else %}
-                                            <button type="button" class="btn btn-sm btn-outline-secondary disabled" aria-label="Cannot Delete Document"><i class="bi bi-lock-fill"></i></button>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">No documents uploaded yet.</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- FINANCIAL MICRO-LEDGER SECTION -->
-                    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4 border-start border-success border-4" id="financials">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div>
-                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-stack text-success me-2"></i>Financial Support Ledger</h5>
-                                <small class="text-muted">Total NGO Investment: <strong class="text-success">${{ total_spent if total_spent else '0.00' }}</strong></small>
+                                </form>
                             </div>
-                            <!-- A11y Fix: Explicitly defined type="button" -->
-                            <button type="button" class="btn btn-sm btn-success fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#expenseModal"><i class="bi bi-plus-circle me-1"></i> Log Expense</button>
-                        </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light small text-muted text-uppercase">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Category</th>
-                                        <th>Vendor/Desc</th>
-                                        <th class="text-end pe-3">Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for exp in expenses %}
-                                    <tr>
-                                        <td class="small fw-bold text-muted">{{ exp.expense_date }}</td>
-                                        <td><span class="badge bg-success bg-opacity-10 text-success border">{{ exp.category }}</span></td>
-                                        <td class="small">{{ exp.vendor_name if exp.vendor_name else exp.description }}</td>
-                                        <td class="fw-bold text-end pe-3 text-success">${{ exp.amount }}</td>
-                                    </tr>
-                                    {% else %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">No expenses logged yet.</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <!-- MOBILE UX FIX: table-responsive wrapper -->
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Filename</th>
+                                            <th>Date</th>
+                                            <th class="d-print-none text-end pe-3">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for doc in docs %}
+                                        <tr>
+                                            <td><span class="badge bg-dark bg-opacity-10 text-dark border px-2 py-1"><i class="bi bi-file-earmark-text-fill text-warning me-1"></i>{{ doc.document_type }}</span></td>
+                                            <td class="text-truncate" style="max-width: 200px;">
+                                                <a href="{{ url_for('static', filename='uploads/documents/' + doc.saved_filename) }}" target="_blank" class="text-decoration-none fw-bold text-primary">{{ doc.original_filename }}</a>
+                                            </td>
+                                            <td class="small text-muted fw-bold">{{ doc.upload_date }}</td>
+                                            <td class="d-print-none text-end pe-3">
+                                                <!-- SECURITY FIX: Only Admins can delete documents -->
+                                                {% if session.get("role") in ["Admin", "Director"] %}
+                                                <a href="/delete_document/{{ doc.id }}" onclick="return confirm('Permanently delete this file?')" class="btn btn-sm btn-white border text-danger shadow-sm py-1"><i class="bi bi-trash-fill"></i></a>
+                                                {% else %}
+                                                <span class="small text-muted"><i class="bi bi-lock-fill"></i></span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-5 small fst-italic border-bottom-0">No documents uploaded yet.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    
+
+                    <!-- FINANCIAL LEDGER -->
+                    <div class="card shadow-sm border-0 rounded-4 border-start border-info border-4">
+                        <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-coin text-info me-2"></i>Financial Ledger</h5>
+                                <small class="text-muted fw-bold">Total Spent: <strong class="text-info fs-6">${{ total_spent|default('0.00') }}</strong></small>
+                            </div>
+                            <!-- MOBILE UX FIX: Financials are a desk job. Hidden on mobile. -->
+                            <button class="btn btn-sm btn-info text-white fw-bold d-none d-md-inline-block shadow-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#expenseModal">
+                                <i class="bi bi-plus-lg me-1"></i> Log Expense
+                            </button>
+                        </div>
+                        <div class="card-body px-4 pb-4">
+                            <!-- MOBILE UX FIX: table-responsive -->
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light text-muted small text-uppercase">
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Category</th>
+                                            <th>Vendor</th>
+                                            <th class="text-end pe-3">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for exp in expenses %}
+                                        <tr>
+                                            <td class="small fw-bold text-muted">{{ exp.expense_date }}</td>
+                                            <td><span class="badge bg-light text-dark border px-2 py-1">{{ exp.category }}</span></td>
+                                            <td class="small text-dark khmer-font">{{ exp.vendor_name if exp.vendor_name else '-' }}</td>
+                                            <td class="fw-bold text-info text-end pe-3">${{ exp.amount }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-5 small fst-italic border-bottom-0">No financial records found.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Scripts for the Tab Functionality -->
+<!-- ========================================== -->
+<!-- MODALS (Hidden by default)                 -->
+<!-- ========================================== -->
+
+<!-- Modal: Link Kinship/Household -->
+<div class="modal fade" id="kinshipModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-house-add-fill me-2"></i>Link Household</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/update_kinship/{{ student.id }}" method="post">
+                <div class="modal-body p-4 text-start">
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger small py-3 mb-4 text-dark rounded-4 d-flex">
+                        <i class="bi bi-info-circle-fill me-2 fs-5 text-danger"></i> 
+                        <span>Search for an existing Household ID to link this child to their siblings.</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Household ID #</label>
+                        <input type="number" class="form-control form-control-lg bg-light" name="household_id" placeholder="e.g. 5" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
+                    <button type="button" class="btn btn-white border shadow-sm fw-bold text-dark" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger shadow-sm fw-bold px-4">Link Family</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Log Expense (Only accessible on Desktop) -->
+<div class="modal fade" id="expenseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-info text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Log Financial Support</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/log_expense/{{ student.id }}" method="post">
+                <div class="modal-body p-4 text-start">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Date</label>
+                        <!-- AUTO-FILL: Suggests today's date -->
+                        <input type="date" class="form-control bg-light" name="expense_date" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Category</label>
+                            <select class="form-select bg-light fw-bold text-dark" name="category" required>
+                                <option value="" disabled selected>Select...</option>
+                                <option>School Supplies</option>
+                                <option>Medical Care</option>
+                                <option>Uniforms</option>
+                                <option>Emergency Rice</option>
+                                <option>Tuition/Fees</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted">Amount (USD) *</label>
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white text-info fw-bold">$</span>
+                                <input type="number" step="0.01" class="form-control bg-light fw-bold" name="amount" placeholder="0.00" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Vendor / Notes</label>
+                        <input type="text" class="form-control bg-light khmer-font" name="vendor_name" placeholder="e.g. Local Pharmacy">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
+                    <button type="button" class="btn btn-white border shadow-sm fw-bold text-dark" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-info text-white shadow-sm fw-bold px-4">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Polish CSS -->
+<style>
+    /* Subtle hover lift effect for cards */
+    .transition-hover {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .transition-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.06) !important;
+    }
+    
+    /* Modern Pill Tab overrides */
+    .nav-pills .nav-link {
+        transition: all 0.2s ease;
+        font-size: 0.95rem;
+    }
+    .nav-pills .nav-link.active {
+        background-color: #e9ecef;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
 {% block scripts %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button'));
-        triggerTabList.forEach(function (triggerEl) {
-            var tabCompiler = new bootstrap.Tab(triggerEl);
-            triggerEl.addEventListener('click', function (event) {
-                event.preventDefault();
-                tabCompiler.show();
-            });
-        });
+    // DYNAMIC FILTER LOGIC FOR ACADEMIC RECORDS
+    const reportCards = document.querySelectorAll('.report-card');
+    const reportFilter = document.getElementById('reportYearFilter');
+    const noReportsMessage = document.getElementById('noReportsMessage');
+    
+    // 1. Auto-extract unique academic years
+    const reportYears = new Set();
+    reportCards.forEach(card => {
+        const year = card.getAttribute('data-year');
+        if(year) reportYears.add(year);
     });
+    
+    // 2. Populate the dropdown
+    Array.from(reportYears).sort().reverse().forEach(year => {
+        reportFilter.add(new Option(year, year));
+    });
+
+    // 3. Filtering Function
+    function filterReports() {
+        const selectedYear = reportFilter.value;
+        let visibleCount = 0;
+        
+        reportCards.forEach(card => {
+            if (selectedYear === 'all' || card.getAttribute('data-year') === selectedYear) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        if(visibleCount === 0 && reportCards.length > 0) {
+            noReportsMessage.classList.remove('d-none');
+        } else {
+            noReportsMessage.classList.add('d-none');
+        }
+    }
+
+
+    // DYNAMIC FILTER LOGIC FOR FOLLOW-UPS / TIMELINE
+    const noteCards = document.querySelectorAll('.note-card');
+    const noteFilter = document.getElementById('noteYearFilter');
+    const noNotesMessage = document.getElementById('noNotesMessage');
+    
+    const noteYears = new Set();
+    noteCards.forEach(card => {
+        const year = card.getAttribute('data-year');
+        if(year) noteYears.add(year);
+    });
+    
+    Array.from(noteYears).sort().reverse().forEach(year => {
+        noteFilter.add(new Option(year, year));
+    });
+
+    function filterNotes() {
+        const selectedYear = noteFilter.value;
+        let visibleCount = 0;
+        
+        noteCards.forEach(card => {
+            if (selectedYear === 'all' || card.getAttribute('data-year') === selectedYear) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        if(visibleCount === 0 && noteCards.length > 0) {
+            noNotesMessage.classList.remove('d-none');
+        } else {
+            noNotesMessage.classList.add('d-none');
+        }
+    }
+
+
+    // Expense Data Alert Logic
+    document.getElementById('files-tab').addEventListener('shown.bs.tab', function (event) {
+        if (window.innerWidth < 768) {
+            console.log("Mobile UX Active: Desk-only operations (Financials, Profile Edits) are hidden.");
+        }
+    });
+
+    // Helper script to set today's date in the expense modal automatically
+    var expenseModal = document.getElementById('expenseModal');
+    if (expenseModal) {
+        expenseModal.addEventListener('show.bs.modal', function (event) {
+            var dateInput = expenseModal.querySelector('input[type="date"]');
+            if (!dateInput.value) {
+                var today = new Date().toISOString().split('T')[0];
+                dateInput.value = today;
+            }
+        });
+    }
 </script>
-{% endblock %}
 {% endblock %}

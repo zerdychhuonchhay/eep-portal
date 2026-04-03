@@ -1238,11 +1238,11 @@ def student_profile(id):
             grades_by_report[g['report_id']] = []
         grades_by_report[g['report_id']].append(g)
 
-    return render_template("student_profile.html", student=student, reports=reports, grades_by_report=grades_by_report, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years, siblings=siblings)
+    # 🚨 THE BRIDGE FIX: Attach your grouped grades to each report so HTML can read it!
+    for report in reports:
+        report['subjects'] = grades_by_report.get(report['id'], [])
 
-
-# ==============================================================================
-# NEIGHBORHOOD: CASE LOGIC (Follow Ups)
+    return render_template("student_profile.html", student=student, reports=reports, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years, siblings=siblings)
 # ==============================================================================
 
 @app.route("/add_followup/<int:student_id>", methods=["GET", "POST"])

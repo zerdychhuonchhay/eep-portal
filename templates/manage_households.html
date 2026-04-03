@@ -5,21 +5,24 @@
 {% block main %}
 <div class="container-fluid px-lg-5 mt-4 mb-5 text-start">
     
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
         <div>
-            <h2 class="mb-0 fw-bold"><i class="bi bi-houses-fill text-primary me-2"></i>Household Manager</h2>
-            <p class="text-muted small mb-0">Manage central caregivers, family contact info, and sibling links.</p>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-houses-fill text-info me-2"></i>Manage Households</h2>
+            <p class="text-muted small mb-0">Centralized directory for all EEP families and kinship groups.</p>
         </div>
-        <button type="button" class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
+        <button type="button" class="btn btn-info text-white shadow-sm fw-bold w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
             <i class="bi bi-house-add-fill me-1"></i> Add New Family
         </button>
     </div>
 
-    <!-- The Data Table Card -->
+    <!-- The Data Container -->
     <div class="card shadow-sm border-0 rounded-4">
         <div class="card-body p-0">
-            <div class="table-responsive p-4">
+            
+            <!-- ======================================================== -->
+            <!-- 🖥️ DESKTOP VIEW: The Standard Wide Table (Hidden on Mobile) -->
+            <!-- ======================================================== -->
+            <div class="table-responsive p-4 d-none d-md-block">
                 <table id="householdsTable" class="table table-hover align-middle mb-0">
                     <thead class="table-light text-muted small text-uppercase">
                         <tr>
@@ -36,7 +39,7 @@
                             <!-- Guardian Name -->
                             <td class="py-3">
                                 <a href="/household/{{ hh.id }}" class="text-decoration-none d-flex align-items-center">
-                                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
+                                    <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 40px; height: 40px;">
                                         <i class="bi bi-person-fill fs-5"></i>
                                     </div>
                                     <span class="fw-bold text-dark fs-6">{{ hh.guardian_name }}</span>
@@ -77,24 +80,19 @@
                             <!-- Actions -->
                             <td class="text-end pe-3">
                                 <div class="btn-group shadow-sm">
-                                    <!-- View Family Dashboard -->
-                                    <a href="/household/{{ hh.id }}" class="btn btn-sm btn-outline-primary fw-bold" title="View Family Dashboard">
+                                    <a href="/household/{{ hh.id }}" class="btn btn-sm btn-outline-info fw-bold" title="View Family Dashboard">
                                         <i class="bi bi-eye-fill me-1"></i> View
                                     </a>
-
-                                    <!-- Edit Button -->
                                     <button type="button" class="btn btn-sm btn-outline-secondary fw-bold" 
                                             data-bs-toggle="modal" data-bs-target="#editHouseholdModal"
                                             onclick="populateEditModal('{{ hh.id }}', '{{ hh.guardian_name|escape }}', '{{ hh.phone_number|escape }}', '{{ hh.slum_area|escape }}')">
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
-                                    
-                                    <!-- Delete Button -->
                                     {% if hh.student_count == 0 %}
-                                    <form action="/manage_households" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this empty household?');">
+                                    <form action="/manage_households" method="post" class="d-inline m-0" onsubmit="return confirm('Are you sure you want to permanently delete this empty household?');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="household_id" value="{{ hh.id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold"><i class="bi bi-trash-fill"></i></button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold h-100"><i class="bi bi-trash-fill"></i></button>
                                     </form>
                                     {% else %}
                                     <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Cannot delete: Students are living here"><i class="bi bi-trash"></i></button>
@@ -106,6 +104,97 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- ======================================================== -->
+            <!-- 📱 MOBILE VIEW: Compact Native Cards (Hidden on Desktop) -->
+            <!-- ======================================================== -->
+            <div class="d-block d-md-none p-3 bg-light">
+                
+                <!-- Quick Mobile Search Bar -->
+                <div class="input-group mb-3 shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="mobileSearch" class="form-control border-start-0 py-2" placeholder="Search families..." onkeyup="filterMobileCards()">
+                </div>
+
+                <div id="mobileCardsContainer">
+                    {% for hh in households %}
+                    <div class="card mb-3 shadow-sm border-0 rounded-4 border-start border-info border-4 mobile-card">
+                        <div class="card-body p-3">
+                            
+                            <!-- Header: Name & Slum -->
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <a href="/household/{{ hh.id }}" class="fw-bold text-dark fs-5 text-decoration-none searchable-name">
+                                    {{ hh.guardian_name }}
+                                </a>
+                                <span class="badge bg-light text-dark border"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ hh.slum_area if hh.slum_area else '?' }}</span>
+                            </div>
+                            
+                            <!-- Body: Phone Number -->
+                            <div class="mb-3">
+                                {% if hh.phone_number %}
+                                    <a href="tel:{{ hh.phone_number }}" class="text-decoration-none fw-bold text-secondary"><i class="bi bi-telephone-fill me-2"></i>{{ hh.phone_number }}</a>
+                                {% else %}
+                                    <span class="text-muted small fst-italic"><i class="bi bi-telephone-x me-2"></i>No Phone</span>
+                                {% endif %}
+                            </div>
+
+                            <!-- Footer: Sibling Count & Kebab Menu -->
+                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                <div>
+                                    {% if hh.student_count > 0 %}
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3">
+                                            <i class="bi bi-people-fill me-1"></i> {{ hh.student_count }} Children
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark rounded-pill px-3">Empty</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- THE KEBAB DROPDOWN MENU -->
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-white border shadow-sm rounded-circle px-2" type="button" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
+                                        <li>
+                                            <a class="dropdown-item fw-bold text-info py-2" href="/household/{{ hh.id }}">
+                                                <i class="bi bi-eye-fill me-2"></i> View Profile
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item fw-bold py-2" href="#" data-bs-toggle="modal" data-bs-target="#editHouseholdModal" onclick="populateEditModal('{{ hh.id }}', '{{ hh.guardian_name|escape }}', '{{ hh.phone_number|escape }}', '{{ hh.slum_area|escape }}')">
+                                                <i class="bi bi-pencil-square me-2"></i> Edit Details
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            {% if hh.student_count == 0 %}
+                                            <form action="/manage_households" method="post" class="m-0" onsubmit="return confirm('Are you sure you want to permanently delete this empty household?');">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="household_id" value="{{ hh.id }}">
+                                                <button type="submit" class="dropdown-item fw-bold text-danger py-2">
+                                                    <i class="bi bi-trash-fill me-2"></i> Delete Family
+                                                </button>
+                                            </form>
+                                            {% else %}
+                                            <span class="dropdown-item text-muted small py-2"><i class="bi bi-trash me-2"></i>Cannot Delete (Has Kids)</span>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted p-4">
+                        <i class="bi bi-house-x fs-1 opacity-25"></i>
+                        <p class="mt-2 mb-0">No households found.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -116,26 +205,25 @@
 <div class="modal fade" id="addHouseholdModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+            <div class="modal-header bg-info text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
                 <h5 class="modal-title fw-bold"><i class="bi bi-house-add-fill me-2"></i>Create Central Household</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="/manage_households" method="post">
                 <div class="modal-body p-4 text-start">
                     <input type="hidden" name="action" value="add">
                     
-                    <div class="alert alert-info bg-info bg-opacity-10 border-info small py-3 mb-4 rounded-3 d-flex">
-                        <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i> 
-                        <span>Creating a household here allows you to quickly link multiple siblings to the exact same address and primary caregiver.</span>
+                    <div class="alert alert-info bg-info bg-opacity-10 border-info small py-3 mb-4 text-dark rounded-3">
+                        <i class="bi bi-info-circle-fill me-1"></i> Creating a household here allows you to link multiple siblings to a single address and phone number!
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Primary Caregiver / Guardian Name *</label>
-                        <input type="text" class="form-control form-control-lg bg-light" name="guardian_name" placeholder="e.g. Aunt Bopha" required>
+                        <label class="form-label fw-bold small text-muted">Primary Caregiver Name (Head of House) *</label>
+                        <input type="text" class="form-control form-control-lg bg-light" name="guardian_name" placeholder="e.g. Sokha" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted">Phone Number</label>
-                        <input type="text" class="form-control bg-light" name="phone_number">
+                        <input type="text" class="form-control bg-light" name="phone_number" placeholder="e.g. 012 345 678">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted">Slum Area</label>
@@ -144,7 +232,7 @@
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
                     <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary fw-bold shadow-sm px-4">Create Family</button>
+                    <button type="submit" class="btn btn-info text-white fw-bold shadow-sm px-4">Create Household</button>
                 </div>
             </form>
         </div>
@@ -152,36 +240,35 @@
 </div>
 
 <!-- ============================================== -->
-<!-- MODAL 2: EDIT EXISTING HOUSEHOLD               -->
+<!-- MODAL 2: EDIT HOUSEHOLD                        -->
 <!-- ============================================== -->
 <div class="modal fade" id="editHouseholdModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-white border-bottom-0 pt-4 pb-2 px-4">
-                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Household Info</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header bg-secondary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit Caregiver Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="/manage_households" method="post">
                 <div class="modal-body p-4 text-start">
                     <input type="hidden" name="action" value="edit">
-                    <input type="hidden" name="household_id" id="edit_id">
+                    <input type="hidden" name="household_id" id="edit_hh_id">
                     
-                    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning small py-3 mb-4 text-dark rounded-3 d-flex">
-                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5 text-warning"></i> 
-                        <span>Changing this information will instantly update the synced profiles of <strong>every student</strong> currently living in this household.</span>
+                    <div class="alert alert-warning bg-warning bg-opacity-10 border-warning small py-2 mb-4 text-dark rounded-3">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Updates here will change the address/phone for ALL children living in this house instantly.
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Primary Caregiver / Guardian Name</label>
-                        <input type="text" class="form-control form-control-lg bg-light" name="guardian_name" id="edit_guardian" required>
+                        <label class="form-label fw-bold small text-muted">Primary Caregiver Name (Head of House) *</label>
+                        <input type="text" class="form-control form-control-lg bg-light" id="edit_guardian_name" name="guardian_name" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted">Phone Number</label>
-                        <input type="text" class="form-control bg-light" name="phone_number" id="edit_phone">
+                        <input type="text" class="form-control bg-light" id="edit_phone_number" name="phone_number">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted">Slum Area</label>
-                        <input type="text" class="form-control bg-light" name="slum_area" id="edit_slum">
+                        <input type="text" class="form-control bg-light" id="edit_slum_area" name="slum_area">
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
@@ -192,25 +279,48 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Fills the Edit Modal with the specific row's data
+    function populateEditModal(id, guardian, phone, slum) {
+        document.getElementById('edit_hh_id').value = id;
+        document.getElementById('edit_guardian_name').value = guardian;
+        document.getElementById('edit_phone_number').value = phone;
+        document.getElementById('edit_slum_area').value = slum;
+    }
+
+    // Standard Desktop DataTables
     $(document).ready(function() {
         $('#householdsTable').DataTable({
             "pageLength": 25,
+            "order": [[ 0, "asc" ]],
             "language": {
                 "search": "",
-                "searchPlaceholder": "🔍 Search Caregiver or Area..."
+                "searchPlaceholder": "🔍 Search Households..."
             }
         });
     });
 
-    function populateEditModal(id, guardian, phone, slum) {
-        document.getElementById('edit_id').value = id;
-        document.getElementById('edit_guardian').value = guardian;
-        document.getElementById('edit_phone').value = phone;
-        document.getElementById('edit_slum').value = slum;
+    // Custom Mobile Search Filter for the native cards
+    function filterMobileCards() {
+        const input = document.getElementById('mobileSearch');
+        const filter = input.value.toLowerCase();
+        const cards = document.querySelectorAll('.mobile-card');
+
+        cards.forEach(card => {
+            const nameElement = card.querySelector('.searchable-name');
+            if (nameElement) {
+                const textValue = nameElement.textContent || nameElement.innerText;
+                if (textValue.toLowerCase().indexOf(filter) > -1) {
+                    card.style.display = "";
+                } else {
+                    card.style.display = "none";
+                }
+            }
+        });
     }
 </script>
 {% endblock %}
