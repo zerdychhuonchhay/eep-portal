@@ -1525,17 +1525,34 @@ def manifest():
 
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
+@admin_required
 def settings():
+    """Master Control Panel for the NGO"""
+    
+    # 1. AUTO-BUILDER: Ensure the settings table exists so we don't crash
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    """)
+    
+    # Ensure default academic year exists
+    if not db.execute("SELECT * FROM system_settings WHERE key = 'current_academic_year'"):
+        db.execute("INSERT INTO system_settings (key, value) VALUES ('current_academic_year', '2025-2026')")
+
     if request.method == "POST":
         action = request.form.get("action")
+        
+        # ==========================================
+        # SUBJECT MANAGEMENT
+        # ==========================================
         if action == "add_subject":
             new_subject = request.form.get("new_subject")
             category = request.form.get("category", "General") 
             if not new_subject:
                 flash("Subject name cannot be empty", "danger")
-                return redirect("/settings")
-
-            if db.execute("SELECT id FROM subjects WHERE name = ?", new_subject):
+            elif db.execute("SELECT id FROM subjects WHERE name = ?", new_subject):
                 flash(f"Subject '{new_subject}' already exists.", "warning")
             else:
                 max_sort = db.execute("SELECT MAX(sort_order) as max_val FROM subjects")[0]["max_val"]
@@ -1551,14 +1568,75 @@ def settings():
                 category = request.form.get(f"category_{subject['id']}")
                 if sort_order is not None and str(sort_order).strip() != "":
                     db.execute("UPDATE subjects SET sort_order = ?, category = ? WHERE id = ?", sort_order, category, subject['id'])
-            
             log_action("Updated Subject Master Settings")
             flash("Subjects successfully updated!", "success")
+            
+        elif action == "delete_subject":
+            sub_id = request.form.get("subject_id")
+            # SECURITY: Don't let them delete a subject if grades are attached!
+            grade_count = db.execute("SELECT COUNT(*) as count FROM grades WHERE subject_id = ?", sub_id)[0]['count']
+            if grade_count > 0:
+                flash(f"Cannot delete! There are {grade_count} grades linked to this subject. Change their grades first.", "danger")
+            else:
+                sub_name = db.execute("SELECT name FROM subjects WHERE id = ?", sub_id)[0]['name']
+                db.execute("DELETE FROM subjects WHERE id = ?", sub_id)
+                log_action(f"Deleted Subject: {sub_name}")
+                flash(f"Subject '{sub_name}' permanently deleted.", "success")
+
+        # ==========================================
+        # PROGRAM MANAGEMENT
+        # ==========================================
+        elif action == "add_program":
+            name = request.form.get("program_name")
+            icon = request.form.get("program_icon", "bi-circle")
+            if name:
+                db.execute("INSERT INTO programs (name, icon) VALUES (?, ?)", name, icon)
+                log_action(f"Added new NGO Program: {name}")
+                flash(f"Program '{name}' added successfully!", "success")
+                
+        elif action == "edit_program":
+            prog_id = request.form.get("program_id")
+            name = request.form.get("program_name")
+            icon = request.form.get("program_icon")
+            db.execute("UPDATE programs SET name = ?, icon = ? WHERE id = ?", name, icon, prog_id)
+            log_action(f"Updated NGO Program ID: {prog_id}")
+            flash("Program updated successfully!", "success")
+            
+        elif action == "delete_program":
+            prog_id = request.form.get("program_id")
+            # Protect Core Programs from being deleted
+            if int(prog_id) in [0, 1]:
+                flash("Security Error: Cannot delete core system programs (Global / EEP).", "danger")
+            else:
+                student_count = db.execute("SELECT COUNT(*) as count FROM students WHERE program_id = ?", prog_id)[0]['count']
+                if student_count > 0:
+                    flash(f"Cannot delete! {student_count} students are enrolled in this program.", "danger")
+                else:
+                    db.execute("DELETE FROM programs WHERE id = ?", prog_id)
+                    log_action("Deleted an NGO Program")
+                    flash("Program successfully deleted.", "success")
+
+        # ==========================================
+        # SYSTEM VARIABLES
+        # ==========================================
+        elif action == "update_system":
+            acad_year = request.form.get("current_academic_year")
+            if acad_year:
+                db.execute("UPDATE system_settings SET value = ? WHERE key = 'current_academic_year'", acad_year)
+                log_action(f"Updated Global Academic Year to {acad_year}")
+                flash("System variables updated successfully!", "success")
 
         return redirect("/settings")
 
+    # --- GET REQUEST: Load the page data ---
     subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
-    return render_template("settings.html", subjects=subjects)
+    programs = db.execute("SELECT * FROM programs ORDER BY id ASC")
+    
+    # Extract system settings into a simple dictionary for Jinja
+    sys_raw = db.execute("SELECT * FROM system_settings")
+    sys_settings = {row['key']: row['value'] for row in sys_raw}
+
+    return render_template("settings.html", subjects=subjects, programs=programs, sys_settings=sys_settings)
 
 
 # ==============================================================================

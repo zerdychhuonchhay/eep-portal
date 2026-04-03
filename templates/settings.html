@@ -3,84 +3,275 @@
 {% block title %}System Settings{% endblock %}
 
 {% block main %}
-<div class="container mt-4 mb-5 text-start" style="max-width: 900px;">
-    <h2 class="mb-4">⚙️ System Settings</h2>
-
-    <!-- Add New Subject Card -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-primary text-white fw-bold">
-            <i class="bi bi-plus-circle me-1"></i> Add New Master Subject
-        </div>
-        <div class="card-body bg-light p-4">
-            <form action="/settings" method="post" class="row g-3 align-items-end">
-                <input type="hidden" name="action" value="add_subject">
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold text-muted">Subject Name</label>
-                    <input type="text" class="form-control" name="new_subject" placeholder="e.g. Physics" required>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold text-muted">Tier / Category</label>
-                    <select class="form-select" name="category" required>
-                        <option value="Primary / Lower Grade">Primary / Lower Grade</option>
-                        <option value="High School">High School</option>
-                        <option value="University / Vocational">University / Vocational</option>
-                        <option value="General" selected>General (Everyone takes it)</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">Add</button>
-                </div>
-            </form>
+<div class="container mt-4 mb-5 text-start" style="max-width: 1000px;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-gear-fill text-secondary me-2"></i>Global Settings</h2>
+            <p class="text-muted small mb-0">Configure database variables, programs, and academic subjects.</p>
         </div>
     </div>
 
-    <!-- Update Existing Subjects Card -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-list-task me-1"></i> Manage Subjects & Tiers</span>
-            <span class="badge bg-light text-dark">{{ subjects|length }} Subjects Total</span>
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs fw-bold mb-4" id="settingsTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active text-dark" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab"><i class="bi bi-sliders me-1"></i> App Preferences</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-dark" id="programs-tab" data-bs-toggle="tab" data-bs-target="#programs" type="button" role="tab"><i class="bi bi-buildings-fill me-1"></i> NGO Programs</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link text-dark" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab"><i class="bi bi-journal-text me-1"></i> Academic Subjects</button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="settingsTabsContent">
+        
+        <!-- ============================================== -->
+        <!-- TAB 1: SYSTEM VARIABLES                        -->
+        <!-- ============================================== -->
+        <div class="tab-pane fade show active" id="system" role="tabpanel">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-dark text-white fw-bold pt-3 pb-2 px-4">
+                    <i class="bi bi-globe me-1"></i> Global Variables
+                </div>
+                <div class="card-body p-4 bg-light">
+                    <form action="/settings" method="post">
+                        <input type="hidden" name="action" value="update_system">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold text-muted small">Default Academic Year</label>
+                                <input type="text" class="form-control fw-bold text-primary" name="current_academic_year" value="{{ sys_settings.current_academic_year }}" required>
+                                <small class="text-muted mt-1 d-block">This automatically pre-fills the "Academic Year" box when adding new report cards.</small>
+                            </div>
+                        </div>
+                        
+                        <hr class="opacity-25 my-4">
+                        
+                        <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm"><i class="bi bi-save me-1"></i> Save App Preferences</button>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="card-body p-0">
-            <form action="/settings" method="post">
-                <input type="hidden" name="action" value="update_subjects">
+
+        <!-- ============================================== -->
+        <!-- TAB 2: NGO PROGRAMS                            -->
+        <!-- ============================================== -->
+        <div class="tab-pane fade" id="programs" role="tabpanel">
+            
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-success text-white fw-bold pt-3 pb-2 px-4">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Program
+                </div>
+                <div class="card-body p-4">
+                    <form action="/settings" method="post" class="row g-3 align-items-end">
+                        <input type="hidden" name="action" value="add_program">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Program Name</label>
+                            <input type="text" class="form-control bg-light" name="program_name" placeholder="e.g. Medical Outreach" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted">Bootstrap Icon Class</label>
+                            <input type="text" class="form-control bg-light" name="program_icon" placeholder="e.g. bi-heart-fill">
+                            <small class="text-muted"><a href="https://icons.getbootstrap.com/" target="_blank">Find Icons Here</a></small>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center pt-3 pb-2 px-4">
+                    <span><i class="bi bi-list-task me-1"></i> Manage Programs</span>
+                </div>
                 <div class="table-responsive p-3">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light text-muted small">
+                        <thead class="table-light text-muted small text-uppercase">
                             <tr>
-                                <th style="width: 15%;">Sort Order</th>
-                                <th style="width: 40%;">Subject Name</th>
-                                <th style="width: 45%;">Tier / Category</th>
+                                <th style="width: 10%;">ID</th>
+                                <th>Icon</th>
+                                <th>Program Name</th>
+                                <th class="text-end pe-3">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for subject in subjects %}
+                            {% for p in programs %}
                             <tr>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-center fw-bold" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}" style="max-width: 80px;">
+                                <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">#{{ p.id }}</span></td>
+                                <td><i class="bi {{ p.icon }} fs-5 text-primary"></i> <span class="small text-muted ms-2">{{ p.icon }}</span></td>
+                                <td class="fw-bold">{{ p.name }}</td>
+                                <td class="text-end pe-3">
+                                    <div class="btn-group shadow-sm">
+                                        <!-- Edit Btn -->
+                                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold" 
+                                                data-bs-toggle="modal" data-bs-target="#editProgramModal"
+                                                onclick="document.getElementById('edit_prog_id').value='{{ p.id }}'; document.getElementById('edit_prog_name').value='{{ p.name }}'; document.getElementById('edit_prog_icon').value='{{ p.icon }}';">
+                                            Edit
+                                        </button>
+                                        <!-- Delete Btn (Protected for Core Programs) -->
+                                        {% if p.id in [0, 1] %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary disabled" title="Core System Programs cannot be deleted"><i class="bi bi-lock-fill"></i></button>
+                                        {% else %}
+                                            <form action="/settings" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this program?');">
+                                                <input type="hidden" name="action" value="delete_program">
+                                                <input type="hidden" name="program_id" value="{{ p.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold"><i class="bi bi-trash-fill"></i></button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
                                 </td>
-                                <td class="fw-bold">{{ subject.name }}</td>
-                                <td>
-                                    <select class="form-select form-select-sm" name="category_{{ subject.id }}">
-                                        <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Primary / Lower Grade</option>
-                                        <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>High School</option>
-                                        <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>University / Vocational</option>
-                                        <option value="General" {% if subject.category == 'General' or not subject.category %}selected{% endif %}>General</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-4">No subjects found in the database.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                <div class="card-footer bg-light border-top text-end py-3">
-                    <button type="submit" class="btn btn-warning btn-lg px-5 shadow-sm fw-bold"><i class="bi bi-save me-1"></i> Save All Changes</button>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- TAB 3: ACADEMIC SUBJECTS                       -->
+        <!-- ============================================== -->
+        <div class="tab-pane fade" id="subjects" role="tabpanel">
+            
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-header bg-primary text-white fw-bold pt-3 pb-2 px-4">
+                    <i class="bi bi-plus-circle me-1"></i> Add New Master Subject
+                </div>
+                <div class="card-body bg-light p-4">
+                    <form action="/settings" method="post" class="row g-3 align-items-end">
+                        <input type="hidden" name="action" value="add_subject">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted">Subject Name</label>
+                            <input type="text" class="form-control" name="new_subject" placeholder="e.g. Physics" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-muted">Tier / Category</label>
+                            <select class="form-select" name="category" required>
+                                <option value="Primary / Lower Grade">Primary / Lower Grade</option>
+                                <option value="High School">High School</option>
+                                <option value="University / Vocational">University / Vocational</option>
+                                <option value="General" selected>General (Everyone takes it)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center pt-3 pb-2 px-4">
+                    <span><i class="bi bi-list-task me-1"></i> Manage Subjects & Tiers</span>
+                    <span class="badge bg-light text-dark">{{ subjects|length }} Subjects Total</span>
+                </div>
+                <div class="card-body p-0">
+                    <form action="/settings" method="post" id="updateSubjectsForm">
+                        <input type="hidden" name="action" value="update_subjects">
+                        <div class="table-responsive p-3">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light text-muted small text-uppercase">
+                                    <tr>
+                                        <th style="width: 15%;">Sort Order</th>
+                                        <th style="width: 40%;">Subject Name</th>
+                                        <th style="width: 35%;">Tier / Category</th>
+                                        <th class="text-end pe-3">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for subject in subjects %}
+                                    <tr>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm text-center fw-bold" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}" style="max-width: 80px;">
+                                        </td>
+                                        <td class="fw-bold">{{ subject.name }}</td>
+                                        <td>
+                                            <select class="form-select form-select-sm" name="category_{{ subject.id }}">
+                                                <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Primary / Lower Grade</option>
+                                                <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>High School</option>
+                                                <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>University / Vocational</option>
+                                                <option value="General" {% if subject.category == 'General' or not subject.category %}selected{% endif %}>General</option>
+                                            </select>
+                                        </td>
+                                        <td class="text-end pe-3">
+                                            <!-- The Delete Button (Triggers a separate form submission) -->
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteSubject('{{ subject.id }}', '{{ subject.name|escape }}')">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">No subjects found in the database.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer bg-light border-top text-end py-3 px-4">
+                            <button type="submit" class="btn btn-warning btn-lg px-5 shadow-sm fw-bold"><i class="bi bi-save me-1"></i> Save All Subject Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL: EDIT PROGRAM                            -->
+<!-- ============================================== -->
+<div class="modal fade" id="editProgramModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit Program</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/settings" method="post">
+                <div class="modal-body p-4 text-start">
+                    <input type="hidden" name="action" value="edit_program">
+                    <input type="hidden" name="program_id" id="edit_prog_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Program Name</label>
+                        <input type="text" class="form-control bg-light fw-bold" name="program_name" id="edit_prog_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Bootstrap Icon Class</label>
+                        <input type="text" class="form-control bg-light" name="program_icon" id="edit_prog_icon">
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
+                    <button type="button" class="btn btn-white border fw-bold text-dark" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Hidden form for deleting subjects safely -->
+<form id="deleteSubjectForm" action="/settings" method="post" style="display: none;">
+    <input type="hidden" name="action" value="delete_subject">
+    <input type="hidden" name="subject_id" id="delete_subject_id">
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function deleteSubject(subjectId, subjectName) {
+        if(confirm(`Are you sure you want to delete the subject '${subjectName}'? Note: It will block deletion if grades exist for this subject to protect student records.`)) {
+            document.getElementById('delete_subject_id').value = subjectId;
+            document.getElementById('delete_subjectForm').submit();
+        }
+    }
+</script>
 {% endblock %}
