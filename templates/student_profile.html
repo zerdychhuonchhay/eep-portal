@@ -6,17 +6,22 @@
 <div class="container-fluid px-lg-4 pt-3 pb-5">
     
     <!-- HEADER SECTION -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 gap-3">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0 bg-transparent p-0">
                 <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Roster</a></li>
                 <li class="breadcrumb-item active fw-bold text-primary" aria-current="page">Student Profile</li>
             </ol>
         </nav>
-        <div class="d-flex gap-2">
-            <!-- MOBILE UX FIX: Quick Note is allowed on mobile. Edit Profile is a desk job. -->
-            <a href="/add_followup/{{ student.id }}" class="btn btn-danger shadow-sm fw-bold rounded-pill px-3"><i class="bi bi-clipboard2-heart-fill me-1"></i> Quick Note</a>
-            <a href="/edit_student/{{ student.id }}" class="btn btn-white border shadow-sm fw-bold d-none d-md-inline-block rounded-pill px-3 text-dark"><i class="bi bi-pencil-square me-1"></i> Edit Profile</a>
+        
+        <!-- UI AUDIT: Fixed button flexbox layout and padding for a premium, aligned look -->
+        <div class="d-flex flex-wrap gap-2 w-100 w-md-auto mt-2 mt-md-0">
+            <a href="/add_followup/{{ student.id }}" class="btn btn-primary shadow-sm fw-bold rounded-pill px-4 py-2 flex-grow-1 flex-md-grow-0 d-flex justify-content-center align-items-center">
+                <i class="bi bi-journal-plus me-2"></i> Quick Note
+            </a>
+            <a href="/edit_student/{{ student.id }}" class="btn btn-light border shadow-sm fw-bold rounded-pill px-4 py-2 d-none d-md-flex justify-content-center align-items-center text-dark">
+                <i class="bi bi-pencil-square me-2"></i> Edit Profile
+            </a>
         </div>
     </div>
 
@@ -25,12 +30,10 @@
         <!-- LEFT COLUMN: PROFILE & HOUSEHOLD CARDS     -->
         <!-- ========================================== -->
         <div class="col-lg-4">
-            <!-- SMART SCROLL: Sticky positioning keeps this in view naturally while the whole page scrolls -->
             <div class="sticky-lg-top" style="top: 20px; z-index: 5;">
                 
                 <!-- MODERN IDENTITY CARD -->
                 <div class="card shadow-sm border-0 rounded-4 text-center mb-4 overflow-hidden">
-                    <!-- Colored Gradient Header -->
                     <div class="bg-primary bg-gradient w-100" style="height: 100px;"></div>
                     
                     <div class="card-body px-4 pb-4 position-relative" style="margin-top: -65px;">
@@ -42,7 +45,6 @@
                                 <img src="{{ thumb }}" class="rounded-circle shadow avatar-xl border border-4 border-white" style="width: 130px; height: 130px;" alt="Default Avatar">
                             {% endif %}
                             
-                            <!-- Status Badge Indicator -->
                             <span class="position-absolute bottom-0 end-0 p-2 bg-{% if student.status == 'Active' %}success{% elif student.status == 'Dropped Out' %}danger{% else %}secondary{% endif %} border border-light border-2 rounded-circle shadow-sm" title="{{ student.status }}">
                                 <span class="visually-hidden">Status: {{ student.status }}</span>
                             </span>
@@ -57,12 +59,12 @@
                             <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1"><i class="bi bi-person-badge me-1"></i> {{ student.ngo_id }}</span>
                         </p>
                         
-                        <div class="d-flex justify-content-center gap-2 mb-4">
+                        <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap">
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill"><i class="bi bi-mortarboard-fill me-1"></i> {{ student.grade_level }}</span>
-                            <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill"><i class="bi bi-calendar-event me-1"></i> Age: {{ student.age if student.age else '?' }}</span>
+                            <!-- UI AUDIT: Attached data-dob attribute here for JS to calculate Age -->
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill" id="student-age-badge" data-dob="{{ student.dob }}"><i class="bi bi-calendar-event me-1"></i> Age: {{ student.age if student.age else '?' }}</span>
                         </div>
 
-                        <!-- Data Grid -->
                         <div class="text-start bg-light rounded-4 p-3 small border">
                             <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
                                 <span class="text-muted fw-bold"><i class="bi bi-building me-1"></i> Program</span>
@@ -89,37 +91,35 @@
                 </div>
                 
                 <!-- MODERN HOUSEHOLD & KINSHIP CARD -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-danger border-4">
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-info border-4">
                     <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-house-heart-fill text-danger me-2"></i>Family & Kinship</h5>
-                        <!-- MOBILE UX FIX: Household linking hidden on mobile -->
-                        <button class="btn btn-sm btn-outline-danger rounded-pill d-none d-md-inline-block fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#kinshipModal">Link Family</button>
+                        <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-house-heart-fill text-info me-2"></i>Family & Kinship</h5>
+                        <button class="btn btn-sm btn-outline-info rounded-pill d-none d-md-inline-block fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#kinshipModal">Link Family</button>
                     </div>
                     <div class="card-body p-4">
                         {% if household %}
-                            <!-- Central Household Info -->
-                            <div class="bg-danger bg-opacity-10 p-3 rounded-4 mb-3 border border-danger border-opacity-25">
-                                <h6 class="fw-bold mb-1 text-danger-emphasis">
+                            <div class="bg-info bg-opacity-10 p-3 rounded-4 mb-3 border border-info border-opacity-25">
+                                <h6 class="fw-bold mb-1 text-info-emphasis">
                                     {{ household.guardian_name }} 
-                                    <span class="badge bg-danger ms-1 rounded-pill" style="font-size: 0.65rem;">Head of House</span>
+                                    <span class="badge bg-info ms-1 rounded-pill" style="font-size: 0.65rem;">Head of House</span>
                                 </h6>
-                                <div class="small text-danger-emphasis fw-bold mb-1">
+                                <div class="small text-info-emphasis fw-bold mb-1">
                                     <i class="bi bi-telephone-fill me-1 opacity-75"></i> 
                                     {% if household.phone_number %}
-                                        <a href="tel:{{ household.phone_number }}" class="text-decoration-none text-danger-emphasis">{{ household.phone_number }}</a>
+                                        <a href="tel:{{ household.phone_number }}" class="text-decoration-none text-info-emphasis">{{ household.phone_number }}</a>
                                     {% else %}
                                         No Phone
                                     {% endif %}
                                 </div>
-                                <div class="small text-danger-emphasis fw-bold khmer-font"><i class="bi bi-geo-alt-fill me-1 opacity-75"></i> {{ household.slum_area if household.slum_area else 'Unknown Area' }}</div>
-                                <div class="mt-3 text-end border-top border-danger border-opacity-25 pt-2">
-                                    <a href="/household/{{ household.id }}" class="btn btn-sm btn-danger py-0 px-3 rounded-pill shadow-sm fw-bold" style="font-size: 0.75rem;">View Full Family</a>
+                                <div class="small text-info-emphasis fw-bold khmer-font"><i class="bi bi-geo-alt-fill me-1 opacity-75"></i> {{ household.slum_area if household.slum_area else 'Unknown Area' }}</div>
+                                <div class="mt-3 text-end border-top border-info border-opacity-25 pt-2">
+                                    <a href="/household/{{ household.id }}" class="btn btn-sm btn-info text-white py-0 px-3 rounded-pill shadow-sm fw-bold" style="font-size: 0.75rem;">View Full Family</a>
                                 </div>
                             </div>
                             
-                            <!-- RESTORED: Biological Parents Block -->
+                            <!-- Biological Parents Block -->
                             <div class="bg-light p-3 rounded-4 mb-3 border">
-                                <h6 class="fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-diagram-3-fill text-info me-1"></i> Biological Parents</h6>
+                                <h6 class="fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-diagram-3-fill text-secondary me-1"></i> Biological Parents</h6>
                                 <div class="small">
                                     <div class="d-flex justify-content-between mb-1">
                                         <span class="text-muted fw-bold">Mother:</span>
@@ -131,7 +131,7 @@
                                     </div>
                                     <div class="d-flex justify-content-between border-top pt-1 mt-1">
                                         <span class="text-muted fw-bold">Relation to Head:</span>
-                                        <span class="fw-bold text-info">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
+                                        <span class="fw-bold text-info-emphasis">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -154,16 +154,14 @@
                                 </div>
                             {% endif %}
                         {% else %}
-                            <!-- Legacy fallback if not linked to a central household -->
                             <div class="bg-warning bg-opacity-10 p-3 rounded-4 mb-3 border border-warning border-opacity-50">
                                 <h6 class="fw-bold mb-1 text-dark">{{ student.guardian_name if student.guardian_name else 'Unknown' }} <span class="badge bg-warning text-dark ms-1 rounded-pill">Unlinked</span></h6>
                                 <div class="small text-muted mb-1 fw-bold"><i class="bi bi-telephone-fill me-1"></i> {{ student.phone_number if student.phone_number else 'No Phone' }}</div>
                                 <div class="small text-muted khmer-font fw-bold"><i class="bi bi-geo-alt-fill me-1"></i> {{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
                             </div>
                             
-                            <!-- RESTORED: Biological Parents Block (Legacy) -->
                             <div class="bg-light p-3 rounded-4 mb-3 border">
-                                <h6 class="fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-diagram-3-fill text-info me-1"></i> Biological Parents</h6>
+                                <h6 class="fw-bold small text-muted text-uppercase mb-2"><i class="bi bi-diagram-3-fill text-secondary me-1"></i> Biological Parents</h6>
                                 <div class="small">
                                     <div class="d-flex justify-content-between mb-1">
                                         <span class="text-muted fw-bold">Mother:</span>
@@ -175,7 +173,7 @@
                                     </div>
                                     <div class="d-flex justify-content-between border-top pt-1 mt-1">
                                         <span class="text-muted fw-bold">Relation to Guardian:</span>
-                                        <span class="fw-bold text-info">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
+                                        <span class="fw-bold text-info-emphasis">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -194,8 +192,7 @@
         <!-- ========================================== -->
         <div class="col-lg-8">
             
-            <!-- SMART SCROLL: Sticky Pill Navigation that acts like a dynamic header -->
-            <div class="sticky-lg-top pt-2 pb-1" style="top: 0px; z-index: 10; background-color: #f8f9fa;">
+            <div class="sticky-lg-top pt-2 pb-1 bg-light" style="top: 0px; z-index: 10;">
                 <ul class="nav nav-pills nav-fill fw-bold mb-3 bg-white rounded-pill shadow-sm border p-1" id="profileTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active rounded-pill text-dark" id="academics-tab" data-bs-toggle="tab" data-bs-target="#academics" type="button" role="tab">
@@ -204,12 +201,12 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link rounded-pill text-dark" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab">
-                            <i class="bi bi-clipboard-pulse me-1 text-danger"></i> Follow-Ups
+                            <i class="bi bi-clipboard-pulse me-1 text-primary"></i> Follow-Ups
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link rounded-pill text-dark" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab">
-                            <i class="bi bi-folder-fill me-1 text-warning"></i> Files & Funds
+                            <i class="bi bi-folder-fill me-1 text-dark"></i> Files & Funds
                         </button>
                     </li>
                 </ul>
@@ -219,113 +216,183 @@
             <div class="tab-content" id="profileTabsContent">
                 
                 <!-- ========================================== -->
-                <!-- TAB 1: ACADEMICS (UPGRADED UI)             -->
+                <!-- TAB 1: ACADEMICS                           -->
                 <!-- ========================================== -->
                 <div class="tab-pane fade show active" id="academics" role="tabpanel">
                     
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 px-2 gap-2 mt-2">
                         <h5 class="fw-bold text-dark mb-0">Academic History</h5>
                         
-                        <!-- Filter & Add Actions -->
-                        <div class="d-flex align-items-center gap-2">
-                            <select id="reportYearFilter" class="form-select form-select-sm rounded-pill bg-white border shadow-sm fw-bold text-secondary" style="width: auto; min-width: 120px;" onchange="filterReports()">
-                                <option value="all">All Years</option>
-                                <!-- Years auto-populated by Javascript -->
-                            </select>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm">
+                                <i class="bi bi-calendar3 text-muted ms-3 me-2"></i>
+                                <select id="reportYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none" style="width: auto; min-width: 100px;" onchange="filterReports()">
+                                    <option value="all">All Years</option>
+                                </select>
+                            </div>
+                            <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm">
+                                <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
+                                <select id="reportMonthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none" style="width: auto; min-width: 100px;" onchange="filterReports()">
+                                    <option value="all">All Months</option>
+                                </select>
+                            </div>
                             
-                            <!-- MOBILE UX FIX: Grading hidden on mobile -->
                             <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold shadow-sm d-none d-md-inline-block rounded-pill px-3 text-nowrap"><i class="bi bi-plus-lg me-1"></i> Add Report</a>
                         </div>
                     </div>
                     
                     <div id="academicRecordsContainer">
-                        {% for report in reports %}
-                        <!-- Added data-year attribute for the Javascript filter -->
-                        <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-success border-4 overflow-hidden transition-hover report-card" data-year="{{ report.academic_year }}">
-                            
-                            <!-- HEADER & SMART SUB-HEADER -->
-                            <div class="card-header bg-success bg-opacity-10 border-bottom-0 pt-3 pb-2">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div>
-                                        <span class="badge bg-white text-dark border fs-6 me-2 shadow-sm">{{ report.academic_year }}</span>
-                                        <span class="fw-bold text-success-emphasis fs-5">{{ report.month }} {{ report.semester if report.semester else '' }}</span>
-                                    </div>
-                                    <!-- Smart Badging for GPA -->
-                                    {% if report.overall_average %}
-                                        <h3 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
-                                            {{ report.overall_average }}%
-                                        </h3>
-                                    {% else %}
-                                        <h4 class="mb-0 fw-bold text-muted">{{ report.overall_grade if report.overall_grade else 'N/A' }}</h4>
-                                    {% endif %}
-                                </div>
 
-                                <!-- THE FIX: Compact Sub-Header for Metadata -->
-                                <div class="d-flex flex-wrap gap-3 pt-2 border-top border-success border-opacity-25 mt-1">
-                                    {% if report.class_rank %}
-                                    <span class="text-success-emphasis small fw-bold"><i class="bi bi-trophy-fill text-warning me-1"></i>Rank: {{ report.class_rank }}</span>
+                        <!-- THE PERFORMANCE TRAJECTORY MATRIX -->
+                        {% if reports|length > 0 %}
+                        <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-primary border-4 d-none d-md-block">
+                            <div class="card-header bg-white border-bottom-0 pt-3 pb-2 px-4 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold text-primary mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Performance Trajectory (Recent)</h6>
+                                <span class="badge bg-light text-muted border">Left to Right: Oldest to Newest</span>
+                            </div>
+                            <div class="card-body px-4 pb-4 pt-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered align-middle text-center mb-0" style="font-size: 0.85rem; min-width: 500px;">
+                                        
+                                        {% set recent_reports = reports[:6]|reverse|list %}
+                                        {% set unique_subjects = [] %}
+                                        {% for r in recent_reports %}
+                                            {% for sub in r.subjects %}
+                                                {% set sname = sub.subject_name %}
+                                                {% if sname and sname not in unique_subjects %}
+                                                    {% set _ = unique_subjects.append(sname) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="text-start text-uppercase text-muted" style="width: 25%;">Subject</th>
+                                                {% for r in recent_reports %}
+                                                    <th>
+                                                        <div class="fw-bold text-dark">{{ r.month[:3] }}</div>
+                                                        <div class="text-muted" style="font-size: 0.65rem;">{{ r.academic_year[-2:] }}</div>
+                                                    </th>
+                                                {% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="table-primary">
+                                                <td class="text-start fw-bold text-primary"><i class="bi bi-trophy-fill me-1"></i> OVERALL AVERAGE</td>
+                                                {% for r in recent_reports %}
+                                                    <td class="fw-bold text-primary">{{ r.overall_average if r.overall_average else '-' }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                            
+                                            {% for sname in unique_subjects %}
+                                            <tr>
+                                                <td class="text-start fw-bold text-secondary khmer-font">{{ sname }}</td>
+                                                {% for r in recent_reports %}
+                                                    {% set score = namespace(value='-') %}
+                                                    {% for sub in r.subjects %}
+                                                        {% if sub.subject_name == sname %}
+                                                            {% set score.value = sub.score %}
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    <td class="fw-bold text-dark">{{ score.value }}</td>
+                                                {% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% for report in reports %}
+                        <div class="card shadow-sm border-0 rounded-4 mb-3 border-start border-success border-4 overflow-hidden transition-hover report-card" data-year="{{ report.academic_year }}" data-month="{{ report.month }} {{ report.semester if report.semester else '' }}">
+                            
+                            <div class="card-header bg-white border-bottom-0 pt-3 pb-3 d-flex justify-content-between align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseReport{{ report.id }}" aria-expanded="{% if loop.first %}true{% else %}false{% endif %}" aria-controls="collapseReport{{ report.id }}">
+                                <div>
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success fs-6 me-2 shadow-sm">{{ report.academic_year }}</span>
+                                    <span class="fw-bold text-dark fs-5">{{ report.month }} {{ report.semester if report.semester else '' }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    {% if report.overall_average %}
+                                        <h4 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
+                                            {{ report.overall_average }}%
+                                        </h4>
+                                    {% else %}
+                                        <h5 class="mb-0 fw-bold text-muted">{{ report.overall_grade if report.overall_grade else 'N/A' }}</h5>
                                     {% endif %}
-                                    
-                                    {% if report.attendance_days %}
-                                    <span class="text-success-emphasis small fw-bold"><i class="bi bi-calendar-check-fill text-info me-1"></i>Attendance: {{ report.attendance_days }} days</span>
-                                    {% endif %}
-                                    
-                                    <!-- ONLY show school if it differs from their current baseline -->
-                                    {% if report.school_name and report.school_name != student.current_school %}
-                                    <span class="text-success-emphasis small fw-bold"><i class="bi bi-building-fill text-secondary me-1"></i>School: <span class="khmer-font">{{ report.school_name }}</span></span>
-                                    {% endif %}
+                                    <i class="bi bi-chevron-expand text-success opacity-50 fs-5"></i>
                                 </div>
                             </div>
                             
-                            <div class="card-body p-4 bg-white">
-                                <!-- THE FIX: Direct, Beautiful Subject Grid -->
-                                {% if report.subjects %}
-                                    <h6 class="fw-bold text-dark small text-uppercase mb-3"><i class="bi bi-list-columns-reverse text-success me-1"></i> Subject Scores</h6>
-                                    <div class="row g-2">
-                                        {% for sub in report.subjects %}
-                                        <div class="col-12 col-md-6 col-xl-4">
-                                            <div class="d-flex justify-content-between align-items-center p-2 px-3 bg-light border border-secondary border-opacity-10 rounded-3 h-100">
-                                                <div class="d-flex flex-column" style="max-width: 65%;">
-                                                    <span class="text-muted fw-bold text-uppercase mb-1" style="font-size: 0.65rem;">{{ sub.category }}</span>
-                                                    <span class="fw-bold text-dark text-truncate khmer-font" title="{{ sub.name }}">{{ sub.name }}</span>
-                                                </div>
-                                                <div class="text-end">
-                                                    <span class="fw-bold fs-5 text-dark">{{ sub.score }}</span>
-                                                    <span class="text-muted small">/ {{ sub.max_score }}</span>
-                                                </div>
+                            <div id="collapseReport{{ report.id }}" class="collapse {% if loop.first %}show{% endif %}">
+                                <div class="card-body p-4 bg-light border-top">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-6 col-md-4">
+                                            <div class="p-3 border rounded-4 bg-white text-center shadow-sm h-100">
+                                                <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;"><i class="bi bi-trophy-fill text-warning me-1"></i>Class Rank</div>
+                                                <span class="fw-bold fs-5 text-dark">{{ report.class_rank if report.class_rank else '-' }}</span>
                                             </div>
                                         </div>
-                                        {% endfor %}
+                                        <div class="col-6 col-md-4">
+                                            <div class="p-3 border rounded-4 bg-white text-center shadow-sm h-100">
+                                                <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;"><i class="bi bi-calendar-check-fill text-info me-1"></i>Attendance</div>
+                                                <span class="fw-bold fs-5 text-dark">{{ report.attendance_days if report.attendance_days else '-' }} <span class="small text-muted fs-6">days</span></span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <div class="p-3 border rounded-4 bg-white text-center shadow-sm h-100">
+                                                <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;"><i class="bi bi-building-fill text-secondary me-1"></i>School</div>
+                                                <span class="fw-bold text-dark khmer-font small">{{ report.school_name if report.school_name else student.current_school }}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                {% else %}
-                                    <p class="text-muted small fst-italic mb-0"><i class="bi bi-info-circle me-1"></i> No individual subject scores recorded for this report.</p>
-                                {% endif %}
-
-                                {% if report.teacher_comment %}
-                                <div class="mt-4 p-3 bg-light border border-secondary border-opacity-10 rounded-4 position-relative">
-                                    <i class="bi bi-quote position-absolute top-0 start-0 text-muted opacity-25 ms-2 mt-1" style="font-size: 2rem;"></i>
-                                    <p class="small text-dark khmer-font mb-0 fst-italic position-relative z-1 ps-4">"{{ report.teacher_comment }}"</p>
-                                </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="card-footer bg-light border-top rounded-bottom-4 px-4 py-3 d-flex justify-content-between align-items-center">
-                                {% if report.scanned_document %}
-                                <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-white border fw-bold shadow-sm text-dark"><i class="bi bi-file-earmark-image-fill text-primary me-1"></i> View Scan</a>
-                                {% else %}
-                                <span><i class="bi bi-dash-lg text-muted"></i></span>
-                                {% endif %}
-                                
-                                <div>
-                                    <!-- MOBILE UX FIX: Grading edits hidden on mobile -->
-                                    <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-white border fw-bold text-dark me-2 d-none d-md-inline-block shadow-sm">Edit Data</a>
                                     
-                                    <!-- SECURITY FIX: Only Admins can delete reports -->
-                                    {% if session.get("role") in ["Admin", "Director"] %}
-                                    <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm" title="Delete Report"><i class="bi bi-trash-fill"></i></button>
-                                    </form>
+                                    {% if report.subjects %}
+                                    <div class="mt-4">
+                                        <h6 class="fw-bold text-success small text-uppercase mb-3"><i class="bi bi-list-columns-reverse me-1"></i> Detailed Subject Scores</h6>
+                                        <div class="row g-3">
+                                            {% for sub in report.subjects %}
+                                            <div class="col-12 col-md-6 col-xl-4">
+                                                <div class="d-flex justify-content-between align-items-center p-3 bg-white border border-secondary border-opacity-10 rounded-3 shadow-sm h-100">
+                                                    <span class="fw-bold text-secondary text-truncate me-2" title="{{ sub.subject_name }}">{{ sub.subject_name }}</span>
+                                                    <div class="text-end bg-light px-3 py-1 rounded border">
+                                                        <span class="fw-bold text-primary fs-5">{{ sub.score }}</span>
+                                                        {% if sub.max_score %}
+                                                            <span class="text-muted fw-bold small">/ {{ sub.max_score }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
                                     {% endif %}
+
+                                    {% if report.teacher_comment %}
+                                    <div class="mt-4 p-3 bg-white border border-secondary border-opacity-10 rounded-4 position-relative shadow-sm">
+                                        <i class="bi bi-quote position-absolute top-0 start-0 text-muted opacity-25 ms-2 mt-1" style="font-size: 2rem;"></i>
+                                        <p class="small text-dark khmer-font mb-0 fst-italic position-relative z-1 ps-4">"{{ report.teacher_comment }}"</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="card-footer bg-white border-top rounded-bottom-4 px-4 py-3 d-flex justify-content-between align-items-center">
+                                    {% if report.scanned_document %}
+                                    <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-white border fw-bold shadow-sm text-dark"><i class="bi bi-file-earmark-image-fill text-primary me-1"></i> View Scan</a>
+                                    {% else %}
+                                    <span><i class="bi bi-dash-lg text-muted"></i></span>
+                                    {% endif %}
+                                    
+                                    <div>
+                                        <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-white border fw-bold text-dark me-2 d-none d-md-inline-block shadow-sm">Edit Data</a>
+                                        
+                                        {% if session.get("role") in ["Admin", "Director"] %}
+                                        <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm" title="Delete Report"><i class="bi bi-trash-fill"></i></button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -339,9 +406,8 @@
                         </div>
                         {% endfor %}
                         
-                        <!-- Empty State for JS Filter -->
                         <div id="noReportsMessage" class="text-center py-4 d-none">
-                            <p class="text-muted fw-bold mb-0">No records found for this selected year.</p>
+                            <p class="text-muted fw-bold mb-0">No records found for this selected timeframe.</p>
                         </div>
                     </div>
                 </div>
@@ -354,21 +420,17 @@
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-2 gap-2 mt-2">
                         <h5 class="fw-bold text-dark mb-0">Social Work Timeline</h5>
                         
-                        <!-- Filter & Add Actions -->
                         <div class="d-flex align-items-center gap-2">
                             <select id="noteYearFilter" class="form-select form-select-sm rounded-pill bg-white border shadow-sm fw-bold text-secondary" style="width: auto; min-width: 120px;" onchange="filterNotes()">
                                 <option value="all">All Years</option>
-                                <!-- Years auto-populated by Javascript -->
                             </select>
-                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3 text-nowrap"><i class="bi bi-plus-lg me-1"></i> New Note</a>
+                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-primary fw-bold shadow-sm rounded-pill px-3 text-nowrap"><i class="bi bi-plus-lg me-1"></i> New Note</a>
                         </div>
                     </div>
                     
-                    <div class="timeline ps-4 ms-2" style="border-left: 3px solid #f8d7da;" id="notesContainer">
+                    <div class="timeline ps-4 ms-2" style="border-left: 3px solid #cfe2ff;" id="notesContainer">
                         {% for note in followups %}
-                        <!-- Added data-year attribute extracting the year from the date -->
                         <div class="position-relative mb-4 ps-4 note-card" data-year="{{ note.followup_date[:4] }}">
-                            <!-- Timeline Dot colored by risk level -->
                             {% set risk_color = 'success' %}
                             {% if note.risk_factors or note.child_protection_concerns %}
                                 {% set risk_color = 'danger' %}
@@ -385,11 +447,51 @@
                                         <span class="badge bg-{{ risk_color }} bg-opacity-10 text-{{ risk_color }} border border-{{ risk_color }} rounded-pill px-3 py-1"><i class="bi bi-geo-alt-fill me-1"></i> {{ note.location }}</span>
                                     </div>
                                     
-                                    <div class="khmer-font text-dark mb-4" style="font-size: 0.95rem; line-height: 1.6;">
-                                        {{ note.general_notes if note.general_notes else 'No general notes provided.' }}
+                                    {% if note.location == 'Sponsor Letter Update' or note.letter_quarter %}
+                                    <div class="bg-success bg-opacity-10 p-3 rounded-4 mb-3 border border-success border-opacity-25">
+                                        <h6 class="fw-bold text-success-emphasis mb-2"><i class="bi bi-envelope-paper-fill me-1"></i> Sponsor Letter Progress ({{ note.letter_quarter }} {{ note.letter_year }})</h6>
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            <span class="badge {% if note.letter_given == 'Yes' %}bg-success{% else %}bg-secondary bg-opacity-25 text-muted border{% endif %}"><i class="bi bi-pencil-square me-1"></i>Written</span>
+                                            <span class="badge {% if note.letter_translated == 'Yes' %}bg-success{% else %}bg-secondary bg-opacity-25 text-muted border{% endif %}"><i class="bi bi-translate me-1"></i>Translated</span>
+                                            <span class="badge {% if note.letter_scanned == 'Yes' %}bg-success{% else %}bg-secondary bg-opacity-25 text-muted border{% endif %}"><i class="bi bi-printer me-1"></i>Scanned</span>
+                                            <span class="badge {% if note.letter_sent == 'Yes' %}bg-success{% else %}bg-secondary bg-opacity-25 text-muted border{% endif %}"><i class="bi bi-send me-1"></i>Sent</span>
+                                        </div>
+                                        {% if note.letter_notes %}
+                                        <p class="small text-success-emphasis mb-0 mt-2"><strong>Notes:</strong> <span class="khmer-font">{{ note.letter_notes }}</span></p>
+                                        {% endif %}
                                     </div>
+                                    {% endif %}
 
-                                    <!-- Quick tags for protection concerns -->
+                                    {% if note.general_notes %}
+                                    <div class="khmer-font text-dark mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                                        {{ note.general_notes }}
+                                    </div>
+                                    {% elif not note.letter_quarter %}
+                                    <div class="khmer-font text-muted fst-italic mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                                        No general notes provided.
+                                    </div>
+                                    {% endif %}
+
+                                    {% if note.location != 'Sponsor Letter Update' %}
+                                    <div class="d-flex flex-wrap gap-2 mb-4">
+                                        {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
+                                        <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
+                                        {% endif %}
+                                        
+                                        {% if note.home_life and note.home_life != 'Not Evaluated' %}
+                                        <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
+                                        {% endif %}
+                                        
+                                        {% if note.behavior_in_class and note.behavior_in_class != 'Not Evaluated' %}
+                                        <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-person-raised-hand text-info me-1"></i>Behavior: {{ note.behavior_in_class }}</span>
+                                        {% endif %}
+                                        
+                                        {% if note.learning_difficulties and note.learning_difficulties not in ['None', 'Not Evaluated', ''] %}
+                                        <span class="badge bg-light text-dark border px-2 py-1"><i class="bi bi-book text-warning me-1"></i>Learning: {{ note.learning_difficulties }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
                                     {% if note.child_protection_concerns %}
                                         <div class="alert alert-danger py-3 px-4 small mb-4 border-danger rounded-4 fw-bold">
                                             <i class="bi bi-shield-exclamation-fill fs-5 me-2 align-middle"></i> 
@@ -399,7 +501,6 @@
 
                                     <div class="d-flex justify-content-between align-items-center mt-2 pt-3 border-top bg-light mx-n4 mb-n4 p-4 rounded-bottom-4">
                                         <span class="small text-muted fw-bold"><i class="bi bi-person-badge-fill text-secondary me-2"></i>{{ note.completed_by }}</span>
-                                        <!-- MOBILE UX FIX: Edits hidden on mobile -->
                                         <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-1 px-3 d-none d-md-inline-block shadow-sm rounded-pill">Edit Note</a>
                                     </div>
                                 </div>
@@ -408,14 +509,13 @@
                         {% else %}
                         <div class="text-center p-5 ms-n4 mt-4">
                             <div class="bg-light border rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
-                                <i class="bi bi-clipboard-x fs-1 text-danger opacity-75"></i>
+                                <i class="bi bi-clipboard-x fs-1 text-primary opacity-75"></i>
                             </div>
                             <h5 class="fw-bold text-dark mb-1">No timeline events</h5>
                             <p class="small text-muted mb-0">Record a home visit or phone call to start the timeline.</p>
                         </div>
                         {% endfor %}
                         
-                        <!-- Empty State for JS Filter -->
                         <div id="noNotesMessage" class="text-center py-4 ms-n4 d-none">
                             <p class="text-muted fw-bold mb-0">No follow-ups recorded for this selected year.</p>
                         </div>
@@ -428,22 +528,22 @@
                 <div class="tab-pane fade" id="files" role="tabpanel">
                     
                     <!-- DIGITAL FILING CABINET -->
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-warning border-4 mt-2">
+                    <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-secondary border-4 mt-2">
                         <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder-fill text-warning me-2"></i>Digital Filing Cabinet</h5>
-                            <button class="btn btn-sm btn-outline-warning text-dark fw-bold shadow-sm rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#uploadForm">
+                            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder-fill text-secondary me-2"></i>Digital Filing Cabinet</h5>
+                            <button class="btn btn-sm btn-outline-secondary text-dark fw-bold shadow-sm rounded-pill px-3" data-bs-toggle="collapse" data-bs-target="#uploadForm">
                                 <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload
                             </button>
                         </div>
                         <div class="card-body px-4">
                             
                             <!-- Upload Form -->
-                            <div id="uploadForm" class="collapse mb-4 bg-warning bg-opacity-10 p-4 rounded-4 border border-warning border-opacity-25 d-print-none">
+                            <div id="uploadForm" class="collapse mb-4 bg-light p-4 rounded-4 border d-print-none">
                                 <form action="/upload_document/{{ student.id }}" method="POST" enctype="multipart/form-data">
                                     <div class="row g-3 align-items-end">
                                         <div class="col-md-4">
                                             <label class="small fw-bold text-dark mb-1">Document Type</label>
-                                            <select name="document_type" class="form-select fw-bold border-warning" required>
+                                            <select name="document_type" class="form-select fw-bold" required>
                                                 <option value="" disabled selected>Select Type...</option>
                                                 <option>Birth Certificate</option>
                                                 <option>Contract</option>
@@ -454,17 +554,15 @@
                                         </div>
                                         <div class="col-md-5">
                                             <label class="small fw-bold text-dark mb-1">Select File or Camera</label>
-                                            <!-- MOBILE UX FIX: capture="environment" added for native camera hook -->
-                                            <input type="file" name="document_file" class="form-control border-warning bg-white" accept="image/*,application/pdf" capture="environment" required>
+                                            <input type="file" name="document_file" class="form-control bg-white" accept="image/*,application/pdf" capture="environment" required>
                                         </div>
                                         <div class="col-md-3">
-                                            <button class="btn btn-warning w-100 fw-bold shadow-sm text-dark">Save File</button>
+                                            <button class="btn btn-secondary w-100 fw-bold shadow-sm text-white">Save File</button>
                                         </div>
                                     </div>
                                 </form>
                             </div>
 
-                            <!-- MOBILE UX FIX: table-responsive wrapper -->
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light text-muted small text-uppercase">
@@ -478,15 +576,18 @@
                                     <tbody>
                                         {% for doc in docs %}
                                         <tr>
-                                            <td><span class="badge bg-dark bg-opacity-10 text-dark border px-2 py-1"><i class="bi bi-file-earmark-text-fill text-warning me-1"></i>{{ doc.document_type }}</span></td>
-                                            <td class="text-truncate" style="max-width: 200px;">
-                                                <a href="{{ url_for('static', filename='uploads/documents/' + doc.saved_filename) }}" target="_blank" class="text-decoration-none fw-bold text-primary">{{ doc.original_filename }}</a>
+                                            <td><span class="badge bg-dark bg-opacity-10 text-dark border px-2 py-1"><i class="bi bi-file-earmark-text-fill text-secondary me-1"></i>{{ doc.document_type }}</span></td>
+                                            <td>
+                                                <div class="text-truncate" style="max-width: 150px;">
+                                                    <a href="{{ url_for('static', filename='uploads/documents/' + doc.saved_filename) }}" target="_blank" class="text-decoration-none fw-bold text-primary">{{ doc.original_filename }}</a>
+                                                </div>
                                             </td>
-                                            <td class="small text-muted fw-bold">{{ doc.upload_date }}</td>
+                                            <td class="small text-muted fw-bold">{{ doc.upload_date[:10] }}</td>
                                             <td class="d-print-none text-end pe-3">
-                                                <!-- SECURITY FIX: Only Admins can delete documents -->
                                                 {% if session.get("role") in ["Admin", "Director"] %}
-                                                <a href="/delete_document/{{ doc.id }}" onclick="return confirm('Permanently delete this file?')" class="btn btn-sm btn-white border text-danger shadow-sm py-1"><i class="bi bi-trash-fill"></i></a>
+                                                <form action="/delete_document/{{ doc.id }}" method="post" class="d-inline" onsubmit="return confirm('Permanently delete this file?');">
+                                                    <button type="submit" class="btn btn-sm btn-white border text-danger shadow-sm py-1" title="Delete Document"><i class="bi bi-trash-fill"></i></button>
+                                                </form>
                                                 {% else %}
                                                 <span class="small text-muted"><i class="bi bi-lock-fill"></i></span>
                                                 {% endif %}
@@ -504,19 +605,17 @@
                     </div>
 
                     <!-- FINANCIAL LEDGER -->
-                    <div class="card shadow-sm border-0 rounded-4 border-start border-info border-4">
+                    <div class="card shadow-sm border-0 rounded-4 border-start border-dark border-4">
                         <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-coin text-info me-2"></i>Financial Ledger</h5>
-                                <small class="text-muted fw-bold">Total Spent: <strong class="text-info fs-6">${{ total_spent|default('0.00') }}</strong></small>
+                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-coin text-success me-2"></i>Financial Ledger</h5>
+                                <small class="text-muted fw-bold">Total Spent: <strong class="text-success fs-6">${{ total_spent|default('0.00') }}</strong></small>
                             </div>
-                            <!-- MOBILE UX FIX: Financials are a desk job. Hidden on mobile. -->
-                            <button class="btn btn-sm btn-info text-white fw-bold d-none d-md-inline-block shadow-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#expenseModal">
+                            <button class="btn btn-sm btn-dark text-white fw-bold d-none d-md-inline-block shadow-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#expenseModal">
                                 <i class="bi bi-plus-lg me-1"></i> Log Expense
                             </button>
                         </div>
                         <div class="card-body px-4 pb-4">
-                            <!-- MOBILE UX FIX: table-responsive -->
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead class="table-light text-muted small text-uppercase">
@@ -532,8 +631,12 @@
                                         <tr>
                                             <td class="small fw-bold text-muted">{{ exp.expense_date }}</td>
                                             <td><span class="badge bg-light text-dark border px-2 py-1">{{ exp.category }}</span></td>
-                                            <td class="small text-dark khmer-font">{{ exp.vendor_name if exp.vendor_name else '-' }}</td>
-                                            <td class="fw-bold text-info text-end pe-3">${{ exp.amount }}</td>
+                                            <td class="small text-dark khmer-font">
+                                                <div class="text-truncate" style="max-width: 120px;">
+                                                    {{ exp.vendor_name if exp.vendor_name else '-' }}
+                                                </div>
+                                            </td>
+                                            <td class="fw-bold text-success text-end pe-3">${{ exp.amount }}</td>
                                         </tr>
                                         {% else %}
                                         <tr>
@@ -553,21 +656,21 @@
 </div>
 
 <!-- ========================================== -->
-<!-- MODALS (Hidden by default)                 -->
+<!-- MODALS                                     -->
 <!-- ========================================== -->
 
 <!-- Modal: Link Kinship/Household -->
 <div class="modal fade" id="kinshipModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-danger text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+            <div class="modal-header bg-info text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
                 <h5 class="modal-title fw-bold"><i class="bi bi-house-add-fill me-2"></i>Link Household</h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form action="/update_kinship/{{ student.id }}" method="post">
                 <div class="modal-body p-4 text-start">
-                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger small py-3 mb-4 text-dark rounded-4 d-flex">
-                        <i class="bi bi-info-circle-fill me-2 fs-5 text-danger"></i> 
+                    <div class="alert alert-info bg-info bg-opacity-10 border-info small py-3 mb-4 text-dark rounded-4 d-flex">
+                        <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i> 
                         <span>Search for an existing Household ID to link this child to their siblings.</span>
                     </div>
                     <div class="mb-3">
@@ -577,18 +680,18 @@
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
                     <button type="button" class="btn btn-white border shadow-sm fw-bold text-dark" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger shadow-sm fw-bold px-4">Link Family</button>
+                    <button type="submit" class="btn btn-info text-white shadow-sm fw-bold px-4">Link Family</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal: Log Expense (Only accessible on Desktop) -->
+<!-- Modal: Log Expense -->
 <div class="modal fade" id="expenseModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-info text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+            <div class="modal-header bg-dark text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
                 <h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Log Financial Support</h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
@@ -596,7 +699,6 @@
                 <div class="modal-body p-4 text-start">
                     <div class="mb-3">
                         <label class="form-label fw-bold small text-muted">Date</label>
-                        <!-- AUTO-FILL: Suggests today's date -->
                         <input type="date" class="form-control bg-light" name="expense_date" required>
                     </div>
                     <div class="row g-3 mb-3">
@@ -615,7 +717,7 @@
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-muted">Amount (USD) *</label>
                             <div class="input-group shadow-sm">
-                                <span class="input-group-text bg-white text-info fw-bold">$</span>
+                                <span class="input-group-text bg-white text-dark fw-bold">$</span>
                                 <input type="number" step="0.01" class="form-control bg-light fw-bold" name="amount" placeholder="0.00" required>
                             </div>
                         </div>
@@ -627,16 +729,14 @@
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
                     <button type="button" class="btn btn-white border shadow-sm fw-bold text-dark" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info text-white shadow-sm fw-bold px-4">Save Expense</button>
+                    <button type="submit" class="btn btn-success text-white shadow-sm fw-bold px-4">Save Expense</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Custom Polish CSS -->
 <style>
-    /* Subtle hover lift effect for cards */
     .transition-hover {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
@@ -645,7 +745,6 @@
         box-shadow: 0 10px 20px rgba(0,0,0,0.06) !important;
     }
     
-    /* Modern Pill Tab overrides */
     .nav-pills .nav-link {
         transition: all 0.2s ease;
         font-size: 0.95rem;
@@ -659,30 +758,85 @@
 
 {% block scripts %}
 <script>
-    // DYNAMIC FILTER LOGIC FOR ACADEMIC RECORDS
-    const reportCards = document.querySelectorAll('.report-card');
-    const reportFilter = document.getElementById('reportYearFilter');
-    const noReportsMessage = document.getElementById('noReportsMessage');
-    
-    // 1. Auto-extract unique academic years
-    const reportYears = new Set();
-    reportCards.forEach(card => {
-        const year = card.getAttribute('data-year');
-        if(year) reportYears.add(year);
-    });
-    
-    // 2. Populate the dropdown
-    Array.from(reportYears).sort().reverse().forEach(year => {
-        reportFilter.add(new Option(year, year));
+    // JS CALCULATION: Calculate Age dynamically from DOB 
+    // This solves the database issue where 'age' isn't explicitly saved
+    document.addEventListener("DOMContentLoaded", function() {
+        const ageBadge = document.getElementById('student-age-badge');
+        if (ageBadge) {
+            const dob = ageBadge.getAttribute('data-dob');
+            if (dob && dob !== 'None' && dob.trim() !== '') {
+                const birthDate = new Date(dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const m = today.getMonth() - birthDate.getMonth();
+                
+                // If they haven't had their birthday yet this year, subtract 1
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                
+                if (!isNaN(age)) {
+                    ageBadge.innerHTML = `<i class="bi bi-calendar-event me-1"></i> Age: ${age}`;
+                }
+            }
+        }
     });
 
-    // 3. Filtering Function
+    // DYNAMIC FILTER LOGIC FOR ACADEMIC RECORDS
+    const reportCards = document.querySelectorAll('.report-card');
+    const reportYearFilter = document.getElementById('reportYearFilter');
+    const reportMonthFilter = document.getElementById('reportMonthFilter');
+    const noReportsMessage = document.getElementById('noReportsMessage');
+    
+    const reportYears = new Set();
+    const reportMonths = new Set();
+    
+    reportCards.forEach(card => {
+        const year = card.getAttribute('data-year');
+        const month = card.getAttribute('data-month');
+        if(year) reportYears.add(year.trim());
+        if(month) reportMonths.add(month.trim());
+    });
+    
+    Array.from(reportYears).sort().reverse().forEach(year => {
+        reportYearFilter.add(new Option(year, year));
+    });
+
+    const academicOrder = [
+        "August", "September", "October", "November", "December", 
+        "Semester 1", "January", "February", "March", "April", 
+        "May", "June", "July", "Semester 2", "Final Exam"
+    ];
+    
+    const sortedMonths = Array.from(reportMonths).sort((a, b) => {
+        let indexA = academicOrder.findIndex(m => a.includes(m));
+        let indexB = academicOrder.findIndex(m => b.includes(m));
+        if (indexA === -1) indexA = 99;
+        if (indexB === -1) indexB = 99;
+        return indexA - indexB;
+    });
+
+    sortedMonths.forEach(month => {
+        reportMonthFilter.add(new Option(month, month));
+    });
+
+    if (reportYearFilter.options.length > 1) {
+        reportYearFilter.selectedIndex = 1;
+    }
+
     function filterReports() {
-        const selectedYear = reportFilter.value;
+        const selectedYear = reportYearFilter.value;
+        const selectedMonth = reportMonthFilter.value;
         let visibleCount = 0;
         
         reportCards.forEach(card => {
-            if (selectedYear === 'all' || card.getAttribute('data-year') === selectedYear) {
+            const rowYear = card.getAttribute('data-year').trim();
+            const rowMonth = card.getAttribute('data-month').trim();
+            
+            const yearMatch = (selectedYear === 'all' || rowYear === selectedYear);
+            const monthMatch = (selectedMonth === 'all' || rowMonth === selectedMonth);
+            
+            if (yearMatch && monthMatch) {
                 card.style.display = '';
                 visibleCount++;
             } else {
@@ -696,9 +850,11 @@
             noReportsMessage.classList.add('d-none');
         }
     }
+    
+    // Run the filter immediately on page load
+    filterReports();
 
-
-    // DYNAMIC FILTER LOGIC FOR FOLLOW-UPS / TIMELINE
+    // DYNAMIC FILTER LOGIC FOR FOLLOW-UPS
     const noteCards = document.querySelectorAll('.note-card');
     const noteFilter = document.getElementById('noteYearFilter');
     const noNotesMessage = document.getElementById('noNotesMessage');
@@ -733,15 +889,12 @@
         }
     }
 
-
-    // Expense Data Alert Logic
     document.getElementById('files-tab').addEventListener('shown.bs.tab', function (event) {
         if (window.innerWidth < 768) {
             console.log("Mobile UX Active: Desk-only operations (Financials, Profile Edits) are hidden.");
         }
     });
 
-    // Helper script to set today's date in the expense modal automatically
     var expenseModal = document.getElementById('expenseModal');
     if (expenseModal) {
         expenseModal.addEventListener('show.bs.modal', function (event) {

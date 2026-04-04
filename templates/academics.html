@@ -3,16 +3,15 @@
 {% block title %}Master Gradebook{% endblock %}
 
 {% block main %}
-<div class="container mt-4 mb-5" style="max-width: 1400px;">
+<div class="container-fluid mt-4 mb-5 px-lg-4 text-start">
     <!-- Fixed Mobile Header Layout -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <h2 class="text-center text-md-start"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
+        <h2 class="text-center text-md-start mb-0"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
         
         <div class="d-flex flex-wrap justify-content-center gap-2">
             <a href="/export_grades" class="btn btn-outline-success shadow-sm fw-bold">
                 <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
             </a>
-            
             <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#quickAddModal">
                 <i class="bi bi-journal-plus me-1"></i> Add Report
             </button>
@@ -22,90 +21,176 @@
     <!-- The Quick Add Modal -->
     <div class="modal fade" id="quickAddModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold">Select Student</h5>
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header bg-primary text-white border-bottom-0 pt-4 pb-3 px-4 rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Select Student</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <label class="form-label fw-bold small text-muted">Who are you entering grades for?</label>
-                    <select class="form-select mb-3" id="quickStudentSelect">
+                    <select class="form-select form-select-lg bg-light mb-4" id="quickStudentSelect">
                         <option value="" disabled selected>Search or select a student...</option>
                         {% for s in active_students %}
                             <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }} ({{ s.ngo_id }})</option>
                         {% endfor %}
                     </select>
-                    <button class="btn btn-primary w-100 fw-bold" onclick="routeToStudent()">Continue <i class="bi bi-arrow-right"></i></button>
+                </div>
+                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
+                    <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="routeToStudent()">Continue <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NGO LEADERBOARD / QUICK INSIGHTS -->
+    <div class="row mb-4 d-none d-md-flex">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-primary text-white h-100 rounded-4">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <i class="bi bi-trophy-fill display-4 me-3 opacity-50"></i>
+                    <div>
+                        <h6 class="fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Top Performer</h6>
+                        <p class="mb-0 small opacity-75">Table is sorted by 'Avg %' to show current rankings.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="alert alert-light border shadow-sm rounded-4 h-100 mb-0 p-4 d-flex align-items-center">
+                <i class="bi bi-info-circle-fill fs-3 text-info me-3"></i>
+                <div>
+                    <strong class="d-block text-dark mb-1">Competitive Pivot Mode Active</strong>
+                    <span class="text-muted small">Scroll right to see all subjects dynamically pulled from the database. Click any column header to instantly re-rank all students in the NGO!</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- MAIN DATA CONTAINER -->
-    <div class="card shadow-sm border-0 bg-transparent bg-md-white">
+    <div class="card shadow-sm border-0 bg-transparent bg-md-white rounded-4">
+        <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center rounded-top-4 gap-3">
+            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-secondary me-2"></i>Academic Matrix</h5>
+            
+            <!-- SMART DUAL FILTERS (Year & Month) -->
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
+                    <i class="bi bi-calendar3 text-muted ms-3 me-2"></i>
+                    <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none" onchange="filterGradebook()">
+                        <option value="all">All Academic Years</option>
+                        <!-- Years injected via Javascript -->
+                    </select>
+                </div>
+                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
+                    <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
+                    <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none" onchange="filterGradebook()">
+                        <option value="all">All Months/Terms</option>
+                        <!-- Months injected via Javascript -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
         <div class="card-body p-0">
-            <!-- 
-                APP-LIKE STYLING: We use a custom class 'app-style-table' 
-                to trigger the card layout on mobile devices.
-            -->
-            <div class="p-0 p-md-3 w-100">
-                <table id="academicTable" class="table app-style-table align-middle mb-0" style="width:100%;">
-                    <thead class="table-dark d-none d-md-table-header-group">
-                        <tr>
-                            <th>Student</th>
-                            <th>Term</th>
-                            <th>Grade Level</th>
-                            <th>School</th>
-                            <th class="text-center">Avg</th>
-                            <th class="text-center">Rank</th>
-                            <th>Core Subjects & Scores</th>
-                            <th class="text-end">Action</th>
+            <!-- JINJA PIVOT LOGIC: Safely extract ALL unique subjects based on subject_name -->
+            {% set unique_subjects = [] %}
+            {% for record in academic_records %}
+                {% if record.subjects %}
+                    {% for sub in record.subjects %}
+                        {% set sname = sub.subject_name %}
+                        <!-- UI AUDIT FIX: Added strip() check to block empty ghost columns -->
+                        {% if sname and sname.strip() != "" and sname not in unique_subjects %}
+                            {% set _ = unique_subjects.append(sname) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+
+            <div class="p-0 p-md-3 w-100 table-responsive custom-horizontal-scroll">
+                <table id="academicTable" class="table app-style-table align-middle mb-0 table-hover" style="width:100%;">
+                    
+                    <thead class="table-light">
+                        <tr class="text-muted small text-uppercase">
+                            <!-- Sticky Left Column -->
+                            <th class="sticky-col px-3">Student</th>
+                            <th style="min-width: 140px;">Term & Grade</th>
+                            <th class="text-center text-primary fw-bold" style="min-width: 90px;">Avg %</th>
+                            
+                            <!-- Dynamic Subject Headers pulled straight from Database! -->
+                            {% for sub_name in unique_subjects %}
+                                <th class="text-center d-none d-md-table-cell" style="min-width: 110px;">{{ sub_name }}</th>
+                            {% endfor %}
+                            
+                            <th class="text-center" style="min-width: 80px;">Rank</th>
+                            <th class="text-end pe-4" style="min-width: 120px;">Action</th>
                         </tr>
                     </thead>
+                    
                     <tbody>
                         {% for record in academic_records %}
-                        <tr class="shadow-sm shadow-md-none bg-white rounded mb-3 mb-md-0 d-block d-md-table-row border border-md-0 position-relative p-3 p-md-0">
+                        <!-- We store year and month separately so JS can filter smartly -->
+                        <tr class="shadow-sm shadow-md-none bg-white rounded mb-3 mb-md-0 d-block d-md-table-row border border-md-0 position-relative p-3 p-md-0 gradebook-row" 
+                            data-year="{{ record.academic_year }}" 
+                            data-month="{{ record.month }} {{ record.semester if record.semester else '' }}">
                             
-                            <!-- Student Info -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
+                            <!-- Student Info (Sticky on PC) -->
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2 sticky-col bg-white px-md-3">
                                 <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-1">Student</span>
                                 <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark fs-5 fs-md-6">
                                     {{ record.first_name }} {{ record.last_name }}
                                 </a>
-                                <span class="d-block small text-muted">{{ record.ngo_id }}</span>
+                                <span class="d-block small text-muted mt-1 fw-bold">{{ record.school_name if record.school_name else '-' }}</span>
                             </td>
                             
-                            <!-- Term Info -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
-                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Term:</span>
-                                <span class="fw-bold">{{ record.month }} {{ record.academic_year }}</span>
-                                {% if record.semester %}
-                                    <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">{{ record.semester }}</span>
+                            <!-- Term & Grade Info -->
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2 text-muted small fw-bold">
+                                <span class="d-md-none text-uppercase me-2">Term:</span>
+                                <span class="d-block text-dark">{{ record.month }} {{ record.semester if record.semester else '' }}</span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 mt-1 d-inline-block">{{ record.academic_year }}</span>
+                                
+                                <!-- BUG FIX: Properly mapping to grade_level, with fallback safeguard so it never renders an empty bubble -->
+                                {% if record.grade_level %}
+                                    <span class="badge bg-light text-dark border px-2 py-1 mt-1 d-inline-block ms-1">{{ record.grade_level }}</span>
                                 {% endif %}
                             </td>
                             
-                            <!-- Historical Grade -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-1 pb-md-2">
-                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">Level:</span>
-                                {{ record.historical_grade if record.historical_grade else record.current_grade }}
-                            </td>
-                            
-                            <!-- Historical School -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom pb-2 pb-md-2 khmer-font small text-muted" style="max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                <span class="d-md-none text-muted small fw-bold text-uppercase me-2">School:</span>
-                                {{ record.school_name if record.school_name else '-' }}
-                            </td>
-                            
-                            <!-- Overall Average (Floating badge on mobile!) -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom text-md-center position-absolute top-0 end-0 p-3 position-md-static p-md-2">
+                            <!-- Overall Average -->
+                            <!-- UI AUDIT FIX: Injected data-sort to ensure DataTables sorts the exact number, ignoring the HTML badge -->
+                            <td data-sort="{{ record.overall_average if record.overall_average else -1 }}" class="d-block d-md-table-cell border-0 border-md-bottom text-md-center p-md-2 mobile-avg-badge">
                                 {% if record.overall_average %}
-                                    <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm fs-5 fs-md-6">
+                                    <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm fs-5 fs-md-6 px-3 py-2 rounded-pill">
                                         {{ record.overall_average }}%
                                     </span>
                                 {% else %}
                                     <span class="text-muted d-none d-md-inline">-</span>
                                 {% endif %}
                             </td>
+
+                            <!-- Dynamic Pivot Columns -->
+                            {% for sub_name in unique_subjects %}
+                                {% set score_val = namespace(score='-', max='') %}
+                                {% if record.subjects %}
+                                    {% for sub in record.subjects %}
+                                        {% if sub.subject_name == sub_name %}
+                                            {% set score_val.score = sub.score %}
+                                            {% set score_val.max = sub.max_score %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                
+                                <!-- Hide these individual columns entirely on Mobile! -->
+                                <!-- UI AUDIT FIX: Injected data-sort to prevent alphanumeric sorting crash -->
+                                <td data-sort="{{ score_val.score if score_val.score != '-' else -1 }}" class="d-none d-md-table-cell text-center border-0 border-md-bottom align-middle">
+                                    {% if score_val.score != '-' %}
+                                        <div class="fw-bold text-dark fs-6">{{ score_val.score }}</div>
+                                        {% if score_val.max %}
+                                            <div class="text-muted fw-bold" style="font-size: 0.65rem;">out of {{ score_val.max }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted opacity-25">-</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
                             
                             <!-- Class Rank -->
                             <td class="d-block d-md-table-cell border-0 border-md-bottom pb-2 pb-md-2 text-md-center fw-bold text-secondary">
@@ -113,27 +198,39 @@
                                 {{ record.class_rank if record.class_rank else '-' }}
                             </td>
                             
-                            <!-- Condensed Subject List -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom border-top border-md-start pt-3 pt-md-2 pb-3 pb-md-2" style="max-width: 300px; white-space: normal;">
-                                <span class="d-md-none text-muted small fw-bold text-uppercase d-block mb-2">Subject Breakdown:</span>
-                                {% if record.subjects %}
-                                    <div class="d-flex flex-wrap gap-1">
-                                        {% for sub in record.subjects %}
-                                            {% set badge = sub.score|get_badge(sub.max_score) %}
-                                            <span class="badge bg-light text-dark border shadow-sm px-2 py-1" style="font-size: 0.7rem;">
-                                                <span class="text-muted">{{ sub.name }}:</span> 
-                                                <strong class="{% if badge %}text-{{ badge[1] }}{% endif %} ms-1">{{ sub.score }}</strong>
-                                            </span>
-                                        {% endfor %}
+                            <!-- Action Column & Mobile Breakdown -->
+                            <td class="d-block d-md-table-cell border-0 border-md-bottom text-md-end pt-0 pt-md-2 pe-md-4">
+                                
+                                <!-- Mobile Only: Accordion for Subjects -->
+                                <div class="d-md-none text-start border-top pt-3 pb-3 mb-2 mt-2">
+                                    <button class="btn btn-sm btn-light border w-100 text-start fw-bold d-flex justify-content-between align-items-center shadow-sm py-2 px-3 rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSubs{{ record.id }}">
+                                        <span class="text-primary"><i class="bi bi-list-columns-reverse me-2"></i>View All Subjects</span>
+                                        <i class="bi bi-chevron-down text-muted"></i>
+                                    </button>
+                                    
+                                    <div class="collapse mt-2" id="mobileSubs{{ record.id }}">
+                                        {% if record.subjects %}
+                                            <div class="d-flex flex-column gap-2 bg-light p-3 rounded-4 border shadow-sm">
+                                                {% for sub in record.subjects %}
+                                                    <div class="d-flex justify-content-between align-items-center bg-white p-2 px-3 rounded border shadow-sm">
+                                                        <span class="text-dark small fw-bold text-truncate me-2">{{ sub.subject_name }}</span> 
+                                                        <div class="text-nowrap">
+                                                            <strong class="text-primary">{{ sub.score }}</strong> 
+                                                            {% if sub.max_score %}
+                                                                <span class="text-muted small fw-bold">/ {{ sub.max_score }}</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center p-3 bg-light rounded-4 border small text-muted fst-italic">No subjects recorded</div>
+                                        {% endif %}
                                     </div>
-                                {% else %}
-                                    <span class="small text-muted fst-italic">No detailed subjects recorded</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- Action (Full width button on mobile) -->
-                            <td class="d-block d-md-table-cell border-0 border-md-bottom text-md-end pt-0 pt-md-2 pe-md-3">
-                                <a href="/edit_report/{{ record.report_id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-2 py-md-0 w-100 w-md-auto mt-2 mt-md-0">
+                                </div>
+
+                                <!-- Action Button -->
+                                <a href="/edit_report/{{ record.id }}" class="btn btn-sm btn-outline-secondary shadow-sm py-2 py-md-1 w-100 w-md-auto mt-2 mt-md-0 fw-bold rounded-3">
                                     <i class="bi bi-pencil-square me-1 d-md-none"></i> Edit Report
                                 </a>
                             </td>
@@ -146,35 +243,42 @@
     </div>
 </div>
 
-<!-- Custom CSS for the Native App Layout -->
+<!-- Custom CSS for the Native App Layout & Pivot Table -->
 <style>
-    /* Remove background on mobile so cards stand out */
+    @media (min-width: 768px) {
+        .custom-horizontal-scroll {
+            overflow-x: auto;
+            padding-bottom: 15px; 
+        }
+        .custom-horizontal-scroll::-webkit-scrollbar { height: 8px; }
+        .custom-horizontal-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-horizontal-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+        .custom-horizontal-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            background-color: #fff;
+            z-index: 2;
+            border-right: 2px solid #f8f9fa !important; 
+        }
+        .table-light th.sticky-col {
+            background-color: #f8f9fa !important;
+            z-index: 3;
+        }
+    }
+
     @media (max-width: 767.98px) {
         .bg-md-white { background-color: transparent !important; }
+        .dataTables_wrapper .dataTables_filter { float: none; text-align: center; margin-bottom: 1.5rem; }
+        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; padding: 0.75rem; border-radius: 12px; border: 2px solid #0d6efd; box-shadow: 0 4px 10px rgba(13,110,253,0.1); }
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info { display: none; }
+        .app-style-table tbody tr { margin-bottom: 1.5rem !important; border-radius: 16px !important; display: block; border: 1px solid rgba(0,0,0,0.05) !important; background-color: #ffffff; box-shadow: 0 8px 20px rgba(0,0,0,0.04); padding: 1.25rem !important; }
         
-        /* Clean up DataTables controls for mobile */
-        .dataTables_wrapper .dataTables_filter {
-            float: none;
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .dataTables_wrapper .dataTables_filter input {
-            width: 100%;
-            margin-left: 0;
-            padding: 0.5rem;
-            border-radius: 8px;
-        }
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_info {
-            display: none; /* Hide pagination info to keep it clean */
-        }
-        
-        /* Add spacing between cards */
-        .app-style-table tbody tr {
-            margin-bottom: 1rem !important;
-            border-radius: 12px !important;
-            display: block;
-        }
+        /* Strict Mobile Hide for Headers to stop DataTables crashing */
+        .app-style-table thead { display: none !important; }
+        .app-style-table th { display: none !important; } 
+        .mobile-avg-badge { position: absolute; top: 20px; right: 20px; padding: 0 !important; }
     }
 </style>
 {% endblock %}
@@ -188,18 +292,95 @@
         }
     }
 
+    // THE MASSIVE FIX: Integrating Filters Directly into DataTables Engine!
+    var academicTable;
+
     $(document).ready(function() {
-        // We use a simpler DataTables config because our custom CSS handles the mobile view natively
-        $('#academicTable').DataTable({
-            "pageLength": 25,
-            "order": [
-                [1, "desc"] 
-            ],
+        const yearSet = new Set();
+        const monthSet = new Set();
+        
+        // 1. Extract all exact years and months from the HTML rows
+        $('.gradebook-row').each(function() {
+            const year = $(this).attr('data-year');
+            const month = $(this).attr('data-month');
+            if(year) yearSet.add(year.trim());
+            if(month) monthSet.add(month.trim());
+        });
+
+        // 2. Populate Dropdowns
+        const yearFilter = $('#yearFilter');
+        const monthFilter = $('#monthFilter');
+
+        Array.from(yearSet).sort().reverse().forEach(year => {
+            yearFilter.append(new Option(year, year));
+        });
+
+        const academicOrder = [
+            "August", "September", "October", "November", "December", 
+            "Semester 1", "January", "February", "March", "April", 
+            "May", "June", "July", "Semester 2", "Final Exam"
+        ];
+        
+        const sortedMonths = Array.from(monthSet).sort((a, b) => {
+            let indexA = academicOrder.findIndex(m => a.includes(m));
+            let indexB = academicOrder.findIndex(m => b.includes(m));
+            if (indexA === -1) indexA = 99;
+            if (indexB === -1) indexB = 99;
+            return indexA - indexB;
+        });
+
+        sortedMonths.forEach(month => {
+            monthFilter.append(new Option(month, month));
+        });
+
+        // 3. Smart Default: Auto-select the most recent academic year
+        if (yearFilter.find('option').length > 1) {
+            yearFilter.prop('selectedIndex', 1);
+        }
+
+        // 4. Initialize DataTables
+        academicTable = $('#academicTable').DataTable({
+            "pageLength": 50,
+            "order": [[2, "desc"]], // Default sort by Avg %
             "language": {
                 "search": "",
-                "searchPlaceholder": "🔍 Search records..."
-            }
+                "searchPlaceholder": "🔍 Search Leaderboard...",
+                "emptyTable": "No academic records found for the selected timeframe."
+            },
+            "scrollX": false, 
+            "autoWidth": false
         });
+
+        // 5. Build the Custom Search Extension to prevent CSS overrides
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex, rowData, counter) {
+                // Ensure this only applies to the Academic Table
+                if (settings.nTable.id !== 'academicTable') return true;
+
+                var selectedYear = $('#yearFilter').val();
+                var selectedMonth = $('#monthFilter').val();
+                
+                // Fetch the actual node to read data attributes safely
+                var rowNode = settings.aoData[dataIndex].nTr;
+                var rowYear = $(rowNode).attr('data-year') || "";
+                var rowMonth = $(rowNode).attr('data-month') || "";
+                
+                var yearMatch = (selectedYear === 'all' || rowYear.trim() === selectedYear);
+                var monthMatch = (selectedMonth === 'all' || rowMonth.trim() === selectedMonth);
+                
+                return yearMatch && monthMatch;
+            }
+        );
+
+        // 6. Force the table to render with the filters applied immediately
+        academicTable.draw();
     });
+
+    // 7. This is the function called by the HTML <select onchange="">
+    function filterGradebook() {
+        if (academicTable) {
+            academicTable.draw();
+        }
+    }
 </script>
 {% endblock %}

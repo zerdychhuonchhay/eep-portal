@@ -523,39 +523,40 @@ def delete_task(task_id):
 @app.route("/academics")
 @login_required
 def academics():
-    """Show Master Gradebook for all students"""
-    active_students = db.execute("SELECT id, ngo_id, first_name, last_name FROM students WHERE status = 'Active' ORDER BY first_name")
-
-    reports = db.execute("""
-        SELECT r.id as report_id, r.month, r.academic_year, r.semester, r.overall_average, r.class_rank, r.grade_level as historical_grade, r.school_name,
-               s.id as student_id, s.ngo_id, s.first_name, s.last_name, s.grade_level as current_grade
+    """Master Gradebook - Shows all students and all grades dynamically"""
+    
+    # 1. Fetch all reports with the student's identity attached
+    academic_records_raw = db.execute("""
+        SELECT r.*, s.first_name, s.last_name, s.ngo_id, s.khmer_name, s.gender, s.current_school
         FROM monthly_reports r
         JOIN students s ON r.student_id = s.id
         WHERE s.status = 'Active'
-        ORDER BY r.id DESC
+        ORDER BY r.academic_year DESC, r.id DESC
     """)
 
-    all_grades = db.execute("""
-        SELECT g.report_id, COALESCE(s.name, g.custom_subject_name) as subject_name, g.score, g.max_score
+    # 2. 🚨 THE FIX: Fetch ALL grades and securely COALESCE the subject name!
+    raw_grades = db.execute("""
+        SELECT g.*, COALESCE(subj.name, g.custom_subject_name) as subject_name
         FROM grades g
-        LEFT JOIN subjects s ON g.subject_id = s.id
-        ORDER BY s.sort_order ASC, subject_name ASC
+        LEFT JOIN subjects subj ON g.subject_id = subj.id
     """)
 
-    academic_records = []
-    for report in reports:
-        report_grades = []
-        for grade in all_grades:
-            if grade["report_id"] == report["report_id"]:
-                report_grades.append({
-                    "name": grade["subject_name"],
-                    "score": grade["score"],
-                    "max_score": grade["max_score"]
-                })
-        report["subjects"] = report_grades
-        academic_records.append(report)
+    # 3. Group the grades by their report ID so we can attach them efficiently
+    grades_by_report = {}
+    for g in raw_grades:
+        rep_id = g['report_id']
+        if rep_id not in grades_by_report:
+            grades_by_report[rep_id] = []
+        grades_by_report[rep_id].append(g)
 
-    return render_template("academics.html", academic_records=academic_records, active_students=active_students)
+    # 4. Attach the grouped subjects into the main records list
+    for record in academic_records_raw:
+        record['subjects'] = grades_by_report.get(record['id'], [])
+
+    # 5. Fetch active students for the Quick Add modal
+    active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name")
+
+    return render_template("academics.html", academic_records=academic_records_raw, active_students=active_students)
 
 @app.template_filter('get_badge')
 def get_badge_filter(score, max_score):
