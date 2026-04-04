@@ -112,11 +112,17 @@
                                 <!-- Action Buttons -->
                                 <td class="action-cell text-end pe-2 pe-md-3 border-bottom-md">
                                     <div class="btn-group shadow-sm w-100 w-md-auto">
+                                        <!-- RESTORED: Edit button for Field Workers to quickly fix typos/addresses on mobile -->
+                                        <a href="/edit_student/{{ student.id }}" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center" title="Edit Profile">
+                                            <i class="bi bi-pencil-square"></i> <span class="ms-1 d-none d-md-inline">Edit</span>
+                                        </a>
+                                        <!-- Grades hidden on mobile (Split-pane view is too wide for phones) -->
                                         <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold d-none d-md-inline-flex align-items-center justify-content-center" title="Add Report">
                                             <i class="bi bi-journal-plus"></i> <span class="ms-1">Grades</span>
                                         </a>
-                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center w-100" title="Add Follow-Up">
-                                            <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1">Notes</span>
+                                        <!-- Notes/Follow-up fully visible everywhere -->
+                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center w-100 w-md-auto" title="Add Follow-Up">
+                                            <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1 d-none d-md-inline">Notes</span>
                                         </a>
                                     </div>
                                 </td>
