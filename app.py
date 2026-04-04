@@ -523,40 +523,39 @@ def delete_task(task_id):
 @app.route("/academics")
 @login_required
 def academics():
-    """Master Gradebook - Shows all students and all grades dynamically"""
-    
-    # 1. Fetch all reports with the student's identity attached
-    academic_records_raw = db.execute("""
-        SELECT r.*, s.first_name, s.last_name, s.ngo_id, s.khmer_name, s.gender, s.current_school
+    """Show Master Gradebook for all students"""
+    active_students = db.execute("SELECT id, ngo_id, first_name, last_name FROM students WHERE status = 'Active' ORDER BY first_name")
+
+    reports = db.execute("""
+        SELECT r.id as report_id, r.month, r.academic_year, r.semester, r.overall_average, r.class_rank, r.grade_level as historical_grade, r.school_name,
+               s.id as student_id, s.ngo_id, s.first_name, s.last_name, s.grade_level as current_grade
         FROM monthly_reports r
         JOIN students s ON r.student_id = s.id
         WHERE s.status = 'Active'
-        ORDER BY r.academic_year DESC, r.id DESC
+        ORDER BY r.id DESC
     """)
 
-    # 2. 🚨 THE FIX: Fetch ALL grades and securely COALESCE the subject name!
-    raw_grades = db.execute("""
-        SELECT g.*, COALESCE(subj.name, g.custom_subject_name) as subject_name
+    all_grades = db.execute("""
+        SELECT g.report_id, COALESCE(s.name, g.custom_subject_name) as subject_name, g.score, g.max_score
         FROM grades g
-        LEFT JOIN subjects subj ON g.subject_id = subj.id
+        LEFT JOIN subjects s ON g.subject_id = s.id
+        ORDER BY s.sort_order ASC, subject_name ASC
     """)
 
-    # 3. Group the grades by their report ID so we can attach them efficiently
-    grades_by_report = {}
-    for g in raw_grades:
-        rep_id = g['report_id']
-        if rep_id not in grades_by_report:
-            grades_by_report[rep_id] = []
-        grades_by_report[rep_id].append(g)
+    academic_records = []
+    for report in reports:
+        report_grades = []
+        for grade in all_grades:
+            if grade["report_id"] == report["report_id"]:
+                report_grades.append({
+                    "name": grade["subject_name"],
+                    "score": grade["score"],
+                    "max_score": grade["max_score"]
+                })
+        report["subjects"] = report_grades
+        academic_records.append(report)
 
-    # 4. Attach the grouped subjects into the main records list
-    for record in academic_records_raw:
-        record['subjects'] = grades_by_report.get(record['id'], [])
-
-    # 5. Fetch active students for the Quick Add modal
-    active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name")
-
-    return render_template("academics.html", academic_records=academic_records_raw, active_students=active_students)
+    return render_template("academics.html", academic_records=academic_records, active_students=active_students)
 
 @app.template_filter('get_badge')
 def get_badge_filter(score, max_score):
@@ -1200,7 +1199,69 @@ def household_profile(id):
 @app.route("/student/<int:id>")
 @login_required
 def student_profile(id):
+    """Single source of truth for a student's full profile, grades, notes, and files."""
+    
+    # 1. Core Identity
     student = db.execute("SELECT * FROM students WHERE id = ?", id)[0]
+
+    # 2. Household & Kinship Linkage
+    household = None
+    siblings = []
+    if student.get("household_id"):
+        hh = db.execute("SELECT * FROM households WHERE id = ?", student["household_id"])
+        if hh:
+            household = hh[0]
+            
+        siblings = db.execute("""
+            SELECT id, first_name, last_name, profile_picture, status, grade_level 
+            FROM students 
+            WHERE household_id = ? AND id != ?
+            ORDER BY dob ASC
+        """, student["household_id"], id)
+
+    # 3. Academic Engine (JS handles the filtering now, so we just fetch all!)
+    reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC", id)
+
+    raw_grades = db.execute("""
+        SELECT g.*, COALESCE(s.name, g.custom_subject_name) as subject_name
+        FROM grades g LEFT JOIN subjects s ON g.subject_id = s.id
+        WHERE g.report_id IN (SELECT id FROM monthly_reports WHERE student_id = ?)
+        ORDER BY s.sort_order ASC, subject_name ASC
+    """, id)
+
+    grades_by_report = {}
+    for g in raw_grades:
+        if g['report_id'] not in grades_by_report:
+            grades_by_report[g['report_id']] = []
+        grades_by_report[g['report_id']].append(g)
+
+    # Attach the subjects perfectly into the reports
+    for report in reports:
+        report['subjects'] = grades_by_report.get(report['id'], [])
+
+    # 4. Social Work Timeline
+    followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC, id DESC", id)
+    
+    # 5. Digital Filing Cabinet
+    docs = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY upload_date DESC", id)
+
+    # 6. Financial Ledger
+    expenses = db.execute("SELECT * FROM student_expenses WHERE student_id = ? ORDER BY expense_date DESC", id)
+    
+    # Calculate the total NGO investment for this specific child
+    total_spent_raw = sum(exp['amount'] for exp in expenses) if expenses else 0.00
+    total_spent = f"{total_spent_raw:,.2f}"
+
+    return render_template("student_profile.html", 
+                           student=student, 
+                           household=household,
+                           siblings=siblings,
+                           reports=reports, 
+                           followups=followups, 
+                           docs=docs, 
+                           expenses=expenses,
+                           total_spent=total_spent)
+
 
     siblings = []
     if student.get("household_id"):
