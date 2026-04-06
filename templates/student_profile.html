@@ -214,7 +214,7 @@
             <div class="tab-content" id="profileTabsContent">
                 
                 <!-- ========================================== -->
-                <!-- TAB 1: ACADEMICS (UI AUDITED & SOUNDWAVE)  -->
+                <!-- TAB 1: ACADEMICS (CHART.JS MULTI-LINE)     -->
                 <!-- ========================================== -->
                 <div class="tab-pane fade show active" id="academics" role="tabpanel">
                     
@@ -245,7 +245,7 @@
                     
                     <div id="academicRecordsContainer">
 
-                        <!-- THE PERFORMANCE TRAJECTORY (SOUND WAVE) MATRIX -->
+                        <!-- THE PERFORMANCE TRAJECTORY (CHART.JS MULTI-LINE GRAPH) -->
                         {% if reports|length > 0 %}
                         <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-primary border-4 d-none d-md-block overflow-hidden">
                             <div class="card-header bg-white border-bottom-0 pt-3 pb-2 px-4 d-flex justify-content-between align-items-center">
@@ -253,93 +253,9 @@
                                 <span class="badge bg-light text-muted border">Left to Right: Oldest to Newest</span>
                             </div>
                             <div class="card-body px-4 pb-4 pt-0">
-                                
-                                <div class="table-responsive border rounded-3 bg-white">
-                                    <table class="table table-sm table-borderless align-middle text-center mb-0" style="min-width: 100%;">
-                                        
-                                        {% set recent_reports = reports[:8]|reverse|list %}
-                                        {% set unique_subjects = [] %}
-                                        {% for r in recent_reports %}
-                                            {% for sub in r.subjects %}
-                                                {% set sname = sub.subject_name %}
-                                                {% if sname and sname not in unique_subjects %}
-                                                    {% set _ = unique_subjects.append(sname) %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        {% endfor %}
-
-                                        <thead class="border-bottom">
-                                            <tr>
-                                                <th class="text-start text-uppercase text-muted fw-bold ps-3" style="width: 30%; font-size: 0.75rem;">Subject Trace</th>
-                                                {% for r in recent_reports %}
-                                                    <th class="py-2">
-                                                        <div class="fw-bold text-dark" style="font-size: 0.7rem;">{{ r.month[:3] }}</div>
-                                                        <div class="text-muted" style="font-size: 0.6rem;">{{ r.academic_year[-2:] }}</div>
-                                                    </th>
-                                                {% endfor %}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Overall Average Sound Wave -->
-                                            <tr class="bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25">
-                                                <td class="text-start fw-bold text-primary ps-3" style="font-size: 0.8rem;"><i class="bi bi-activity me-1"></i> OVERALL WAVE</td>
-                                                {% for r in recent_reports %}
-                                                    <td class="align-bottom pt-3 pb-1" style="height: 50px;">
-                                                        {% set score_val = r.overall_average|float(default=0) if r.overall_average else 0 %}
-                                                        {% set height = score_val if score_val > 0 else 5 %}
-                                                        {% set color = 'bg-success' if score_val >= 80 else ('bg-warning' if score_val >= 50 else ('bg-danger' if score_val > 0 else 'bg-secondary opacity-25')) %}
-                                                        <div class="d-flex justify-content-center align-items-end h-100">
-                                                            <div class="{{ color }} rounded-pill wave-bar shadow-sm" style="width: 12px; height: {{ height }}%; min-height: 4px;" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ r.overall_average if r.overall_average else 'N/A' }}%"></div>
-                                                        </div>
-                                                    </td>
-                                                {% endfor %}
-                                            </tr>
-                                            
-                                            <!-- Individual Subject Sound Waves -->
-                                            {% for sname in unique_subjects %}
-                                            <tr class="border-bottom border-light">
-                                                <td class="text-start fw-bold text-secondary khmer-font ps-3" style="font-size: 0.75rem;">{{ sname }}</td>
-                                                {% for r in recent_reports %}
-                                                    {% set score = namespace(value='-') %}
-                                                    {% for sub in r.subjects %}
-                                                        {% if sub.subject_name == sname %}
-                                                            {% set score.value = sub.score %}
-                                                        {% endif %}
-                                                    {% endfor %}
-                                                    
-                                                    <!-- Visual Calculation Logic -->
-                                                    {% set raw_val = score.value|string|lower %}
-                                                    {% set height = 5 %}
-                                                    {% set color = 'bg-secondary opacity-25' %}
-
-                                                    {% if raw_val in ['a', 'good', 'excellent', 'a+', 'a-'] %} 
-                                                        {% set height = 95 %} {% set color = 'bg-success' %}
-                                                    {% elif raw_val in ['b', 'b+', 'b-'] %} 
-                                                        {% set height = 85 %} {% set color = 'bg-success' %}
-                                                    {% elif raw_val in ['c', 'c+', 'c-', 'average'] %} 
-                                                        {% set height = 75 %} {% set color = 'bg-warning' %}
-                                                    {% elif raw_val in ['d', 'd+', 'd-'] %} 
-                                                        {% set height = 65 %} {% set color = 'bg-danger' %}
-                                                    {% elif raw_val in ['f', 'poor', 'fail'] %} 
-                                                        {% set height = 40 %} {% set color = 'bg-danger' %}
-                                                    {% elif score.value != '-' %}
-                                                        {% set parsed_val = score.value|float(default=-1) %}
-                                                        {% if parsed_val >= 0 %}
-                                                            {% set height = parsed_val if parsed_val <= 100 else 100 %}
-                                                            {% set color = 'bg-success' if parsed_val >= 80 else ('bg-warning' if parsed_val >= 50 else 'bg-danger') %}
-                                                        {% endif %}
-                                                    {% endif %}
-
-                                                    <td class="align-bottom pt-2 pb-1" style="height: 40px;">
-                                                        <div class="d-flex justify-content-center align-items-end h-100">
-                                                            <div class="{{ color }} rounded-pill wave-bar" style="width: 8px; height: {{ height }}%; min-height: 4px;" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ score.value }}"></div>
-                                                        </div>
-                                                    </td>
-                                                {% endfor %}
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
+                                <!-- Clean Canvas Container for Chart.js -->
+                                <div class="border rounded-4 bg-light p-3 shadow-inner" style="height: 320px; width: 100%;">
+                                    <canvas id="trajectoryChart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -416,7 +332,7 @@
                                     <div class="mt-4">
                                         <h6 class="fw-bold text-success small text-uppercase mb-3"><i class="bi bi-list-columns-reverse me-2"></i> Detailed Subject Scores</h6>
                                         
-                                        <!-- UI AUDIT: Condensed, Space-Saving Table Layout for Subjects -->
+                                        <!-- Condensed, Space-Saving Table Layout for Subjects -->
                                         <div class="table-responsive border rounded-4 shadow-sm bg-white">
                                             <table class="table table-sm table-hover align-middle mb-0">
                                                 <thead class="table-light text-muted small text-uppercase">
@@ -457,7 +373,7 @@
                                     {% endif %}
 
                                     {% if report.teacher_comment %}
-                                    <!-- UI AUDIT: Modern Callout for Teacher Comments -->
+                                    <!-- Modern Callout for Teacher Comments -->
                                     <div class="mt-4 p-4 bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm border-start border-4 border-info">
                                         <div class="d-flex align-items-start">
                                             <i class="bi bi-quote text-info opacity-50 fs-2 me-3 lh-1" style="margin-top: -5px;"></i>
@@ -910,16 +826,6 @@
     .text-warning.text-darken {
         color: #b48600 !important;
     }
-    
-    /* Premium Wave Bar Charts */
-    .wave-bar {
-        transition: height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s ease;
-        cursor: pointer;
-    }
-    .wave-bar:hover {
-        transform: scaleY(1.15);
-        filter: brightness(0.9);
-    }
 
     @media (max-width: 767.98px) {
         .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td { display: block; width: 100%; }
@@ -933,6 +839,9 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Add Chart.js for Performance Trajectory -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const ageBadge = document.getElementById('student-age-badge');
@@ -953,13 +862,149 @@
                 }
             }
         }
-        
-        // Initialize tooltips for the Sound Waves
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
     });
+
+    // --- PERFORMANCE TRAJECTORY CHART (Chart.js) ---
+    {% if reports|length > 0 %}
+        {% set recent_reports = reports[:8]|reverse|list %}
+        
+        {% set unique_subjects = [] %}
+        {% for r in recent_reports %}
+            {% for sub in r.subjects %}
+                {% set sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
+                {% if sname and sname.strip() != "" and sname.strip() not in unique_subjects %}
+                    {% set _ = unique_subjects.append(sname.strip()) %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+
+        const ctx = document.getElementById('trajectoryChart');
+        if (ctx) {
+            const labels = [
+                {% for r in recent_reports %}
+                    "{{ r.month[:3] }} '{{ r.academic_year[-2:] }}",
+                {% endfor %}
+            ];
+            
+            // Helper function to safely parse scores including letter grades
+            function parseScore(val) {
+                if (val === null || val === 'null' || val === '-') return null;
+                let num = parseFloat(val);
+                if (!isNaN(num)) return num;
+                
+                // Fallback for Letter Grades / Text
+                let upper = String(val).toUpperCase();
+                if (['A+', 'A', 'A-', 'GOOD', 'EXCELLENT', 'PASS'].includes(upper)) return 95;
+                if (['B+', 'B', 'B-'].includes(upper)) return 85;
+                if (['C+', 'C', 'C-', 'AVERAGE', 'FAIR'].includes(upper)) return 75;
+                if (['D+', 'D', 'D-'].includes(upper)) return 65;
+                if (['E', 'F', 'POOR', 'FAIL'].includes(upper)) return 50;
+                return null;
+            }
+
+            const datasets = [
+                {
+                    label: 'Overall Average',
+                    data: [
+                        {% for r in recent_reports %}
+                            {{ r.overall_average if r.overall_average else 'null' }},
+                        {% endfor %}
+                    ],
+                    borderColor: '#212529', // Dark bold line
+                    backgroundColor: '#212529',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#212529',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    tension: 0.3,
+                    spanGaps: true
+                },
+                {% set colors = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6610f2', '#d63384', '#fd7e14', '#20c997'] %}
+                {% for sname in unique_subjects %}
+                {
+                    label: '{{ sname|replace("'", "\\'") }}',
+                    data: [
+                        {% for r in recent_reports %}
+                            {% set score = namespace(value='null') %}
+                            {% for sub in r.subjects %}
+                                {% set current_sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
+                                {% if current_sname and current_sname.strip() == sname %}
+                                    {% set score.value = "'" ~ sub.score ~ "'" %}
+                                {% endif %}
+                            {% endfor %}
+                            parseScore({{ score.value|safe }}),
+                        {% endfor %}
+                    ],
+                    borderColor: '{{ colors[loop.index0 % colors|length] }}',
+                    backgroundColor: '{{ colors[loop.index0 % colors|length] }}',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.3,
+                    spanGaps: true
+                },
+                {% endfor %}
+            ];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            suggestedMin: 40, 
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false 
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                font: {
+                                    size: 11,
+                                    family: "'Inter', 'Kantumruy Pro', sans-serif"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(33, 37, 41, 0.95)',
+                            padding: 12,
+                            titleFont: { size: 13, family: "'Inter', 'Kantumruy Pro', sans-serif" },
+                            bodyFont: { size: 13, family: "'Inter', 'Kantumruy Pro', sans-serif" },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + (context.datasetIndex === 0 ? '%' : '');
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    {% endif %}
 
     // ... Existing Reports/Filter Logic ...
     const reportCards = document.querySelectorAll('.report-card');
