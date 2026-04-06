@@ -58,10 +58,10 @@
         </div>
         <div class="col-md-8">
             <div class="alert alert-light border shadow-sm rounded-4 h-100 mb-0 p-4 d-flex align-items-center">
-                <i class="bi bi-info-circle-fill fs-3 text-info me-3"></i>
+                <i class="bi bi-grid-3x3-gap-fill fs-3 text-info me-3"></i>
                 <div>
-                    <strong class="d-block text-dark mb-1">Competitive Pivot Mode Active</strong>
-                    <span class="text-muted small">Scroll right to see all subjects dynamically pulled from the database. Click any column header to instantly re-rank all students in the NGO!</span>
+                    <strong class="d-block text-dark mb-1">Dynamic Heatmap Active</strong>
+                    <span class="text-muted small">Select a specific Grade Tier to instantly hide unused subjects and condense the table. Green (A/B), Yellow (C), Red (D/F).</span>
                 </div>
             </div>
         </div>
@@ -69,21 +69,34 @@
 
     <!-- MAIN DATA CONTAINER -->
     <div class="card shadow-sm border-0 bg-white rounded-4">
-        <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex flex-column flex-md-row justify-content-between align-items-center rounded-top-4 gap-3">
+        <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex flex-column flex-xl-row justify-content-between align-items-center rounded-top-4 gap-3">
             <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-secondary me-2"></i>Academic Matrix</h5>
             
-            <!-- SMART DUAL FILTERS (Year & Month) -->
-            <div class="d-flex flex-wrap align-items-center gap-2">
+            <!-- SMART DUAL FILTERS (Tier, Year, Month) -->
+            <!-- Removed inline onchange events to let JS handle dependencies cleanly -->
+            <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+                <!-- 1. Academic Tier Filter -->
+                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-info border-2">
+                    <i class="bi bi-layers-fill text-info ms-3 me-2"></i>
+                    <select id="tierFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
+                        <option value="all">All Grade Levels</option>
+                        <option value="primary">Primary (K-6)</option>
+                        <option value="highschool">High School (7-12)</option>
+                        <option value="highered">Uni / Vocational</option>
+                    </select>
+                </div>
+                <!-- 2. Year Filter -->
                 <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
                     <i class="bi bi-calendar3 text-muted ms-3 me-2"></i>
-                    <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none" onchange="filterGradebook()">
+                    <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
                         <option value="all">All Academic Years</option>
                         <!-- Years injected via Javascript -->
                     </select>
                 </div>
+                <!-- 3. Month Filter -->
                 <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
                     <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
-                    <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none" onchange="filterGradebook()">
+                    <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
                         <option value="all">All Months/Terms</option>
                         <!-- Months injected via Javascript -->
                     </select>
@@ -97,7 +110,6 @@
             {% for record in academic_records %}
                 {% if record.subjects %}
                     {% for sub in record.subjects %}
-                        <!-- Tries all possible keys to guarantee we find the subject name -->
                         {% set sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
                         {% if sname and sname.strip() != "" and sname.strip() not in unique_subjects %}
                             {% set _ = unique_subjects.append(sname.strip()) %}
@@ -117,24 +129,39 @@
                             <th class="text-center align-middle" style="min-width: 140px;">Term & Grade</th>
                             <th class="text-center text-primary fw-bold align-middle" style="min-width: 100px;">Avg %</th>
                             
-                            <!-- Dynamic Subject Headers pulled straight from Database! -->
+                            <!-- Dynamic Subject Headers -->
                             {% for sub_name in unique_subjects %}
-                                <th class="text-center align-middle" style="min-width: 120px;">{{ sub_name }}</th>
+                                <th class="text-center align-middle subject-header" style="min-width: 85px;">{{ sub_name }}</th>
                             {% endfor %}
                             
                             <th class="text-center align-middle" style="min-width: 80px;">Rank</th>
-                            <th class="text-center align-middle" style="min-width: 120px;">Action</th>
+                            <th class="text-center align-middle" style="min-width: 100px;">Action</th>
                         </tr>
                     </thead>
                     
                     <tbody>
+                        {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
+                        {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
+
                         {% for record in academic_records %}
+                        
+                        <!-- THE FIX: Determine the tier so JS can filter it -->
+                        {% set tier = 'other' %}
+                        {% if record.grade_level in primary_grades %}
+                            {% set tier = 'primary' %}
+                        {% elif record.grade_level in high_grades %}
+                            {% set tier = 'highschool' %}
+                        {% elif record.grade_level and ('University' in record.grade_level or 'Vocational' in record.grade_level) %}
+                            {% set tier = 'highered' %}
+                        {% endif %}
+
                         <tr class="bg-white gradebook-row" 
                             data-year="{{ record.academic_year }}" 
-                            data-month="{{ record.month }} {{ record.semester if record.semester else '' }}">
+                            data-month="{{ record.month }} {{ record.semester if record.semester else '' }}"
+                            data-tier="{{ tier }}">
                             
                             <!-- Student Info (Sticky on all devices) -->
-                            <td class="sticky-col bg-white px-3">
+                            <td class="sticky-col bg-white px-3 py-2">
                                 <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark fs-6">
                                     {{ record.first_name }} {{ record.last_name }}
                                 </a>
@@ -142,7 +169,7 @@
                             </td>
                             
                             <!-- Term & Grade Info -->
-                            <td class="text-center align-middle">
+                            <td class="text-center align-middle py-2">
                                 <span class="d-block text-dark fw-bold small">{{ record.month }} {{ record.semester if record.semester else '' }}</span>
                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 mt-1">{{ record.academic_year }}</span>
                                 {% if record.grade_level %}
@@ -151,7 +178,7 @@
                             </td>
                             
                             <!-- Overall Average -->
-                            <td data-sort="{{ record.overall_average if record.overall_average else -1 }}" class="text-center align-middle bg-light">
+                            <td data-sort="{{ record.overall_average if record.overall_average else -1 }}" class="text-center align-middle bg-light py-2">
                                 {% if record.overall_average %}
                                     <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm fs-6 px-3 py-2 rounded-pill">
                                         {{ record.overall_average }}%
@@ -161,25 +188,32 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Dynamic Pivot Columns -->
+                            <!-- Dynamic Pivot Columns (THE HEATMAP) -->
                             {% for sub_name in unique_subjects %}
-                                {% set score_val = namespace(score='-', max='') %}
+                                {% set score_val = namespace(score='-', max='', text_class='text-dark', box_class='', badge_class='', grade_letter='') %}
                                 {% if record.subjects %}
                                     {% for sub in record.subjects %}
                                         {% set current_sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
                                         {% if current_sname and current_sname.strip() == sub_name %}
                                             {% set score_val.score = sub.score %}
                                             {% set score_val.max = sub.max_score %}
+                                            {% set score_val.text_class = sub.text_class if sub.text_class else 'text-dark' %}
+                                            {% set score_val.box_class = sub.box_class if sub.box_class else '' %}
+                                            {% set score_val.badge_class = sub.badge_class if sub.badge_class else '' %}
+                                            {% set score_val.grade_letter = sub.grade_letter if sub.grade_letter else '' %}
                                         {% endif %}
                                     {% endfor %}
                                 {% endif %}
                                 
-                                <td data-sort="{{ score_val.score if score_val.score != '-' else -1 }}" class="text-center align-middle">
+                                <td data-sort="{{ score_val.score if score_val.score != '-' else -1 }}" class="text-center align-middle p-2 subject-cell">
                                     {% if score_val.score != '-' %}
-                                        <div class="fw-bold text-dark fs-6">{{ score_val.score }}</div>
-                                        {% if score_val.max %}
-                                            <div class="text-muted fw-bold" style="font-size: 0.65rem;">out of {{ score_val.max }}</div>
-                                        {% endif %}
+                                        <!-- The Heatmap Color Box -->
+                                        <div class="d-inline-flex flex-column align-items-center justify-content-center p-2 rounded {{ score_val.box_class }}" style="min-width: 60px;">
+                                            <span class="fw-bold {{ score_val.text_class }} {% if score_val.text_class == 'text-warning' %}text-darken{% endif %} lh-1 fs-6">{{ score_val.score }}</span>
+                                            {% if score_val.grade_letter %}
+                                                <span class="badge {{ score_val.badge_class }} mt-1 shadow-sm" style="font-size: 0.65rem; padding: 0.2rem 0.4rem;">{{ score_val.grade_letter }}</span>
+                                            {% endif %}
+                                        </div>
                                     {% else %}
                                         <span class="text-muted opacity-25">-</span>
                                     {% endif %}
@@ -193,9 +227,8 @@
                             
                             <!-- Action Column (Edit Report) -->
                             <td class="text-center align-middle">
-                                <!-- FIX: Smart URL mapping to handle both report_id and id based on your Python backend -->
                                 <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-outline-secondary fw-bold shadow-sm px-3 rounded-pill">
-                                    <i class="bi bi-pencil-square me-1"></i> Edit
+                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                             </td>
                         </tr>
@@ -243,6 +276,11 @@
     /* Remove DataTables default weird margins when scrolling */
     .dataTables_wrapper .row { margin-left: 0; margin-right: 0; }
     .dataTables_wrapper .dataTables_filter { margin-bottom: 1rem; }
+    
+    /* Ensure yellow text warnings are legible */
+    .text-warning.text-darken {
+        color: #b48600 !important;
+    }
 </style>
 {% endblock %}
 
@@ -255,26 +293,36 @@
         }
     }
 
-    // THE MASSIVE FIX: Integrating Filters Directly into DataTables Engine!
     var academicTable;
 
     $(document).ready(function() {
         const yearSet = new Set();
-        const monthSet = new Set();
+        const yearMonthMap = {}; // Tracks exactly which months exist for each year
         
         // 1. Extract all exact years and months from the HTML rows
         $('.gradebook-row').each(function() {
-            const year = $(this).attr('data-year');
-            const month = $(this).attr('data-month');
-            if(year) yearSet.add(year.trim());
-            if(month) monthSet.add(month.trim());
+            const year = $(this).attr('data-year') ? $(this).attr('data-year').trim() : "";
+            const month = $(this).attr('data-month') ? $(this).attr('data-month').trim() : "";
+            
+            if(year) {
+                yearSet.add(year);
+                if (!yearMonthMap[year]) {
+                    yearMonthMap[year] = new Set();
+                }
+                if(month) {
+                    yearMonthMap[year].add(month);
+                }
+            }
         });
 
-        // 2. Populate Dropdowns
+        // 2. Populate Year Dropdown
         const yearFilter = $('#yearFilter');
         const monthFilter = $('#monthFilter');
+        const tierFilter = $('#tierFilter');
 
-        Array.from(yearSet).sort().reverse().forEach(year => {
+        // Sort years descending (newest first)
+        const sortedYears = Array.from(yearSet).sort().reverse();
+        sortedYears.forEach(year => {
             yearFilter.append(new Option(year, year));
         });
 
@@ -284,67 +332,150 @@
             "May", "June", "July", "Semester 2", "Final Exam"
         ];
         
-        const sortedMonths = Array.from(monthSet).sort((a, b) => {
-            let indexA = academicOrder.findIndex(m => a.includes(m));
-            let indexB = academicOrder.findIndex(m => b.includes(m));
-            if (indexA === -1) indexA = 99;
-            if (indexB === -1) indexB = 99;
-            return indexA - indexB;
-        });
+        // 3. Dynamic Month Populator Function
+        function populateMonths(selectedYear) {
+            // Save what the user currently has selected, so we don't annoy them by changing it if possible
+            const currentMonth = monthFilter.val();
+            
+            // Clear existing options (keep the "All" option)
+            monthFilter.find('option:not(:first)').remove();
+            
+            let monthsToUse = new Set();
+            if (selectedYear === 'all') {
+                Object.values(yearMonthMap).forEach(mSet => {
+                    mSet.forEach(m => monthsToUse.add(m));
+                });
+            } else if (yearMonthMap[selectedYear]) {
+                monthsToUse = yearMonthMap[selectedYear];
+            }
+            
+            // Sort the available months based on the academic year order
+            const sortedMonths = Array.from(monthsToUse).sort((a, b) => {
+                let indexA = academicOrder.findIndex(m => a.includes(m));
+                let indexB = academicOrder.findIndex(m => b.includes(m));
+                if (indexA === -1) indexA = 99;
+                if (indexB === -1) indexB = 99;
+                return indexA - indexB;
+            });
 
-        sortedMonths.forEach(month => {
-            monthFilter.append(new Option(month, month));
-        });
+            // Append the dynamically filtered months
+            sortedMonths.forEach(month => {
+                monthFilter.append(new Option(month, month));
+            });
 
-        // 3. Smart Default: Auto-select the most recent academic year
-        if (yearFilter.find('option').length > 1) {
-            yearFilter.prop('selectedIndex', 1);
+            // SMART DEFAULT LOGIC: 
+            // If they had a month selected and it still exists in the new year, keep it.
+            // Otherwise, automatically select the MOST RECENT month for the selected year.
+            if (currentMonth && currentMonth !== 'all' && sortedMonths.includes(currentMonth)) {
+                monthFilter.val(currentMonth);
+            } else if (sortedMonths.length > 0) {
+                // The last item in sortedMonths is the furthest along in the academic year
+                monthFilter.val(sortedMonths[sortedMonths.length - 1]);
+            } else {
+                monthFilter.val('all');
+            }
         }
 
-        // 4. Initialize DataTables
+        // 4. Initial Default Setting on Page Load
+        if (sortedYears.length > 0) {
+            yearFilter.val(sortedYears[0]); // Default to the newest Year immediately
+        }
+        populateMonths(yearFilter.val()); // Populate and default to the newest Month
+
+        // 5. Initialize DataTables
         academicTable = $('#academicTable').DataTable({
             "pageLength": 50,
             "order": [[2, "desc"]], // Default sort by Avg %
             "language": {
                 "search": "",
                 "searchPlaceholder": "🔍 Search Leaderboard...",
-                "emptyTable": "No academic records found for the selected timeframe."
+                "emptyTable": "No academic records found for the selected filters."
             },
-            "scrollX": false, // Handled beautifully by our custom wrapper CSS instead!
+            "scrollX": false, 
             "autoWidth": false
         });
 
-        // 5. Build the Custom Search Extension to prevent CSS overrides
+        // 6. Build the Custom Search Extension
         $.fn.dataTable.ext.search.push(
             function(settings, data, dataIndex, rowData, counter) {
-                // Ensure this only applies to the Academic Table
                 if (settings.nTable.id !== 'academicTable') return true;
 
                 var selectedYear = $('#yearFilter').val();
                 var selectedMonth = $('#monthFilter').val();
+                var selectedTier = $('#tierFilter').val(); 
                 
-                // Fetch the actual node to read data attributes safely
                 var rowNode = settings.aoData[dataIndex].nTr;
                 if (!rowNode) return true;
                 
                 var rowYear = $(rowNode).attr('data-year') || "";
                 var rowMonth = $(rowNode).attr('data-month') || "";
+                var rowTier = $(rowNode).attr('data-tier') || "";
                 
                 var yearMatch = (selectedYear === 'all' || rowYear.trim() === selectedYear);
                 var monthMatch = (selectedMonth === 'all' || rowMonth.trim() === selectedMonth);
+                var tierMatch = (selectedTier === 'all' || rowTier.trim() === selectedTier);
                 
-                return yearMatch && monthMatch;
+                return yearMatch && monthMatch && tierMatch;
             }
         );
 
-        // 6. Force the table to render with the filters applied immediately
-        academicTable.draw();
+        // 7. Bind Events to Dropdowns
+        yearFilter.on('change', function() {
+            populateMonths($(this).val()); // Update the available months when year changes
+            filterGradebook();
+        });
+
+        monthFilter.on('change', function() {
+            filterGradebook();
+        });
+
+        tierFilter.on('change', function() {
+            filterGradebook();
+        });
+
+        // Run the filter + column cleaner immediately on load
+        filterGradebook();
     });
 
-    // 7. This is the function called by the HTML <select onchange="">
+    // THE MAGIC TRICK: Hide empty columns based on filters
     function filterGradebook() {
         if (academicTable) {
+            // First, apply the row filters (Year/Month/Tier)
             academicTable.draw();
+            
+            // Second, scan every single column to see if it is 100% empty on the CURRENT view
+            let numCols = academicTable.columns().count();
+            let columnsToHide = [];
+            let columnsToShow = [];
+
+            // Skip Student(0), Term(1), Avg(2). Also skip the last two columns (Rank, Action)
+            for (let i = 3; i < numCols - 2; i++) {
+                // Look only at the data currently VISIBLE on the screen
+                let colData = academicTable.column(i, {search: 'applied'}).data();
+                let columnHasData = false;
+                
+                for (let j = 0; j < colData.length; j++) {
+                    let cellContent = colData[j];
+                    // If the cell contains anything other than our empty "-" placeholder
+                    if (!cellContent.includes('opacity-25">-</span>')) {
+                        columnHasData = true;
+                        break;
+                    }
+                }
+                
+                if (columnHasData) {
+                    columnsToShow.push(i);
+                } else {
+                    columnsToHide.push(i);
+                }
+            }
+            
+            // Collapse the empty columns, Expand the active ones!
+            academicTable.columns(columnsToShow).visible(true, false);
+            academicTable.columns(columnsToHide).visible(false, false);
+            
+            // Recalculate table width smoothly
+            academicTable.columns.adjust().draw(false);
         }
     }
 </script>

@@ -14,7 +14,6 @@
             </ol>
         </nav>
         
-        <!-- UI AUDIT: Fixed button flexbox layout and padding for a premium, aligned look -->
         <div class="d-flex flex-wrap gap-2 w-100 w-md-auto mt-2 mt-md-0">
             <a href="/add_followup/{{ student.id }}" class="btn btn-primary shadow-sm fw-bold rounded-pill px-4 py-2 flex-grow-1 flex-md-grow-0 d-flex justify-content-center align-items-center transition-hover">
                 <i class="bi bi-journal-plus me-2"></i> Quick Note
@@ -61,7 +60,6 @@
                         
                         <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap">
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2 rounded-pill"><i class="bi bi-mortarboard-fill me-1"></i> {{ student.grade_level }}</span>
-                            <!-- UI AUDIT: Attached data-dob attribute here for JS to calculate Age -->
                             <span class="badge bg-info bg-opacity-10 text-info border border-info px-3 py-2 rounded-pill" id="student-age-badge" data-dob="{{ student.dob }}"><i class="bi bi-calendar-event me-1"></i> Age: {{ student.age if student.age else '?' }}</span>
                         </div>
 
@@ -216,45 +214,50 @@
             <div class="tab-content" id="profileTabsContent">
                 
                 <!-- ========================================== -->
-                <!-- TAB 1: ACADEMICS                           -->
+                <!-- TAB 1: ACADEMICS (UI AUDITED & SOUNDWAVE)  -->
                 <!-- ========================================== -->
                 <div class="tab-pane fade show active" id="academics" role="tabpanel">
                     
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3 px-2 gap-3 mt-2">
                         <h5 class="fw-bold text-dark mb-0">Academic History</h5>
                         
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm">
-                                <i class="bi bi-calendar3 text-muted ms-3 me-2"></i>
-                                <select id="reportYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none" style="width: auto; min-width: 100px;" onchange="filterReports()">
+                        <!-- Premium Filter Controls -->
+                        <div class="d-flex flex-wrap align-items-center gap-2 bg-white p-2 rounded-4 border shadow-sm">
+                            <div class="d-flex align-items-center px-2 border-end">
+                                <i class="bi bi-calendar3 text-muted me-2"></i>
+                                <select id="reportYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none px-1" style="width: auto; min-width: 90px;" onchange="filterReports()">
                                     <option value="all">All Years</option>
                                 </select>
                             </div>
-                            <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm">
-                                <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
-                                <select id="reportMonthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none" style="width: auto; min-width: 100px;" onchange="filterReports()">
+                            <div class="d-flex align-items-center px-2">
+                                <i class="bi bi-calendar-month text-muted me-2"></i>
+                                <select id="reportMonthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none px-1" style="width: auto; min-width: 90px;" onchange="filterReports()">
                                     <option value="all">All Months</option>
                                 </select>
                             </div>
                             
-                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold shadow-sm d-none d-md-inline-block rounded-pill px-4 text-nowrap transition-hover"><i class="bi bi-plus-lg me-1"></i> Add Report</a>
+                            <!-- FEATURE CONTROL -->
+                            {% if session.get('role') == 'Admin' or session.get('can_manage_academics') %}
+                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold shadow-sm d-none d-md-inline-block rounded-pill ms-2 px-3 text-nowrap transition-hover"><i class="bi bi-plus-lg me-1"></i> Add</a>
+                            {% endif %}
                         </div>
                     </div>
                     
                     <div id="academicRecordsContainer">
 
-                        <!-- THE PERFORMANCE TRAJECTORY MATRIX -->
+                        <!-- THE PERFORMANCE TRAJECTORY (SOUND WAVE) MATRIX -->
                         {% if reports|length > 0 %}
-                        <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-primary border-4 d-none d-md-block">
+                        <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-primary border-4 d-none d-md-block overflow-hidden">
                             <div class="card-header bg-white border-bottom-0 pt-3 pb-2 px-4 d-flex justify-content-between align-items-center">
-                                <h6 class="fw-bold text-primary mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Performance Trajectory (Recent)</h6>
+                                <h6 class="fw-bold text-primary mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Performance Trajectory</h6>
                                 <span class="badge bg-light text-muted border">Left to Right: Oldest to Newest</span>
                             </div>
                             <div class="card-body px-4 pb-4 pt-0">
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered table-hover align-middle text-center mb-0" style="font-size: 0.85rem; min-width: 100%;">
+                                
+                                <div class="table-responsive border rounded-3 bg-white">
+                                    <table class="table table-sm table-borderless align-middle text-center mb-0" style="min-width: 100%;">
                                         
-                                        {% set recent_reports = reports[:6]|reverse|list %}
+                                        {% set recent_reports = reports[:8]|reverse|list %}
                                         {% set unique_subjects = [] %}
                                         {% for r in recent_reports %}
                                             {% for sub in r.subjects %}
@@ -265,28 +268,37 @@
                                             {% endfor %}
                                         {% endfor %}
 
-                                        <thead class="table-light">
+                                        <thead class="border-bottom">
                                             <tr>
-                                                <th class="text-start text-uppercase text-dark fw-bold" style="width: 25%;">Subject</th>
+                                                <th class="text-start text-uppercase text-muted fw-bold ps-3" style="width: 30%; font-size: 0.75rem;">Subject Trace</th>
                                                 {% for r in recent_reports %}
-                                                    <th>
-                                                        <div class="fw-bold text-dark">{{ r.month[:3] }}</div>
-                                                        <div class="text-muted" style="font-size: 0.65rem;">{{ r.academic_year[-2:] }}</div>
+                                                    <th class="py-2">
+                                                        <div class="fw-bold text-dark" style="font-size: 0.7rem;">{{ r.month[:3] }}</div>
+                                                        <div class="text-muted" style="font-size: 0.6rem;">{{ r.academic_year[-2:] }}</div>
                                                     </th>
                                                 {% endfor %}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr class="table-primary border-primary border-opacity-25">
-                                                <td class="text-start fw-bold text-primary"><i class="bi bi-trophy-fill me-1"></i> OVERALL AVERAGE</td>
+                                            <!-- Overall Average Sound Wave -->
+                                            <tr class="bg-primary bg-opacity-10 border-bottom border-primary border-opacity-25">
+                                                <td class="text-start fw-bold text-primary ps-3" style="font-size: 0.8rem;"><i class="bi bi-activity me-1"></i> OVERALL WAVE</td>
                                                 {% for r in recent_reports %}
-                                                    <td class="fw-bold text-primary fs-6">{{ r.overall_average if r.overall_average else '-' }}</td>
+                                                    <td class="align-bottom pt-3 pb-1" style="height: 50px;">
+                                                        {% set score_val = r.overall_average|float(default=0) if r.overall_average else 0 %}
+                                                        {% set height = score_val if score_val > 0 else 5 %}
+                                                        {% set color = 'bg-success' if score_val >= 80 else ('bg-warning' if score_val >= 50 else ('bg-danger' if score_val > 0 else 'bg-secondary opacity-25')) %}
+                                                        <div class="d-flex justify-content-center align-items-end h-100">
+                                                            <div class="{{ color }} rounded-pill wave-bar shadow-sm" style="width: 12px; height: {{ height }}%; min-height: 4px;" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ r.overall_average if r.overall_average else 'N/A' }}%"></div>
+                                                        </div>
+                                                    </td>
                                                 {% endfor %}
                                             </tr>
                                             
+                                            <!-- Individual Subject Sound Waves -->
                                             {% for sname in unique_subjects %}
-                                            <tr>
-                                                <td class="text-start fw-bold text-secondary khmer-font">{{ sname }}</td>
+                                            <tr class="border-bottom border-light">
+                                                <td class="text-start fw-bold text-secondary khmer-font ps-3" style="font-size: 0.75rem;">{{ sname }}</td>
                                                 {% for r in recent_reports %}
                                                     {% set score = namespace(value='-') %}
                                                     {% for sub in r.subjects %}
@@ -294,7 +306,35 @@
                                                             {% set score.value = sub.score %}
                                                         {% endif %}
                                                     {% endfor %}
-                                                    <td class="fw-bold text-dark">{{ score.value }}</td>
+                                                    
+                                                    <!-- Visual Calculation Logic -->
+                                                    {% set raw_val = score.value|string|lower %}
+                                                    {% set height = 5 %}
+                                                    {% set color = 'bg-secondary opacity-25' %}
+
+                                                    {% if raw_val in ['a', 'good', 'excellent', 'a+', 'a-'] %} 
+                                                        {% set height = 95 %} {% set color = 'bg-success' %}
+                                                    {% elif raw_val in ['b', 'b+', 'b-'] %} 
+                                                        {% set height = 85 %} {% set color = 'bg-success' %}
+                                                    {% elif raw_val in ['c', 'c+', 'c-', 'average'] %} 
+                                                        {% set height = 75 %} {% set color = 'bg-warning' %}
+                                                    {% elif raw_val in ['d', 'd+', 'd-'] %} 
+                                                        {% set height = 65 %} {% set color = 'bg-danger' %}
+                                                    {% elif raw_val in ['f', 'poor', 'fail'] %} 
+                                                        {% set height = 40 %} {% set color = 'bg-danger' %}
+                                                    {% elif score.value != '-' %}
+                                                        {% set parsed_val = score.value|float(default=-1) %}
+                                                        {% if parsed_val >= 0 %}
+                                                            {% set height = parsed_val if parsed_val <= 100 else 100 %}
+                                                            {% set color = 'bg-success' if parsed_val >= 80 else ('bg-warning' if parsed_val >= 50 else 'bg-danger') %}
+                                                        {% endif %}
+                                                    {% endif %}
+
+                                                    <td class="align-bottom pt-2 pb-1" style="height: 40px;">
+                                                        <div class="d-flex justify-content-center align-items-end h-100">
+                                                            <div class="{{ color }} rounded-pill wave-bar" style="width: 8px; height: {{ height }}%; min-height: 4px;" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ score.value }}"></div>
+                                                        </div>
+                                                    </td>
                                                 {% endfor %}
                                             </tr>
                                             {% endfor %}
@@ -305,48 +345,69 @@
                         </div>
                         {% endif %}
 
+                        <!-- ITERATING REPORT CARDS -->
                         {% for report in reports %}
                         <div class="card shadow-sm border-0 rounded-4 mb-3 border-start border-success border-4 overflow-hidden transition-hover report-card" data-year="{{ report.academic_year }}" data-month="{{ report.month }} {{ report.semester if report.semester else '' }}">
                             
-                            <!-- UX/UI FIX: Added report-header class to trigger the chevron rotation -->
                             <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 d-flex justify-content-between align-items-center report-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseReport{{ report.id }}" aria-expanded="{% if loop.first %}true{% else %}false{% endif %}" aria-controls="collapseReport{{ report.id }}">
                                 <div>
                                     <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-1 rounded-pill me-2 shadow-sm">{{ report.academic_year }}</span>
-                                    <span class="fw-bold text-dark fs-5">{{ report.month }} {{ report.semester if report.semester else '' }}</span>
+                                    <span class="fw-bold text-dark fs-5">{{ report.month }} <span class="text-muted fw-normal fs-6 ms-1">{{ report.semester if report.semester else '' }}</span></span>
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
                                     {% if report.overall_average %}
-                                        <h4 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
+                                        <!-- Emphasized Average Badge -->
+                                        <div class="text-end me-2 d-none d-sm-block">
+                                            <span class="d-block text-uppercase text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px; font-weight: 700;">Average</span>
+                                        </div>
+                                        <h4 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %} bg-light px-3 py-1 rounded-pill border">
                                             {{ report.overall_average }}%
                                         </h4>
                                     {% else %}
-                                        <h5 class="mb-0 fw-bold text-muted">{{ report.overall_grade if report.overall_grade else 'N/A' }}</h5>
+                                        <h5 class="mb-0 fw-bold text-muted bg-light px-3 py-1 rounded-pill border">{{ report.overall_grade if report.overall_grade else 'N/A' }}</h5>
                                     {% endif %}
-                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                         <i class="bi bi-chevron-down text-success opacity-75 fs-6 rotate-icon"></i>
                                     </div>
                                 </div>
                             </div>
                             
                             <div id="collapseReport{{ report.id }}" class="collapse {% if loop.first %}show{% endif %}">
-                                <div class="card-body p-4 bg-light border-top">
-                                    <div class="row g-3 mb-3">
+                                <div class="card-body p-4 bg-light border-top border-secondary border-opacity-10">
+                                    
+                                    <!-- Micro-Metric Cards -->
+                                    <div class="row g-3 mb-4">
                                         <div class="col-6 col-md-4">
-                                            <div class="p-3 border rounded-4 bg-white text-center shadow-sm h-100 d-flex flex-column justify-content-center">
-                                                <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;"><i class="bi bi-trophy-fill text-warning me-1"></i>Class Rank</div>
-                                                <span class="fw-bold fs-4 text-dark">{{ report.class_rank if report.class_rank else '-' }}</span>
+                                            <div class="p-3 bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm h-100 d-flex align-items-center">
+                                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                                    <i class="bi bi-trophy-fill text-warning fs-5"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Class Rank</div>
+                                                    <div class="fw-bold fs-5 text-dark lh-1">{{ report.class_rank if report.class_rank else '-' }}</div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="col-6 col-md-4">
-                                            <div class="p-3 border rounded-4 bg-white text-center shadow-sm h-100 d-flex flex-column justify-content-center">
-                                                <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;"><i class="bi bi-calendar-check-fill text-info me-1"></i>Attendance</div>
-                                                <span class="fw-bold fs-4 text-dark">{{ report.attendance_days if report.attendance_days else '-' }} <span class="small text-muted fs-6">days</span></span>
+                                            <div class="p-3 bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm h-100 d-flex align-items-center">
+                                                <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                                    <i class="bi bi-calendar-check-fill text-info fs-5"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Attendance</div>
+                                                    <div class="fw-bold fs-5 text-dark lh-1">{{ report.attendance_days if report.attendance_days else '-' }} <span class="small text-muted fs-6 fw-normal">days</span></div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="col-12 col-md-4">
-                                            <div class="p-3 border rounded-4 bg-white text-center shadow-sm h-100 d-flex flex-column justify-content-center">
-                                                <div class="text-muted text-uppercase fw-bold mb-2" style="font-size: 0.7rem; letter-spacing: 0.5px;"><i class="bi bi-building-fill text-secondary me-1"></i>School</div>
-                                                <span class="fw-bold text-dark khmer-font small">{{ report.school_name if report.school_name else student.current_school }}</span>
+                                            <div class="p-3 bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm h-100 d-flex align-items-center">
+                                                <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                                    <i class="bi bi-building-fill text-secondary fs-5"></i>
+                                                </div>
+                                                <div class="text-truncate">
+                                                    <div class="text-muted text-uppercase fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">School Attended</div>
+                                                    <div class="fw-bold text-dark khmer-font text-truncate" style="font-size: 0.95rem;">{{ report.school_name if report.school_name else student.current_school }}</div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -354,45 +415,80 @@
                                     {% if report.subjects %}
                                     <div class="mt-4">
                                         <h6 class="fw-bold text-success small text-uppercase mb-3"><i class="bi bi-list-columns-reverse me-2"></i> Detailed Subject Scores</h6>
-                                        <div class="row g-3">
-                                            {% for sub in report.subjects %}
-                                            <div class="col-12 col-md-6 col-xl-4">
-                                                <div class="d-flex justify-content-between align-items-center p-3 bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm h-100">
-                                                    <span class="fw-bold text-secondary text-truncate me-2" title="{{ sub.subject_name }}">{{ sub.subject_name }}</span>
-                                                    <div class="text-end bg-light px-3 py-1 rounded-3 border">
-                                                        <span class="fw-bold text-primary fs-5">{{ sub.score }}</span>
-                                                        {% if sub.max_score %}
-                                                            <span class="text-muted fw-bold small">/ {{ sub.max_score }}</span>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {% endfor %}
+                                        
+                                        <!-- UI AUDIT: Condensed, Space-Saving Table Layout for Subjects -->
+                                        <div class="table-responsive border rounded-4 shadow-sm bg-white">
+                                            <table class="table table-sm table-hover align-middle mb-0">
+                                                <thead class="table-light text-muted small text-uppercase">
+                                                    <tr>
+                                                        <th class="ps-3 border-bottom-0 py-2" style="width: 45%;">Subject</th>
+                                                        <th class="text-center border-bottom-0 py-2" style="width: 20%;">Score</th>
+                                                        <th class="text-center border-bottom-0 py-2" style="width: 15%;">Max</th>
+                                                        <th class="text-end pe-3 border-bottom-0 py-2" style="width: 20%;">Grade</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for sub in report.subjects %}
+                                                    {% set text_class = sub.text_class if sub.text_class else 'text-dark' %}
+                                                    <tr>
+                                                        <td class="ps-3 py-1">
+                                                            <span class="text-secondary fw-bold text-uppercase d-block" style="font-size: 0.55rem; letter-spacing: 0.5px;">{{ sub.category }}</span>
+                                                            <span class="fw-bold text-dark khmer-font" style="font-size: 0.85rem;">{{ sub.subject_name }}</span>
+                                                        </td>
+                                                        <td class="text-center py-1">
+                                                            <span class="fw-bold {{ text_class }} {% if text_class == 'text-warning' %}text-darken{% endif %}" style="font-size: 0.95rem;">{{ sub.score }}</span>
+                                                        </td>
+                                                        <td class="text-center text-muted fw-bold py-1" style="font-size: 0.8rem;">
+                                                            {{ sub.max_score if sub.max_score else '-' }}
+                                                        </td>
+                                                        <td class="text-end pe-3 py-1">
+                                                            {% if sub.grade_letter %}
+                                                                <span class="badge shadow-sm {{ sub.badge_class }} rounded-pill" style="font-size: 0.75rem; padding: 0.35rem 0.6rem;">{{ sub.grade_letter }}</span>
+                                                            {% else %}
+                                                                <span class="text-muted opacity-50">-</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                     {% endif %}
 
                                     {% if report.teacher_comment %}
-                                    <div class="mt-4 p-4 bg-white border border-secondary border-opacity-10 rounded-4 position-relative shadow-sm">
-                                        <i class="bi bi-quote position-absolute top-0 start-0 text-muted opacity-10 ms-3 mt-2" style="font-size: 3rem;"></i>
-                                        <p class="small text-dark khmer-font mb-0 fst-italic position-relative z-1 ps-4" style="line-height: 1.6;">"{{ report.teacher_comment }}"</p>
+                                    <!-- UI AUDIT: Modern Callout for Teacher Comments -->
+                                    <div class="mt-4 p-4 bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm border-start border-4 border-info">
+                                        <div class="d-flex align-items-start">
+                                            <i class="bi bi-quote text-info opacity-50 fs-2 me-3 lh-1" style="margin-top: -5px;"></i>
+                                            <div>
+                                                <span class="d-block text-uppercase text-muted fw-bold mb-1" style="font-size: 0.65rem; letter-spacing: 0.5px;">Teacher's Notes</span>
+                                                <p class="text-dark khmer-font mb-0 fst-italic" style="line-height: 1.6; font-size: 0.95rem;">{{ report.teacher_comment }}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                     {% endif %}
                                 </div>
                                 
+                                <!-- Card Footer Actions -->
                                 <div class="card-footer bg-white border-top rounded-bottom-4 px-4 py-3 d-flex justify-content-between align-items-center">
                                     {% if report.scanned_document %}
-                                    <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-white border fw-bold shadow-sm text-dark transition-hover"><i class="bi bi-file-earmark-image-fill text-primary me-1"></i> View Scan</a>
+                                    <a href="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" target="_blank" class="btn btn-sm btn-light border fw-bold shadow-sm text-primary transition-hover rounded-pill px-3">
+                                        <i class="bi bi-file-earmark-image-fill me-1"></i> View Scan
+                                    </a>
                                     {% else %}
                                     <span class="small text-muted fst-italic"><i class="bi bi-image text-muted opacity-50 me-1"></i> No Scan Available</span>
                                     {% endif %}
                                     
                                     <div>
-                                        <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-white border fw-bold text-dark me-2 d-none d-md-inline-block shadow-sm transition-hover">Edit Data</a>
+                                        <!-- FEATURE CONTROL -->
+                                        {% if session.get('role') == 'Admin' or session.get('can_manage_academics') %}
+                                        <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-white border fw-bold text-dark me-2 d-none d-md-inline-block shadow-sm transition-hover rounded-pill px-3">Edit Data</a>
+                                        {% endif %}
                                         
                                         {% if session.get("role") in ["Admin", "Director"] %}
                                         <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover" title="Delete Report"><i class="bi bi-trash-fill"></i></button>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-pill px-3" title="Delete Report"><i class="bi bi-trash-fill"></i></button>
                                         </form>
                                         {% endif %}
                                     </div>
@@ -400,6 +496,7 @@
                             </div>
                         </div>
                         {% else %}
+                        <!-- Empty State -->
                         <div class="text-center p-5 bg-white rounded-4 shadow-sm border border-2 border-dashed border-secondary border-opacity-25 mt-4">
                             <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                 <i class="bi bi-journal-x fs-1 text-muted opacity-50"></i>
@@ -431,7 +528,11 @@
                                     <option value="all">All Years</option>
                                 </select>
                             </div>
+                            
+                            <!-- FEATURE CONTROL -->
+                            {% if session.get('role') == 'Admin' or session.get('can_manage_followups') %}
                             <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-primary fw-bold shadow-sm rounded-pill px-4 text-nowrap transition-hover"><i class="bi bi-plus-lg me-1"></i> New Note</a>
+                            {% endif %}
                         </div>
                     </div>
                     
@@ -445,7 +546,6 @@
                                 {% set risk_color = 'warning' %}
                             {% endif %}
                             
-                            <!-- UI AUDIT FIX: Perfectly aligned timeline dot -->
                             <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 18px; height: 18px; left: -10.5px; top: 20px; border: 3px solid #fff; box-shadow: 0 0 0 3px #cfe2ff !important;"></div>
                             
                             <div class="card shadow-sm border-0 rounded-4 transition-hover mt-2">
@@ -511,8 +611,11 @@
 
                                     <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10 bg-light mx-n4 mb-n4 p-4 rounded-bottom-4">
                                         <span class="small text-muted fw-bold"><i class="bi bi-person-badge-fill text-secondary me-2"></i>{{ note.completed_by }}</span>
-                                        <!-- MOBILE UX FIX: Edits hidden on mobile -->
+                                        
+                                        <!-- FEATURE CONTROL -->
+                                        {% if session.get('role') == 'Admin' or session.get('can_manage_followups') %}
                                         <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-1 px-3 d-none d-md-inline-block shadow-sm rounded-pill transition-hover">Edit Note</a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -543,9 +646,13 @@
                     <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-secondary border-4 mt-2">
                         <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                             <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder-fill text-secondary me-2"></i>Digital Filing Cabinet</h5>
+                            
+                            <!-- FEATURE CONTROL -->
+                            {% if session.get('role') == 'Admin' or session.get('can_upload_files') %}
                             <button class="btn btn-sm btn-outline-secondary text-dark fw-bold shadow-sm rounded-pill px-3 transition-hover" data-bs-toggle="collapse" data-bs-target="#uploadForm">
                                 <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload
                             </button>
+                            {% endif %}
                         </div>
                         <div class="card-body px-0 px-md-4 pb-4">
                             
@@ -575,7 +682,6 @@
                                 </form>
                             </div>
 
-                            <!-- UI AUDIT FIX: Upgraded to mobile-cards-table to prevent horizontal scrolling on phones -->
                             <div class="table-responsive px-3 px-md-0">
                                 <table class="table table-hover align-middle mb-0 mobile-cards-table">
                                     <thead class="table-light text-muted small text-uppercase d-none d-md-table-header-group">
@@ -629,12 +735,15 @@
                                 <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cash-coin text-success me-2"></i>Financial Ledger</h5>
                                 <small class="text-muted fw-bold">Total Spent: <strong class="text-success fs-6">${{ total_spent|default('0.00') }}</strong></small>
                             </div>
+                            
+                            <!-- RESTRICTED TO ADMIN -->
+                            {% if session.get('role') == 'Admin' %}
                             <button class="btn btn-sm btn-dark text-white fw-bold d-none d-md-inline-block shadow-sm rounded-pill px-3 transition-hover" data-bs-toggle="modal" data-bs-target="#expenseModal">
                                 <i class="bi bi-plus-lg me-1"></i> Log Expense
                             </button>
+                            {% endif %}
                         </div>
                         <div class="card-body px-0 px-md-4 pb-4">
-                            <!-- UI AUDIT FIX: Upgraded to mobile-cards-table -->
                             <div class="table-responsive px-3 px-md-0">
                                 <table class="table table-hover align-middle mb-0 mobile-cards-table">
                                     <thead class="table-light text-muted small text-uppercase d-none d-md-table-header-group">
@@ -695,12 +804,21 @@
                 <div class="modal-body p-4 text-start">
                     <div class="alert alert-info bg-info bg-opacity-10 border-info small py-3 mb-4 text-dark rounded-4 d-flex shadow-sm">
                         <i class="bi bi-info-circle-fill me-2 fs-5 text-info"></i> 
-                        <span>Search for an existing Household ID to link this child to their siblings.</span>
+                        <span>Search for an existing Household to link this child to their siblings.</span>
                     </div>
+                    
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Household ID #</label>
-                        <input type="number" class="form-control form-control-lg bg-light" name="household_id" placeholder="e.g. 5" required>
+                        <label class="form-label fw-bold small text-muted">Select Family / Caregiver</label>
+                        <select class="form-select form-select-lg bg-light fw-bold text-dark" name="household_id" required>
+                            <option value="" disabled selected>Search or select family...</option>
+                            {% for h in households %}
+                                <option value="{{ h.id }}">
+                                    {{ h.guardian_name }} {% if h.phone_number %} - {{ h.phone_number }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
                     </div>
+
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
                     <button type="button" class="btn btn-white border shadow-sm fw-bold text-dark" data-bs-dismiss="modal">Cancel</button>
@@ -781,15 +899,28 @@
         opacity: 0.8;
     }
     
-    /* UX UI Audit: Animated Chevron for Accordions */
     .report-header [aria-expanded="true"] .rotate-icon {
         transform: rotate(180deg);
     }
     .rotate-icon {
         transition: transform 0.3s ease;
     }
+    
+    /* Ensure dark text warnings are legible */
+    .text-warning.text-darken {
+        color: #b48600 !important;
+    }
+    
+    /* Premium Wave Bar Charts */
+    .wave-bar {
+        transition: height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s ease;
+        cursor: pointer;
+    }
+    .wave-bar:hover {
+        transform: scaleY(1.15);
+        filter: brightness(0.9);
+    }
 
-    /* Mobile Responsive Tables for Tab 3 */
     @media (max-width: 767.98px) {
         .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td { display: block; width: 100%; }
         .mobile-cards-table thead { display: none !important; }
@@ -803,7 +934,6 @@
 
 {% block scripts %}
 <script>
-    // JS CALCULATION: Calculate Age dynamically from DOB 
     document.addEventListener("DOMContentLoaded", function() {
         const ageBadge = document.getElementById('student-age-badge');
         if (ageBadge) {
@@ -814,7 +944,6 @@
                 let age = today.getFullYear() - birthDate.getFullYear();
                 const m = today.getMonth() - birthDate.getMonth();
                 
-                // If they haven't had their birthday yet this year, subtract 1
                 if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
                     age--;
                 }
@@ -824,9 +953,15 @@
                 }
             }
         }
+        
+        // Initialize tooltips for the Sound Waves
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     });
 
-    // DYNAMIC FILTER LOGIC FOR ACADEMIC RECORDS
+    // ... Existing Reports/Filter Logic ...
     const reportCards = document.querySelectorAll('.report-card');
     const reportYearFilter = document.getElementById('reportYearFilter');
     const reportMonthFilter = document.getElementById('reportMonthFilter');
@@ -895,10 +1030,8 @@
         }
     }
     
-    // Run the filter immediately on page load
     filterReports();
 
-    // DYNAMIC FILTER LOGIC FOR FOLLOW-UPS
     const noteCards = document.querySelectorAll('.note-card');
     const noteFilter = document.getElementById('noteYearFilter');
     const noNotesMessage = document.getElementById('noNotesMessage');

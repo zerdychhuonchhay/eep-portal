@@ -50,6 +50,59 @@ def calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max):
     return calculated_avg, calculated_grade
 
 
+def get_subject_grade_data(score_raw, max_raw):
+    """Calculates A-F and CSS color classes for an individual subject score"""
+    box_class = 'bg-light border-secondary border-opacity-10'
+    text_class = 'text-dark'
+    badge_class = ''
+    grade_letter = ''
+
+    if not score_raw or score_raw == '-' or str(score_raw).strip() == '':
+        return grade_letter, box_class, text_class, badge_class
+
+    score_str = str(score_raw).strip()
+    
+    try:
+        score = float(score_str)
+        max_score = float(max_raw) if max_raw and str(max_raw).strip() != '' else 100.0
+        
+        if max_score > 0:
+            pct = (score / max_score) * 100
+            if pct >= 85:
+                grade_letter, color = 'A', 'success'
+            elif pct >= 80:
+                grade_letter, color = 'B', 'success'
+            elif pct >= 70:
+                grade_letter, color = 'C', 'warning'
+            elif pct >= 60:
+                grade_letter, color = 'D', 'danger'
+            elif pct >= 50:
+                grade_letter, color = 'E', 'danger'
+            else:
+                grade_letter, color = 'F', 'danger'
+                
+            box_class = f'bg-{color} bg-opacity-10 border-{color} border-opacity-25'
+            text_class = f'text-{color}'
+            badge_class = f'bg-{color}'
+            
+    except ValueError:
+        # Handles manual text grades like "A" or "Pass"
+        text_upper = score_str.upper()
+        if text_upper in ['A', 'B', 'A+', 'A-', 'B+', 'B-', 'GOOD', 'EXCELLENT', 'PASS']:
+            color = 'success'
+        elif text_upper in ['C', 'C+', 'C-', 'AVERAGE', 'FAIR']:
+            color = 'warning'
+        elif text_upper in ['D', 'E', 'F', 'POOR', 'FAIL']:
+            color = 'danger'
+        else:
+            color = None
+            
+        if color:
+            box_class = f'bg-{color} bg-opacity-10 border-{color} border-opacity-25'
+            text_class = f'text-{color}'
+
+    return grade_letter, box_class, text_class, badge_class
+
 # =========================================================
 # 3. THE FILE UPLOAD MANAGER
 # =========================================================
