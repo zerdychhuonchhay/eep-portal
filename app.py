@@ -1199,13 +1199,20 @@ def household_profile(id):
 # NEIGHBORHOOD: STUDENT PROFILES
 # ==============================================================================
 
+# ==============================================================================
+# NEIGHBORHOOD: STUDENT PROFILES
+# ==============================================================================
+
 @app.route("/student/<int:id>")
 @login_required
 def student_profile(id):
     """Single source of truth for a student's full profile, grades, notes, and files."""
     
     # 1. Core Identity
-    student = db.execute("SELECT * FROM students WHERE id = ?", id)[0]
+    student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
+    if not student_data:
+        return render_template("apology.html", message="Student not found")
+    student = student_data[0]
 
     # 2. Household & Kinship Linkage
     household = None
@@ -1216,43 +1223,98 @@ def student_profile(id):
             household = hh[0]
             
         siblings = db.execute("""
-            SELECT id, first_name, last_name, profile_picture, status, grade_level 
+            SELECT id, first_name, last_name, profile_picture, status, grade_level, caregiver_relationship 
             FROM students 
             WHERE household_id = ? AND id != ?
             ORDER BY dob ASC
         """, student["household_id"], id)
 
-    # 3. Academic Engine (JS handles the filtering now, so we just fetch all!)
-    reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC", id)
+    # 3. Academic Engine & Filters
+    academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
+    unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
 
-    raw_grades = db.execute("""
-        SELECT g.*, COALESCE(s.name, g.custom_subject_name) as subject_name
-        FROM grades g LEFT JOIN subjects s ON g.subject_id = s.id
-        WHERE g.report_id IN (SELECT id FROM monthly_reports WHERE student_id = ?)
-        ORDER BY s.sort_order ASC, subject_name ASC
-    """, id)
+    timeframe = request.args.get("timeframe")
 
-    grades_by_report = {}
-    for g in raw_grades:
-        if g['report_id'] not in grades_by_report:
-            grades_by_report[g['report_id']] = []
-        grades_by_report[g['report_id']].append(g)
+    if timeframe and timeframe.isdigit():
+        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC LIMIT ?", id, int(timeframe))
+    elif timeframe and "-" in timeframe:
+        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? AND academic_year = ? ORDER BY id DESC", id, timeframe)
+    else:
+        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC", id)
 
-    # Attach the subjects perfectly into the reports
+    # Attach subjects to each report and calculate A-F Badges dynamically
     for report in reports:
-        report['subjects'] = grades_by_report.get(report['id'], [])
+        subjects = db.execute("""
+            SELECT COALESCE(s.name, g.custom_subject_name) as subject_name, 
+                   g.score, 
+                   g.max_score,
+                   COALESCE(s.category, 'Custom') as category
+            FROM grades g
+            LEFT JOIN subjects s ON g.subject_id = s.id
+            WHERE g.report_id = ?
+            ORDER BY s.sort_order ASC, subject_name ASC
+        """, report["id"])
+        
+        for sub in subjects:
+            score_val = sub['score']
+            grade_letter = ""
+            badge_class = "bg-secondary"
+            text_class = "text-dark"
+            
+            if score_val and score_val != '-':
+                try:
+                    num_score = float(score_val)
+                    max_score = float(sub['max_score']) if sub['max_score'] else 100.0
+                    avg = (num_score / max_score) * 100
+                    
+                    if avg >= 90:
+                        grade_letter, badge_class, text_class = "A", "bg-success", "text-success"
+                    elif avg >= 80:
+                        grade_letter, badge_class, text_class = "B", "bg-success", "text-success"
+                    elif avg >= 70:
+                        grade_letter, badge_class, text_class = "C", "bg-warning text-dark", "text-warning text-darken"
+                    elif avg >= 50:
+                        grade_letter, badge_class, text_class = "D", "bg-warning text-dark", "text-warning text-darken"
+                    else:
+                        grade_letter, badge_class, text_class = "F", "bg-danger", "text-danger"
+                        
+                except ValueError:
+                    upper_score = str(score_val).upper()
+                    if upper_score in ['A', 'A+', 'A-', 'B', 'B+', 'B-', 'PASS', 'GOOD', 'EXCELLENT']:
+                        badge_class, text_class = "bg-success", "text-success"
+                        grade_letter = upper_score
+                    elif upper_score in ['C', 'C+', 'C-', 'AVERAGE', 'FAIR']:
+                        badge_class, text_class = "bg-warning text-dark", "text-warning text-darken"
+                        grade_letter = upper_score
+                    elif upper_score in ['D', 'D+', 'D-', 'E', 'F', 'FAIL', 'POOR']:
+                        badge_class, text_class = "bg-danger", "text-danger"
+                        grade_letter = upper_score
+                    else:
+                        grade_letter = str(score_val) 
+
+            sub['grade_letter'] = grade_letter
+            sub['badge_class'] = badge_class
+            sub['text_class'] = text_class
+
+        report["subjects"] = subjects
 
     # 4. Social Work Timeline
     followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC, id DESC", id)
     
     # 5. Digital Filing Cabinet
-    docs = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY upload_date DESC", id)
+    try:
+        docs = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY upload_date DESC", id)
+    except Exception:
+        docs = []
 
     # 6. Financial Ledger
-    expenses = db.execute("SELECT * FROM student_expenses WHERE student_id = ? ORDER BY expense_date DESC", id)
-    
-    # Calculate the total NGO investment for this specific child
-    total_spent_raw = sum(exp['amount'] for exp in expenses) if expenses else 0.00
+    try:
+        expenses = db.execute("SELECT * FROM student_expenses WHERE student_id = ? ORDER BY expense_date DESC", id)
+        total_spent_raw = sum(exp['amount'] for exp in expenses) if expenses else 0.00
+    except Exception:
+        expenses = []
+        total_spent_raw = 0.00
+        
     total_spent = f"{total_spent_raw:,.2f}"
 
     return render_template("student_profile.html", 
@@ -1263,51 +1325,9 @@ def student_profile(id):
                            followups=followups, 
                            docs=docs, 
                            expenses=expenses,
-                           total_spent=total_spent)
-
-
-    siblings = []
-    if student.get("household_id"):
-        siblings = db.execute("""
-            SELECT id, first_name, last_name, profile_picture, status, caregiver_relationship 
-            FROM students 
-            WHERE household_id = ? AND id != ?
-            ORDER BY dob ASC
-        """, student["household_id"], id)
-
-    academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
-    unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
-
-    timeframe = request.args.get("timeframe")
-
-    if timeframe and timeframe.isdigit():
-        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC LIMIT ?", id, int(timeframe))
-    elif timeframe and "-" in timeframe:
-        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? AND academic_year = ? ORDER BY id DESC", id, timeframe)
-    else:
-        reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC", id)
-
-    followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY id DESC", id)
-    documents = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY id DESC", id)
-
-    raw_grades = db.execute("""
-        SELECT g.*, COALESCE(s.name, g.custom_subject_name) as subject_name
-        FROM grades g LEFT JOIN subjects s ON g.subject_id = s.id
-        WHERE g.report_id IN (SELECT id FROM monthly_reports WHERE student_id = ?)
-        ORDER BY s.sort_order ASC, subject_name ASC
-    """, id)
-
-    grades_by_report = {}
-    for g in raw_grades:
-        if g['report_id'] not in grades_by_report:
-            grades_by_report[g['report_id']] = []
-        grades_by_report[g['report_id']].append(g)
-
-    # 🚨 THE BRIDGE FIX: Attach your grouped grades to each report so HTML can read it!
-    for report in reports:
-        report['subjects'] = grades_by_report.get(report['id'], [])
-
-    return render_template("student_profile.html", student=student, reports=reports, followups=followups, documents=documents, timeframe=timeframe, unique_years=unique_years, siblings=siblings)
+                           total_spent=total_spent,
+                           timeframe=timeframe, 
+                           unique_years=unique_years)
 # ==============================================================================
 
 @app.route("/add_followup/<int:student_id>", methods=["GET", "POST"])

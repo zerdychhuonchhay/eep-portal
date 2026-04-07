@@ -271,17 +271,24 @@
                                     <span class="fw-bold text-dark fs-5">{{ report.month }} <span class="text-muted fw-normal fs-6 ms-1">{{ report.semester if report.semester else '' }}</span></span>
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
-                                    {% if report.overall_average %}
-                                        <!-- Emphasized Average Badge -->
-                                        <div class="text-end me-2 d-none d-sm-block">
-                                            <span class="d-block text-uppercase text-muted" style="font-size: 0.65rem; letter-spacing: 0.5px; font-weight: 700;">Average</span>
-                                        </div>
-                                        <h4 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %} bg-light px-3 py-1 rounded-pill border">
-                                            {{ report.overall_average }}%
-                                        </h4>
-                                    {% else %}
-                                        <h5 class="mb-0 fw-bold text-muted bg-light px-3 py-1 rounded-pill border">{{ report.overall_grade if report.overall_grade else 'N/A' }}</h5>
-                                    {% endif %}
+                                    <!-- 🚨 THE FIX: Display BOTH average and letter grade side-by-side -->
+                                    <div class="d-flex align-items-center bg-light px-3 py-1 rounded-pill border gap-2">
+                                        {% if report.overall_average %}
+                                            <h5 class="mb-0 fw-bold {% if report.overall_average >= 85 %}text-success{% elif report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
+                                                {{ report.overall_average }}%
+                                            </h5>
+                                        {% endif %}
+                                        
+                                        {% if report.overall_grade %}
+                                            <span class="badge {% if report.overall_average and report.overall_average >= 85 %}bg-success{% elif report.overall_average and report.overall_average >= 50 %}bg-warning text-dark{% elif report.overall_average %}bg-danger{% else %}bg-secondary{% endif %} shadow-sm" style="font-size: 0.8rem;">
+                                                {{ report.overall_grade }}
+                                            </span>
+                                        {% endif %}
+                                        
+                                        {% if not report.overall_average and not report.overall_grade %}
+                                            <span class="text-muted small fw-bold">N/A</span>
+                                        {% endif %}
+                                    </div>
                                     <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
                                         <i class="bi bi-chevron-down text-success opacity-75 fs-6 rotate-icon"></i>
                                     </div>
