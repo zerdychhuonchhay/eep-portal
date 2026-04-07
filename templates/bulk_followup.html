@@ -5,104 +5,422 @@
 {% endblock %}
 
 {% block main %}
-<div class="container mt-4 mb-5 text-start" style="max-width: 800px;">
+<div class="container-fluid px-lg-4 pt-3 pb-5">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-people-fill text-danger me-2"></i>Log Group Follow-Up</h2>
-        <a href="/dashboard" class="btn btn-outline-secondary btn-sm shadow-sm"><i class="bi bi-arrow-left"></i> Back</a>
+    <!-- HEADER SECTION -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Roster</a></li>
+                <li class="breadcrumb-item active fw-bold text-danger" aria-current="page">Group Follow-Up</li>
+            </ol>
+        </nav>
+        <a href="/dashboard" class="btn btn-light border shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
     </div>
 
-    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger mb-4 d-flex align-items-center shadow-sm">
-        <i class="bi bi-lightning-charge-fill me-3 fs-4 text-danger"></i>
-        <span class="small text-dark"><strong>Time Saver:</strong> Use this form when you visit a family with multiple siblings, or observe a group of students together. The note you write here will be copied to <strong>every</strong> student you select below.</span>
+    <!-- PAGE TITLE -->
+    <div class="mb-4 text-center text-md-start">
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-people-fill text-danger me-2"></i>Log Group Follow-Up</h2>
+        <p class="text-muted small fw-bold">Record shared case notes for multiple students simultaneously.</p>
     </div>
 
-    <div class="card shadow-sm border-0 border-top border-danger border-4">
-        <div class="card-body bg-light p-4">
+    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 rounded-4 mb-4 d-flex shadow-sm p-3">
+        <i class="bi bi-lightning-charge-fill me-3 fs-4 text-danger mt-1"></i>
+        <span class="small text-dark"><strong>Time Saver:</strong> Use this form when you visit a family with multiple siblings, or observe a group of students together. The notes, risk factors, and details you write here will be securely duplicated to <strong>every</strong> student profile you select.</span>
+    </div>
+
+    <!-- THE FORM -->
+    <form action="/bulk_followup" method="POST" class="needs-validation" novalidate>
+        <div class="row g-4">
             
-            <form action="/bulk_followup" method="post">
+            <!-- ========================================== -->
+            <!-- LEFT COLUMN: The Detailed Form Stack       -->
+            <!-- ========================================== -->
+            <div class="col-lg-7">
                 
-                <!-- TOP SECTION: The Shared Note -->
-                <h5 class="text-danger border-bottom pb-2 mb-3"><i class="bi bi-card-text me-2"></i>1. The Shared Details</h5>
-                <div class="row bg-white p-3 rounded border shadow-sm mx-0 mb-4">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold small text-muted">Date *</label>
-                        <input type="date" class="form-control" name="followup_date" value="{{ today_date }}" required>
+                <!-- CARD 1: Logistics -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-primary border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>1. Meeting Overview</h5>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold small text-muted">Completed By *</label>
-                        <input type="text" class="form-control" name="completed_by" value="{{ current_user }}" required>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold small text-muted">Location / Method</label>
-                        <select class="form-select border-danger text-danger fw-bold" name="location">
-                            <option value="Home Visit">Home Visit / ចុះសួរសុខទុក្ខនៅផ្ទះ</option>
-                            <option value="School Visit">School Visit / ចុះជួបនៅសាលារៀន</option>
-                            <option value="Community Area">Community Area / នៅក្នុងសហគមន៍</option>
-                            <option value="Office Visit">Office Visit / ជួបនៅការិយាល័យ</option>
-                            <option value="Phone Call">Phone Call / តាមទូរស័ព្ទ</option>
-                        </select>
-                    </div>
-                    <div class="col-12 mt-2">
-                        <label class="form-label fw-bold small text-muted">General Notes / <span class="khmer-font">កំណត់ចំណាំទូទៅ</span> *</label>
-                        <textarea class="form-control khmer-font" name="general_notes" rows="3" placeholder="e.g. Visited the house today. The roof is leaking but all 4 siblings look healthy and are attending school..." required></textarea>
-                    </div>
-                </div>
-
-                <!-- BOTTOM SECTION: Student Checklist -->
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 mt-4 gap-2">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-check2-square me-2 text-primary"></i>2. Apply to Students</h5>
-                    
-                    <!-- Quick Search for Mobile -->
-                    <div class="input-group input-group-sm w-auto shadow-sm">
-                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                        <input type="text" id="quickSearch" class="form-control border-start-0" placeholder="Type a name to filter..." onkeyup="filterStudents()">
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Date of Follow-Up *</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-date"></i></span>
+                                    <input type="date" class="form-control border-start-0 bg-light fw-bold" name="followup_date" value="{{ today_date }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Completed By *</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-person-badge"></i></span>
+                                    <input type="text" class="form-control border-start-0 bg-light fw-bold" name="completed_by" value="{{ current_user }}" required placeholder="e.g. Sreyroth">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Location / Method *</label>
+                                <select class="form-select bg-light fw-bold text-primary" name="location" required>
+                                    <option value="Home Visit">🏠 Home Visit / ចុះសួរសុខទុក្ខនៅផ្ទះ</option>
+                                    <option value="School Visit">🏫 School Visit / ចុះជួបនៅសាលារៀន</option>
+                                    <option value="Community Area">🏘️ Community Area / នៅក្នុងសហគមន៍</option>
+                                    <option value="Office Visit">🏢 Office Visit / ជួបនៅការិយាល័យ</option>
+                                    <option value="Phone Call">📱 Phone Call / តាមទូរស័ព្ទ</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white border rounded shadow-sm overflow-hidden" style="max-height: 450px; overflow-y: auto;">
-                    <table class="table table-hover mb-0 align-middle">
-                        <thead class="table-light position-sticky top-0" style="z-index: 1;">
-                            <tr>
-                                <th>Student Name</th>
-                                <th>ID & Grade</th>
-                                <th class="text-end pe-4">Select</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentListBody">
-                            {% for student in students %}
-                            <tr style="cursor: pointer;" class="student-row" onclick="toggleCheckbox('check_{{ student.id }}')">
-                                <td class="fw-bold">
-                                    <span class="searchable-name">{{ student.first_name }} {{ student.last_name }}</span> 
-                                    <span class="khmer-font text-muted fw-normal ms-1 small d-none d-sm-inline">{{ student.khmer_name if student.khmer_name else '' }}</span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border me-1">{{ student.ngo_id }}</span>
-                                    <span class="small text-muted">{{ student.grade_level }}</span>
-                                </td>
-                                <td class="text-end pe-4">
-                                    <input class="form-check-input fs-4" type="checkbox" name="student_ids" value="{{ student.id }}" id="check_{{ student.id }}" onclick="event.stopPropagation()">
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <!-- CARD 2: Physical & Home Environment -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-info border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-heart-pulse me-2 text-info"></i>2. Physical & Home Environment</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Physical Health</label>
+                                <select class="form-select border-info" name="physical_health">
+                                    <option value="" selected>Not Evaluated</option>
+                                    <option value="Good" class="text-success">Good / ល្អ</option>
+                                    <option value="Minor Issues" class="text-warning">Minor Issues / មានបញ្ហាតិចតួច</option>
+                                    <option value="Requires Medical Attention" class="text-danger">Requires Medical / ត្រូវការការព្យាបាល</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Health Details</label>
+                                <input type="text" class="form-control khmer-font" name="physical_health_detail" placeholder="If issues, explain here...">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Social Interaction</label>
+                                <select class="form-select border-info" name="social_interaction">
+                                    <option value="" selected>Not Evaluated</option>
+                                    <option value="Active">Active / សកម្ម</option>
+                                    <option value="Isolated/Withdrawn">Isolated/Withdrawn / ឯកោ</option>
+                                    <option value="Aggressive">Aggressive / ឆេវឆាវ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Social Details</label>
+                                <input type="text" class="form-control khmer-font" name="social_interaction_detail" placeholder="Notes on friends, mood...">
+                            </div>
+                        </div>
+
+                        <div class="bg-light p-3 rounded-4 border border-secondary border-opacity-10">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Home Life Stability</label>
+                            <select class="form-select mb-2" name="home_life">
+                                <option value="" selected>Not Evaluated</option>
+                                <option value="Stable">Stable / មានស្ថិរភាព</option>
+                                <option value="Moderate Stress">Moderate Stress / មានភាពតានតឹងមធ្យម</option>
+                                <option value="High Conflict/Unstable">High Conflict/Unstable / ជម្លោះខ្ពស់</option>
+                            </select>
+                            <textarea class="form-control khmer-font mt-2" name="home_life_detail" rows="2" placeholder="Details about parents, income, housing situation..."></textarea>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mt-4 text-end">
-                    <button type="submit" class="btn btn-danger btn-lg px-5 fw-bold shadow-sm w-100 w-md-auto"><i class="bi bi-save-fill me-2"></i> Save to All Selected Profiles</button>
+                <!-- CARD 3: Education Check-In -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-warning border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-book me-2 text-warning"></i>3. Education Check-In</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Learning Difficulties</label>
+                                <select class="form-select border-warning" name="learning_difficulties">
+                                    <option value="" selected>Not Evaluated</option>
+                                    <option value="None">None / គ្មាន</option>
+                                    <option value="Reading/Writing">Reading/Writing / អំណាន/សំណេរ</option>
+                                    <option value="Math">Math / គណិតវិទ្យា</option>
+                                    <option value="Focus/Attention">Focus/Attention / ការផ្តោតអារម្មណ៍</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Behavior in Class</label>
+                                <select class="form-select border-warning" name="behavior_in_class">
+                                    <option value="" selected>Not Evaluated</option>
+                                    <option value="Attentive">Attentive / យកចិត្តទុកដាក់</option>
+                                    <option value="Distracted">Distracted / មិនយកចិត្តទុកដាក់</option>
+                                    <option value="Disruptive">Disruptive / រំខានគេ</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Peer Issues (Bullying)</label>
+                                <select class="form-select border-warning" name="peer_issues">
+                                    <option value="" selected>Not Evaluated</option>
+                                    <option value="No">No / ទេ</option>
+                                    <option value="Yes - Victim">Yes - Victim / ជាជនរងគ្រោះ</option>
+                                    <option value="Yes - Instigator">Yes - Instigator / ជាអ្នកបង្ក</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Tutoring Participation</label>
+                                <select class="form-select border-warning" name="tutoring_participation">
+                                    <option value="" selected>Not Evaluated</option>
+                                    <option value="N/A">N/A / មិនមាន</option>
+                                    <option value="Attends Regularly">Attends Regularly / ចូលរួមទៀងទាត់</option>
+                                    <option value="Frequently Absent">Frequently Absent / ជារឿយៗអវត្តមាន</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </form>
-            
+
+                <!-- CARD 4: Protection & Risks -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-danger border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-shield-exclamation me-2 text-danger"></i>4. Protection & Risk Assessment</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        
+                        <div class="mb-4 p-3 border border-danger border-opacity-25 rounded-4 bg-danger bg-opacity-10">
+                            <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Active Risk Factors (Check all that apply)</label>
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Child Labor" id="risk1">
+                                        <label class="form-check-label small fw-bold w-100" for="risk1" style="cursor:pointer;">Child Labor</label>
+                                    </div>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Domestic Violence" id="risk2">
+                                        <label class="form-check-label small fw-bold w-100" for="risk2" style="cursor:pointer;">Domestic Violence</label>
+                                    </div>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Substance Abuse in Home" id="risk3">
+                                        <label class="form-check-label small fw-bold w-100" for="risk3" style="cursor:pointer;">Substance Abuse</label>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Eviction Threat" id="risk4">
+                                        <label class="form-check-label small fw-bold w-100" for="risk4" style="cursor:pointer;">Eviction Threat</label>
+                                    </div>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Severe Malnutrition" id="risk5">
+                                        <label class="form-check-label small fw-bold w-100" for="risk5" style="cursor:pointer;">Malnutrition</label>
+                                    </div>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="School Dropout Risk" id="risk6">
+                                        <label class="form-check-label small fw-bold w-100" for="risk6" style="cursor:pointer;">High Dropout Risk</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-danger text-uppercase">Child Protection Concerns?</label>
+                            <input type="text" class="form-control border-danger border-2 khmer-font" name="child_protection_concerns" placeholder="Type 'None' or describe urgent concerns here...">
+                            <small class="text-muted mt-2 d-block fw-bold"><i class="bi bi-exclamation-triangle text-warning me-1"></i> Note: Entering a concern here automatically flags the Director's Dashboard.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 5: Sponsor Letters -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-success border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-envelope-check me-2 text-success"></i>5. Sponsor Letter Workflow</h5>
+                    </div>
+                    <div class="card-body p-4 bg-light bg-opacity-50">
+                        
+                        <div class="row g-3 mb-4 bg-white p-3 rounded-4 border shadow-sm mx-0">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-primary text-uppercase">Letter Quarter *</label>
+                                <select class="form-select border-primary fw-bold" name="letter_quarter">
+                                    <option value="" disabled selected>Select Quarter...</option>
+                                    <option value="Q1">Q1 (Jan - Mar)</option>
+                                    <option value="Q2">Q2 (Apr - Jun)</option>
+                                    <option value="Q3">Q3 (Jul - Sep)</option>
+                                    <option value="Q4">Q4 (Oct - Dec)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-primary text-uppercase">Letter Year *</label>
+                                <!-- Defaulting to current year if passed, otherwise empty -->
+                                <input type="number" class="form-control border-primary fw-bold" name="letter_year" value="{{ current_year }}" min="2020" max="2100">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check mb-3 p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_given" id="task1" value="Yes">
+                                <label class="form-check-label fw-bold w-100" for="task1" style="cursor: pointer;">
+                                    1. Letter given to students to write
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3 p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_translated" id="task2" value="Yes">
+                                <label class="form-check-label fw-bold w-100" for="task2" style="cursor: pointer;">
+                                    2. Letters translated to English
+                                </label>
+                            </div>
+
+                            <div class="form-check mb-3 p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_scanned" id="task3" value="Yes">
+                                <label class="form-check-label fw-bold w-100" for="task3" style="cursor: pointer;">
+                                    3. Letters scanned and ready
+                                </label>
+                            </div>
+
+                            <div class="form-check p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center border-start border-success border-4 transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5 border-success" type="checkbox" name="letter_sent" id="task4" value="Yes">
+                                <label class="form-check-label fw-bold text-success w-100" for="task4" style="cursor: pointer;">
+                                    4. Sent to Sponsor Coordinator
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label fw-bold small text-muted text-uppercase">Additional Letter Notes</label>
+                            <textarea class="form-control khmer-font" name="letter_notes" rows="2" placeholder="e.g., Visited all siblings, collected letters..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 6: General Notes -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-secondary border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-journal-text me-2 text-secondary"></i>6. Shared Case Notes</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">General Notes / <span class="khmer-font fw-normal">កំណត់ចំណាំទូទៅ</span> *</label>
+                        <textarea class="form-control khmer-font bg-light" name="general_notes" rows="6" placeholder="e.g. Visited the house today. The roof is leaking but all siblings look healthy and are attending school..." required></textarea>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================== -->
+            <!-- RIGHT COLUMN: Sticky Student Selection Table-->
+            <!-- ========================================== -->
+            <div class="col-lg-5">
+                
+                <!-- CARD 7: Students (Sticky Wrapper) -->
+                <div class="sticky-lg-top" style="top: 20px; z-index: 5; height: calc(100vh - 40px);">
+                    <div class="card shadow-sm border-0 rounded-4 border-top border-danger border-4 h-100 d-flex flex-column">
+                        
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square me-2 text-danger"></i>7. Apply to Students</h5>
+                            
+                            <!-- Quick Search -->
+                            <div class="input-group input-group-sm shadow-sm" style="max-width: 200px;">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                <input type="text" id="quickSearch" class="form-control border-start-0 bg-light" placeholder="Find student..." onkeyup="filterStudents()">
+                            </div>
+                        </div>
+                        
+                        <!-- The scrolling list -->
+                        <div class="card-body p-0 d-flex flex-column" style="flex: 1; min-height: 0;">
+                            <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
+                                <table class="table table-hover mb-0 align-middle border-top">
+                                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
+                                        <tr class="small text-muted text-uppercase">
+                                            <th class="ps-4">Student Name</th>
+                                            <th>ID & Grade</th>
+                                            <th class="text-end pe-4">Select</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentListBody">
+                                        {% for student in students %}
+                                        <tr style="cursor: pointer;" class="student-row transition-hover" onclick="toggleCheckbox('check_{{ student.id }}')">
+                                            <td class="ps-4 py-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex justify-content-center align-items-center me-2 me-md-3" style="width: 35px; height: 35px;">
+                                                        <i class="bi bi-person-fill fs-5"></i>
+                                                    </div>
+                                                    <div class="lh-sm">
+                                                        <span class="fw-bold text-dark fs-6 searchable-name d-block">{{ student.first_name }} {{ student.last_name }}</span> 
+                                                        {% if student.khmer_name %}
+                                                            <span class="khmer-font text-muted fw-normal small d-none d-md-block">{{ student.khmer_name }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border me-1 mb-1">{{ student.ngo_id }}</span>
+                                                <br class="d-none d-md-block">
+                                                <span class="badge bg-light text-dark border">{{ student.grade_level }}</span>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <input class="form-check-input fs-4 border-secondary shadow-sm" style="cursor: pointer;" type="checkbox" name="student_ids" value="{{ student.id }}" id="check_{{ student.id }}" onclick="event.stopPropagation()">
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- STICKY ACTION FOOTER inside the card -->
+                        <div class="card-footer bg-white border-top p-3 d-flex flex-column justify-content-between align-items-center rounded-bottom-4 gap-3">
+                            <span class="small text-muted fw-bold text-center"><i class="bi bi-info-circle me-1"></i> Check all siblings or group members.</span>
+                            <button type="submit" class="btn btn-danger fw-bold px-4 py-2 rounded-pill shadow-sm w-100 transition-hover fs-5">
+                                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Save to Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 
+<!-- Custom UI Polish CSS -->
+<style>
+    .transition-hover {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .transition-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    
+    /* Prevent table rows from physically lifting, but give them a nice background highlight */
+    tr.transition-hover:hover {
+        transform: none;
+        box-shadow: none !important;
+        background-color: #f8f9fa !important;
+    }
+    
+    /* Clean input focus states */
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        background-color: #fff !important;
+    }
+    
+    /* Input Group styling */
+    .input-group .form-control:focus {
+        box-shadow: none;
+        border-color: #dee2e6;
+    }
+    .input-group:focus-within {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-radius: 0.375rem;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
     // Clicking the table row checks the box automatically (Fat-finger friendly!)
     function toggleCheckbox(checkboxId) {
         const cb = document.getElementById(checkboxId);
-        cb.checked = !cb.checked;
+        if(cb) {
+            cb.checked = !cb.checked;
+        }
     }
 
     // Fast Javascript Search Bar
@@ -123,5 +441,33 @@
             }
         });
     }
+
+    // Bootstrap Form Validation (Standard block to prevent empty submissions)
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        
+                        // Custom logic to ensure at least one checkbox is checked
+                        const checkboxes = form.querySelectorAll('input[name="student_ids"]:checked');
+                        if (checkboxes.length === 0) {
+                            alert("Please select at least one student from the list on the right.");
+                        }
+
+                        // Scroll to the first invalid element so the user sees it
+                        const firstInvalid = form.querySelector(':invalid');
+                        if(firstInvalid) {
+                            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
 </script>
 {% endblock %}

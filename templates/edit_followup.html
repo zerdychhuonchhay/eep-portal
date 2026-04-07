@@ -1,133 +1,142 @@
 {# 
    CS50 FINAL PROJECT CITATION:
-   The layout structure, tabbed interface, and dynamic HTML/CSS logic 
+   The layout structure, card-based interface, and dynamic HTML/CSS logic 
    in this template were developed and refined with the assistance of Google Gemini. 
    The core data architecture, database schema, and integration logic remain my own original work. 
 #}
 {% extends "layout.html" %}
 
-{% block title %}
-    Edit Follow-Up - {{ student.first_name }}
-{% endblock %}
+{% block title %}Edit Follow-Up - {{ student.first_name }} {{ student.last_name }}{% endblock %}
 
 {% block main %}
-<div class="container mt-4 mb-5 text-start" style="max-width: 900px;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Edit Follow-Up: <span class="text-danger">{{ student.first_name }} {{ student.last_name }}</span></h2>
-        <a href="/student/{{ student.id }}" class="btn btn-outline-secondary btn-sm shadow-sm"><i class="bi bi-arrow-left"></i> Back to Profile</a>
+<div class="container-fluid px-lg-4 pt-3 pb-5">
+    
+    <!-- HEADER SECTION -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Roster</a></li>
+                <li class="breadcrumb-item"><a href="/student/{{ student.id }}" class="text-decoration-none text-muted fw-bold">{{ student.first_name }}</a></li>
+                <li class="breadcrumb-item active fw-bold text-warning" aria-current="page">Edit Follow-Up</li>
+            </ol>
+        </nav>
+        <a href="/student/{{ student.id }}" class="btn btn-light border shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
     </div>
 
-    <div class="card shadow-sm border-0 border-top border-warning border-4">
-        <div class="card-body p-0">
-            <form action="/edit_followup/{{ followup.id }}" method="post">
+    <!-- PAGE TITLE -->
+    <div class="mb-4 text-center text-md-start">
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-pencil-square text-warning me-2"></i>Edit Social Work Follow-Up</h2>
+        <p class="text-muted small fw-bold">Updating case notes for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
+    </div>
+
+    <!-- THE FORM -->
+    <form action="/edit_followup/{{ followup.id }}" method="POST" class="needs-validation" novalidate>
+        <div class="row g-4">
+            
+            <!-- ========================================== -->
+            <!-- LEFT COLUMN: Logistics, Well-being, Edu    -->
+            <!-- ========================================== -->
+            <div class="col-lg-6">
                 
-                <!-- Custom Tab Navigation -->
-                <ul class="nav nav-tabs px-4 pt-3 bg-light" id="followupTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active fw-bold text-dark" id="logistics-tab" data-bs-toggle="tab" data-bs-target="#logistics" type="button" role="tab">1. Overview</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-dark" id="wellbeing-tab" data-bs-toggle="tab" data-bs-target="#wellbeing" type="button" role="tab">2. Well-being</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-dark" id="education-tab" data-bs-toggle="tab" data-bs-target="#education" type="button" role="tab">3. Education</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-danger" id="risk-tab" data-bs-toggle="tab" data-bs-target="#risk" type="button" role="tab">4. Risk Assessment</button>
-                    </li>
-                    <!-- NEW: SPONSOR LETTER TAB -->
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-bold text-success" id="sponsor-tab" data-bs-toggle="tab" data-bs-target="#sponsor" type="button" role="tab">5. Sponsor Letter</button>
-                    </li>
-                </ul>
-
-                <!-- Tab Content Areas -->
-                <div class="tab-content p-4" id="followupTabsContent">
-                    
-                    <!-- TAB 1: LOGISTICS -->
-                    <div class="tab-pane fade show active" id="logistics" role="tabpanel">
-                        <h5 class="text-primary border-bottom pb-2 mb-4"><i class="bi bi-calendar-check me-2"></i>Meeting Overview / <span class="khmer-font">ព័ត៌មានទូទៅនៃកិច្ចប្រជុំ</span></h5>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Date of Follow-Up / <span class="khmer-font">កាលបរិច្ឆេទ</span> *</label>
-                                <input type="date" class="form-control" name="followup_date" value="{{ followup.followup_date }}" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold small text-muted">Completed By (Staff Name) / <span class="khmer-font">អ្នកបំពេញសំណុំបែបបទ</span> *</label>
-                                <input type="text" class="form-control" name="completed_by" value="{{ followup.completed_by }}" required>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">Location / Method / <span class="khmer-font">ទីតាំង / វិធីសាស្ត្រ</span></label>
-                            <select class="form-select" name="location">
-                                <option value="Home Visit" {% if followup.location == 'Home Visit' %}selected{% endif %}>Home Visit / ចុះសួរសុខទុក្ខនៅផ្ទះ</option>
-                                <option value="School Visit" {% if followup.location == 'School Visit' %}selected{% endif %}>School Visit / ចុះជួបនៅសាលារៀន</option>
-                                <option value="Office Visit" {% if followup.location == 'Office Visit' %}selected{% endif %}>Office Visit / ជួបនៅការិយាល័យ</option>
-                                <option value="Phone Call" {% if followup.location == 'Phone Call' %}selected{% endif %}>Phone Call / តាមទូរស័ព្ទ</option>
-                                <option value="Sponsor Letter Update" {% if followup.location == 'Sponsor Letter Update' %}selected{% endif %}>Sponsor Letter Update / ធ្វើបច្ចុប្បន្នភាពសំបុត្រឧបត្ថម្ភ</option>
-                                <option value="Other" {% if followup.location == 'Other' %}selected{% endif %}>Other / ផ្សេងៗ</option>
-                            </select>
-                        </div>
+                <!-- CARD 1: Logistics -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-primary border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>1. Meeting Overview</h5>
                     </div>
-
-                    <!-- TAB 2: WELL-BEING & HOME -->
-                    <div class="tab-pane fade" id="wellbeing" role="tabpanel">
-                        <h5 class="text-primary border-bottom pb-2 mb-4"><i class="bi bi-heart-pulse me-2"></i>Physical & Home Environment / <span class="khmer-font">សុខភាព និងស្ថានភាពគ្រួសារ</span></h5>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Physical Health / <span class="khmer-font">សុខភាពរាងកាយ</span></label>
-                                <select class="form-select mb-2" name="physical_health">
-                                    <option value="" {% if not followup.physical_health %}selected{% endif %}>Not Evaluated</option>
-                                    <option value="Good" {% if followup.physical_health == 'Good' %}selected{% endif %}>Good / ល្អ</option>
-                                    <option value="Minor Issues" {% if followup.physical_health == 'Minor Issues' %}selected{% endif %}>Minor Issues / មានបញ្ហាតិចតួច</option>
-                                    <option value="Requires Medical Attention" {% if followup.physical_health == 'Requires Medical Attention' %}selected{% endif %}>Requires Medical Attention / ត្រូវការការព្យាបាល</option>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Date of Follow-Up *</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-date"></i></span>
+                                    <input type="date" class="form-control border-start-0 bg-light fw-bold" name="followup_date" value="{{ followup.followup_date }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Completed By *</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-person-badge"></i></span>
+                                    <input type="text" class="form-control border-start-0 bg-light fw-bold" name="completed_by" value="{{ followup.completed_by }}" required placeholder="e.g. Sreyroth">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Location / Method *</label>
+                                <select class="form-select bg-light fw-bold" name="location" required>
+                                    <option value="Home Visit" {% if followup.location == 'Home Visit' %}selected{% endif %}>🏠 Home Visit / ចុះសួរសុខទុក្ខនៅផ្ទះ</option>
+                                    <option value="School Visit" {% if followup.location == 'School Visit' %}selected{% endif %}>🏫 School Visit / ចុះជួបនៅសាលារៀន</option>
+                                    <option value="Office Visit" {% if followup.location == 'Office Visit' %}selected{% endif %}>🏢 Office Visit / ជួបនៅការិយាល័យ</option>
+                                    <option value="Phone Call" {% if followup.location == 'Phone Call' %}selected{% endif %}>📱 Phone Call / តាមទូរស័ព្ទ</option>
+                                    <option value="Sponsor Letter Update" {% if followup.location == 'Sponsor Letter Update' %}selected{% endif %}>✉️ Sponsor Letter Update / ធ្វើបច្ចុប្បន្នភាពសំបុត្រ</option>
+                                    <option value="Other" {% if followup.location == 'Other' %}selected{% endif %}>📦 Other / ផ្សេងៗ</option>
                                 </select>
                             </div>
-                            <div class="col-md-8">
-                                <label class="form-label fw-bold small text-muted">Health Details / <span class="khmer-font">ព័ត៌មានលម្អិតពីសុខភាព</span></label>
-                                <input type="text" class="form-control khmer-font" name="physical_health_detail" value="{{ followup.physical_health_detail if followup.physical_health_detail else '' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 2: Physical & Home Environment -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-info border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-heart-pulse me-2 text-info"></i>2. Physical & Home Environment</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Physical Health</label>
+                                <select class="form-select border-info" name="physical_health">
+                                    <option value="" {% if not followup.physical_health %}selected{% endif %}>Not Evaluated</option>
+                                    <option value="Good" class="text-success" {% if followup.physical_health == 'Good' %}selected{% endif %}>Good / ល្អ</option>
+                                    <option value="Minor Issues" class="text-warning" {% if followup.physical_health == 'Minor Issues' %}selected{% endif %}>Minor Issues / មានបញ្ហាតិចតួច</option>
+                                    <option value="Requires Medical Attention" class="text-danger" {% if followup.physical_health == 'Requires Medical Attention' %}selected{% endif %}>Requires Medical / ត្រូវការការព្យាបាល</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Health Details</label>
+                                <input type="text" class="form-control khmer-font" name="physical_health_detail" value="{{ followup.physical_health_detail if followup.physical_health_detail else '' }}" placeholder="If issues, explain here...">
                             </div>
                         </div>
 
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted">Social Interaction / <span class="khmer-font">ទំនាក់ទំនងសង្គម</span></label>
-                                <select class="form-select mb-2" name="social_interaction">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Social Interaction</label>
+                                <select class="form-select border-info" name="social_interaction">
                                     <option value="" {% if not followup.social_interaction %}selected{% endif %}>Not Evaluated</option>
                                     <option value="Active" {% if followup.social_interaction == 'Active' %}selected{% endif %}>Active / សកម្ម</option>
                                     <option value="Isolated/Withdrawn" {% if followup.social_interaction == 'Isolated/Withdrawn' %}selected{% endif %}>Isolated/Withdrawn / ឯកោ</option>
                                     <option value="Aggressive" {% if followup.social_interaction == 'Aggressive' %}selected{% endif %}>Aggressive / ឆេវឆាវ</option>
                                 </select>
                             </div>
-                            <div class="col-md-8">
-                                <label class="form-label fw-bold small text-muted">Social Details / <span class="khmer-font">ព័ត៌មានលម្អិតពីទំនាក់ទំនង</span></label>
-                                <input type="text" class="form-control khmer-font" name="social_interaction_detail" value="{{ followup.social_interaction_detail if followup.social_interaction_detail else '' }}">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Social Details</label>
+                                <input type="text" class="form-control khmer-font" name="social_interaction_detail" value="{{ followup.social_interaction_detail if followup.social_interaction_detail else '' }}" placeholder="Notes on friends, mood...">
                             </div>
                         </div>
 
-                        <div class="p-3 bg-light rounded border mb-3">
-                            <label class="form-label fw-bold small text-muted">Home Life Stability / <span class="khmer-font">ស្ថិរភាពគ្រួសារ</span></label>
+                        <div class="bg-light p-3 rounded-4 border border-secondary border-opacity-10">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Home Life Stability</label>
                             <select class="form-select mb-2" name="home_life">
                                 <option value="" {% if not followup.home_life %}selected{% endif %}>Not Evaluated</option>
                                 <option value="Stable" {% if followup.home_life == 'Stable' %}selected{% endif %}>Stable / មានស្ថិរភាព</option>
                                 <option value="Moderate Stress" {% if followup.home_life == 'Moderate Stress' %}selected{% endif %}>Moderate Stress / មានភាពតានតឹងមធ្យម</option>
-                                <option value="High Conflict/Unstable" {% if followup.home_life == 'High Conflict/Unstable' %}selected{% endif %}>High Conflict/Unstable / មានជម្លោះខ្ពស់/មិនមានស្ថិរភាព</option>
+                                <option value="High Conflict/Unstable" {% if followup.home_life == 'High Conflict/Unstable' %}selected{% endif %}>High Conflict/Unstable / ជម្លោះខ្ពស់</option>
                             </select>
-                            <textarea class="form-control khmer-font" name="home_life_detail" rows="2">{{ followup.home_life_detail if followup.home_life_detail else '' }}</textarea>
+                            <textarea class="form-control khmer-font mt-2" name="home_life_detail" rows="2" placeholder="Details about parents, income, housing situation...">{{ followup.home_life_detail if followup.home_life_detail else '' }}</textarea>
                         </div>
                     </div>
+                </div>
 
-                    <!-- TAB 3: EDUCATION -->
-                    <div class="tab-pane fade" id="education" role="tabpanel">
-                        <h5 class="text-primary border-bottom pb-2 mb-4"><i class="bi bi-book me-2"></i>Education Check-In / <span class="khmer-font">ការតាមដានការសិក្សា</span></h5>
-                        
-                        <div class="row mb-4">
+                <!-- CARD 3: Education Check-In -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-warning border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-book me-2 text-warning"></i>3. Education Check-In</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted">Learning Difficulties / <span class="khmer-font">ការលំបាកក្នុងការរៀនសូត្រ</span></label>
-                                <select class="form-select mb-2" name="learning_difficulties">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Learning Difficulties</label>
+                                <select class="form-select border-warning" name="learning_difficulties">
                                     <option value="" {% if not followup.learning_difficulties %}selected{% endif %}>Not Evaluated</option>
                                     <option value="None" {% if followup.learning_difficulties == 'None' %}selected{% endif %}>None / គ្មាន</option>
                                     <option value="Reading/Writing" {% if followup.learning_difficulties == 'Reading/Writing' %}selected{% endif %}>Reading/Writing / អំណាន/សំណេរ</option>
@@ -136,8 +145,8 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted">Behavior in Class / <span class="khmer-font">អាកប្បកិរិយាក្នុងថ្នាក់</span></label>
-                                <select class="form-select mb-2" name="behavior_in_class">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Behavior in Class</label>
+                                <select class="form-select border-warning" name="behavior_in_class">
                                     <option value="" {% if not followup.behavior_in_class %}selected{% endif %}>Not Evaluated</option>
                                     <option value="Attentive" {% if followup.behavior_in_class == 'Attentive' %}selected{% endif %}>Attentive / យកចិត្តទុកដាក់</option>
                                     <option value="Distracted" {% if followup.behavior_in_class == 'Distracted' %}selected{% endif %}>Distracted / មិនយកចិត្តទុកដាក់</option>
@@ -146,19 +155,19 @@
                             </div>
                         </div>
 
-                        <div class="row mb-4">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted">Peer Issues (Bullying) / <span class="khmer-font">បញ្ហាជាមួយមិត្តភក្តិ (ការសម្លុត)</span></label>
-                                <select class="form-select mb-2" name="peer_issues">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Peer Issues (Bullying)</label>
+                                <select class="form-select border-warning" name="peer_issues">
                                     <option value="" {% if not followup.peer_issues %}selected{% endif %}>Not Evaluated</option>
                                     <option value="No" {% if followup.peer_issues == 'No' %}selected{% endif %}>No / ទេ</option>
-                                    <option value="Yes - Victim" {% if followup.peer_issues == 'Yes - Victim' %}selected{% endif %}>Yes - Victim / បាទ/ចាស - ជាជនរងគ្រោះ</option>
-                                    <option value="Yes - Instigator" {% if followup.peer_issues == 'Yes - Instigator' %}selected{% endif %}>Yes - Instigator / បាទ/ចាស - ជាអ្នកបង្ក</option>
+                                    <option value="Yes - Victim" {% if followup.peer_issues == 'Yes - Victim' %}selected{% endif %}>Yes - Victim / ជាជនរងគ្រោះ</option>
+                                    <option value="Yes - Instigator" {% if followup.peer_issues == 'Yes - Instigator' %}selected{% endif %}>Yes - Instigator / ជាអ្នកបង្ក</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted">Tutoring Participation / <span class="khmer-font">ការចូលរួមរៀនគួរ</span></label>
-                                <select class="form-select mb-2" name="tutoring_participation">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Tutoring Participation</label>
+                                <select class="form-select border-warning" name="tutoring_participation">
                                     <option value="" {% if not followup.tutoring_participation %}selected{% endif %}>Not Evaluated</option>
                                     <option value="N/A" {% if followup.tutoring_participation == 'N/A' %}selected{% endif %}>N/A / មិនមាន</option>
                                     <option value="Attends Regularly" {% if followup.tutoring_participation == 'Attends Regularly' %}selected{% endif %}>Attends Regularly / ចូលរួមទៀងទាត់</option>
@@ -167,74 +176,75 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- TAB 4: RISK ASSESSMENT (CRITICAL) -->
-                    <div class="tab-pane fade" id="risk" role="tabpanel">
-                        <h5 class="text-danger border-bottom pb-2 mb-4"><i class="bi bi-shield-exclamation me-2"></i>Protection & Risk Assessment / <span class="khmer-font">ការវាយតម្លៃហានិភ័យ និងការការពារ</span></h5>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- RIGHT COLUMN: Risks, Sponsor, Notes        -->
+            <!-- ========================================== -->
+            <div class="col-lg-6">
+                
+                <!-- CARD 4: Protection & Risks -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-danger border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-shield-exclamation me-2 text-danger"></i>4. Protection & Risk Assessment</h5>
+                    </div>
+                    <div class="card-body p-4">
                         
-                        <!-- Checkbox Grid for Risk Factors -->
-                        <div class="mb-4 p-3 border border-danger rounded bg-danger bg-opacity-10">
-                            <label class="form-label fw-bold text-danger mb-3">Active Risk Factors (Check all that apply) / <span class="khmer-font">កត្តាហានិភ័យសកម្ម (ធីកទាំងអស់ដែលទាក់ទង)</span></label>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="risk_factors" value="Child Labor" id="risk1" {% if followup.risk_factors and 'Child Labor' in followup.risk_factors %}checked{% endif %}>
-                                        <label class="form-check-label small" for="risk1">Child Labor / <span class="khmer-font">ពលកម្មកុមារ</span></label>
+                        <div class="mb-4 p-3 border border-danger border-opacity-25 rounded-4 bg-danger bg-opacity-10">
+                            <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Active Risk Factors (Check all that apply)</label>
+                            <div class="row g-2">
+                                <div class="col-sm-6">
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Child Labor" id="risk1" {% if followup.risk_factors and 'Child Labor' in followup.risk_factors %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold w-100" for="risk1" style="cursor:pointer;">Child Labor</label>
                                     </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="risk_factors" value="Domestic Violence" id="risk2" {% if followup.risk_factors and 'Domestic Violence' in followup.risk_factors %}checked{% endif %}>
-                                        <label class="form-check-label small" for="risk2">Domestic Violence / <span class="khmer-font">អំពើហិង្សាក្នុងគ្រួសារ</span></label>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Domestic Violence" id="risk2" {% if followup.risk_factors and 'Domestic Violence' in followup.risk_factors %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold w-100" for="risk2" style="cursor:pointer;">Domestic Violence</label>
                                     </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="risk_factors" value="Substance Abuse in Home" id="risk3" {% if followup.risk_factors and 'Substance Abuse' in followup.risk_factors %}checked{% endif %}>
-                                        <label class="form-check-label small" for="risk3">Substance Abuse in Home / <span class="khmer-font">ការប្រើប្រាស់គ្រឿងញៀនក្នុងផ្ទះ</span></label>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Substance Abuse in Home" id="risk3" {% if followup.risk_factors and 'Substance Abuse' in followup.risk_factors %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold w-100" for="risk3" style="cursor:pointer;">Substance Abuse</label>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="risk_factors" value="Eviction Threat" id="risk4" {% if followup.risk_factors and 'Eviction Threat' in followup.risk_factors %}checked{% endif %}>
-                                        <label class="form-check-label small" for="risk4">Eviction Threat / <span class="khmer-font">ការគំរាមកំហែងបណ្តេញចេញ</span></label>
+                                <div class="col-sm-6">
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Eviction Threat" id="risk4" {% if followup.risk_factors and 'Eviction Threat' in followup.risk_factors %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold w-100" for="risk4" style="cursor:pointer;">Eviction Threat</label>
                                     </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="risk_factors" value="Severe Malnutrition" id="risk5" {% if followup.risk_factors and 'Severe Malnutrition' in followup.risk_factors %}checked{% endif %}>
-                                        <label class="form-check-label small" for="risk5">Severe Malnutrition / <span class="khmer-font">កង្វះអាហារូបត្ថម្ភធ្ងន់ធ្ងរ</span></label>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="Severe Malnutrition" id="risk5" {% if followup.risk_factors and 'Severe Malnutrition' in followup.risk_factors %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold w-100" for="risk5" style="cursor:pointer;">Malnutrition</label>
                                     </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" name="risk_factors" value="School Dropout Risk" id="risk6" {% if followup.risk_factors and 'School Dropout Risk' in followup.risk_factors %}checked{% endif %}>
-                                        <label class="form-check-label small" for="risk6">High Dropout Risk / <span class="khmer-font">ហានិភ័យខ្ពស់នៃការបោះបង់ការសិក្សា</span></label>
+                                    <div class="form-check bg-white border rounded p-2 ps-4 shadow-sm mb-2 transition-hover">
+                                        <input class="form-check-input border-danger" type="checkbox" name="risk_factors" value="School Dropout Risk" id="risk6" {% if followup.risk_factors and 'School Dropout Risk' in followup.risk_factors %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold w-100" for="risk6" style="cursor:pointer;">High Dropout Risk</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-12 mb-3">
-                                <label class="form-label fw-bold small text-danger">Child Protection Concerns? / <span class="khmer-font">បញ្ហាសុវត្ថិភាពកុមារ?</span></label>
-                                <input type="text" class="form-control border-danger khmer-font" name="child_protection_concerns" value="{{ followup.child_protection_concerns if followup.child_protection_concerns else '' }}" placeholder="Type 'None' or describe urgent concerns here...">
-                                <small class="text-muted mt-1 d-block">⚠️ Note: Entering a concern here will automatically flag this student on the Director's Dashboard.</small>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted">General Notes & Action Plan / <span class="khmer-font">កំណត់ចំណាំទូទៅ និងផែនការសកម្មភាព</span></label>
-                            <textarea class="form-control khmer-font" name="general_notes" rows="4">{{ followup.general_notes if followup.general_notes else '' }}</textarea>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-danger text-uppercase">Child Protection Concerns?</label>
+                            <input type="text" class="form-control border-danger border-2 khmer-font" name="child_protection_concerns" value="{{ followup.child_protection_concerns if followup.child_protection_concerns else '' }}" placeholder="Type 'None' or describe urgent concerns here...">
+                            <small class="text-muted mt-2 d-block fw-bold"><i class="bi bi-exclamation-triangle text-warning me-1"></i> Note: Entering a concern here automatically flags the Director's Dashboard.</small>
                         </div>
                     </div>
-                    
-                    <!-- NEW TAB 5: SPONSOR LETTER CHECKLIST -->
-                    <div class="tab-pane fade" id="sponsor" role="tabpanel">
-                        <h5 class="text-success border-bottom pb-2 mb-4"><i class="bi bi-envelope-check me-2"></i>Sponsor Letter Workflow / <span class="khmer-font">កិច្ចការសំបុត្រអ្នកឧបត្ថម្ភ</span></h5>
-                        
-                        <div class="alert alert-success bg-success bg-opacity-10 border-success mb-4 d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill me-3 fs-4 text-success"></i>
-                            <span class="small text-dark">Track the quarterly sponsor letter progress here. Check off the boxes as you complete each step for this student.</span>
-                        </div>
+                </div>
 
-                        <!-- Quarter & Year Selection -->
-                        <div class="row mb-4 bg-white p-3 rounded border shadow-sm mx-1">
+                <!-- CARD 5: Sponsor Letters -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-success border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-envelope-check me-2 text-success"></i>5. Sponsor Letter Workflow</h5>
+                    </div>
+                    <div class="card-body p-4 bg-light bg-opacity-50">
+                        
+                        <div class="row g-3 mb-4 bg-white p-3 rounded-4 border shadow-sm mx-0">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-primary">Letter Quarter / <span class="khmer-font">ត្រីមាស</span> *</label>
-                                <select class="form-select border-primary" name="letter_quarter">
+                                <label class="form-label fw-bold small text-primary text-uppercase">Letter Quarter *</label>
+                                <select class="form-select border-primary fw-bold" name="letter_quarter">
                                     <option value="" disabled {% if not followup.letter_quarter %}selected{% endif %}>Select Quarter...</option>
                                     <option value="Q1" {% if followup.letter_quarter == 'Q1' %}selected{% endif %}>Q1 (Jan - Mar)</option>
                                     <option value="Q2" {% if followup.letter_quarter == 'Q2' %}selected{% endif %}>Q2 (Apr - Jun)</option>
@@ -242,71 +252,123 @@
                                     <option value="Q4" {% if followup.letter_quarter == 'Q4' %}selected{% endif %}>Q4 (Oct - Dec)</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mt-3 mt-md-0">
-                                <label class="form-label fw-bold small text-primary">Letter Year / <span class="khmer-font">ឆ្នាំ</span> *</label>
-                                <input type="number" class="form-control border-primary" name="letter_year" value="{{ followup.letter_year if followup.letter_year else '' }}" min="2020" max="2100">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-primary text-uppercase">Letter Year *</label>
+                                <input type="number" class="form-control border-primary fw-bold" name="letter_year" value="{{ followup.letter_year if followup.letter_year else '' }}" min="2020" max="2100">
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-12 mb-4">
-                                <div class="form-check mb-3 p-3 border rounded bg-white shadow-sm d-flex align-items-center">
-                                    <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_given" id="task1" value="Yes" {% if followup.letter_given == 'Yes' %}checked{% endif %}>
-                                    <label class="form-check-label fw-bold w-100" for="task1" style="cursor: pointer;">
-                                        1. Letter given to student to write / <span class="khmer-font text-muted fw-normal">បានផ្តល់សំបុត្រឱ្យសិស្សសរសេរ</span>
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-3 p-3 border rounded bg-white shadow-sm d-flex align-items-center">
-                                    <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_translated" id="task2" value="Yes" {% if followup.letter_translated == 'Yes' %}checked{% endif %}>
-                                    <label class="form-check-label fw-bold w-100" for="task2" style="cursor: pointer;">
-                                        2. Letter translated to English / <span class="khmer-font text-muted fw-normal">បានបកប្រែសំបុត្រជាភាសាអង់គ្លេស</span>
-                                    </label>
-                                </div>
+                        <div class="mb-4">
+                            <div class="form-check mb-3 p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_given" id="task1" value="Yes" {% if followup.letter_given == 'Yes' %}checked{% endif %}>
+                                <label class="form-check-label fw-bold w-100" for="task1" style="cursor: pointer;">
+                                    1. Letter given to student to write
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3 p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_translated" id="task2" value="Yes" {% if followup.letter_translated == 'Yes' %}checked{% endif %}>
+                                <label class="form-check-label fw-bold w-100" for="task2" style="cursor: pointer;">
+                                    2. Letter translated to English
+                                </label>
+                            </div>
 
-                                <div class="form-check mb-3 p-3 border rounded bg-white shadow-sm d-flex align-items-center">
-                                    <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_scanned" id="task3" value="Yes" {% if followup.letter_scanned == 'Yes' %}checked{% endif %}>
-                                    <label class="form-check-label fw-bold w-100" for="task3" style="cursor: pointer;">
-                                        3. Letter scanned and ready / <span class="khmer-font text-muted fw-normal">បានស្កេន និងរៀបចំរួចរាល់</span>
-                                    </label>
-                                </div>
+                            <div class="form-check mb-3 p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_scanned" id="task3" value="Yes" {% if followup.letter_scanned == 'Yes' %}checked{% endif %}>
+                                <label class="form-check-label fw-bold w-100" for="task3" style="cursor: pointer;">
+                                    3. Letter scanned and ready
+                                </label>
+                            </div>
 
-                                <div class="form-check p-3 border rounded bg-white shadow-sm d-flex align-items-center border-start border-success border-4">
-                                    <input class="form-check-input ms-1 me-3 fs-5" type="checkbox" name="letter_sent" id="task4" value="Yes" {% if followup.letter_sent == 'Yes' %}checked{% endif %}>
-                                    <label class="form-check-label fw-bold text-success w-100" for="task4" style="cursor: pointer;">
-                                        4. Sent to Sponsor Coordinator / <span class="khmer-font text-muted fw-normal">បានផ្ញើជូនអ្នកសម្របសម្រួល</span>
-                                    </label>
-                                </div>
+                            <div class="form-check p-3 border rounded-4 bg-white shadow-sm d-flex align-items-center border-start border-success border-4 transition-hover">
+                                <input class="form-check-input ms-1 me-3 fs-5 border-success" type="checkbox" name="letter_sent" id="task4" value="Yes" {% if followup.letter_sent == 'Yes' %}checked{% endif %}>
+                                <label class="form-check-label fw-bold text-success w-100" for="task4" style="cursor: pointer;">
+                                    4. Sent to Sponsor Coordinator
+                                </label>
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-12">
-                                <label class="form-label fw-bold small text-muted">Additional Letter Notes / <span class="khmer-font">កំណត់ចំណាំបន្ថែម</span></label>
-                                <textarea class="form-control khmer-font" name="letter_notes" rows="2" placeholder="e.g., Student was sick, letter delayed...">{{ followup.letter_notes if followup.letter_notes else '' }}</textarea>
-                            </div>
+                        <div>
+                            <label class="form-label fw-bold small text-muted text-uppercase">Additional Letter Notes</label>
+                            <textarea class="form-control khmer-font" name="letter_notes" rows="2" placeholder="e.g., Student was sick, letter delayed...">{{ followup.letter_notes if followup.letter_notes else '' }}</textarea>
                         </div>
                     </div>
+                </div>
 
+                <!-- CARD 6: General Notes & Action Plan -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-secondary border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-journal-text me-2 text-secondary"></i>6. General Notes</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Case Notes & Action Plan</label>
+                        <textarea class="form-control khmer-font" name="general_notes" rows="5" placeholder="What are the next steps? What support is needed?">{{ followup.general_notes if followup.general_notes else '' }}</textarea>
+                    </div>
                 </div>
-                
-                <div class="card-footer bg-light border-top text-end py-3 px-4 mt-2">
-                    <button type="submit" class="btn btn-warning btn-lg px-5 shadow-sm fw-bold"><i class="bi bi-save me-1"></i> Update Report</button>
+
+                <!-- STICKY ACTION FOOTER (Docked to the bottom of the right column) -->
+                <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border mt-4 mb-3 sticky-bottom" style="z-index: 1000; bottom: 20px;">
+                    <a href="/student/{{ student.id }}" class="btn btn-light border fw-bold px-4 rounded-pill d-none d-md-inline-block">Cancel</a>
+                    <button type="submit" class="btn btn-warning fw-bold px-5 py-2 rounded-pill shadow-sm ms-auto w-100 w-md-auto fs-5 transition-hover text-dark">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Update Follow-Up
+                    </button>
                 </div>
-            </form>
+
+            </div>
         </div>
-    </div>
+    </form>
 </div>
 
-<!-- Simple script to ensure tabs work smoothly -->
+<!-- Custom UI Polish CSS -->
+<style>
+    .transition-hover {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .transition-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    
+    /* Clean input focus states */
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        background-color: #fff !important;
+    }
+    
+    /* Input Group styling */
+    .input-group .form-control:focus {
+        box-shadow: none;
+        border-color: #dee2e6;
+    }
+    .input-group:focus-within {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-radius: 0.375rem;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    var triggerTabList = [].slice.call(document.querySelectorAll('#followupTabs button'))
-    triggerTabList.forEach(function (triggerEl) {
-      var tabCompiler = new bootstrap.Tab(triggerEl)
-      triggerEl.addEventListener('click', function (event) {
-        event.preventDefault()
-        tabCompiler.show()
-      })
-    })
+    // Bootstrap Form Validation (Standard block to prevent empty submissions)
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        // Scroll to the first invalid element so the user sees it
+                        const firstInvalid = form.querySelector(':invalid');
+                        if(firstInvalid) {
+                            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
 </script>
 {% endblock %}
