@@ -18,7 +18,7 @@ from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from helpers import login_required, admin_required
+from helpers import login_required, admin_required, calculate_gpa, get_subject_grade_data
 
 # 1. Turn on the flask application
 app = Flask(__name__)
@@ -526,39 +526,52 @@ def delete_task(task_id):
 @app.route("/academics")
 @login_required
 def academics():
-    """Show Master Gradebook for all students"""
-    active_students = db.execute("SELECT id, ngo_id, first_name, last_name FROM students WHERE status = 'Active' ORDER BY first_name")
-
-    reports = db.execute("""
-        SELECT r.id as report_id, r.month, r.academic_year, r.semester, r.overall_average, r.class_rank, r.grade_level as historical_grade, r.school_name,
-               s.id as student_id, s.ngo_id, s.first_name, s.last_name, s.grade_level as current_grade
+    """Master Gradebook - Shows all students and all grades dynamically"""
+    
+    # 1. Fetch all reports with the student's identity attached
+    academic_records_raw = db.execute("""
+        SELECT r.*, s.first_name, s.last_name, s.ngo_id, s.khmer_name, s.gender, s.current_school, s.grade_level as student_grade
         FROM monthly_reports r
         JOIN students s ON r.student_id = s.id
         WHERE s.status = 'Active'
-        ORDER BY r.id DESC
+        ORDER BY r.academic_year DESC, r.id DESC
     """)
 
-    all_grades = db.execute("""
-        SELECT g.report_id, COALESCE(s.name, g.custom_subject_name) as subject_name, g.score, g.max_score
+    # 2. Fetch ALL grades and securely COALESCE the subject name
+    raw_grades = db.execute("""
+        SELECT g.*, COALESCE(subj.name, g.custom_subject_name) as subject_name
         FROM grades g
-        LEFT JOIN subjects s ON g.subject_id = s.id
-        ORDER BY s.sort_order ASC, subject_name ASC
+        LEFT JOIN subjects subj ON g.subject_id = subj.id
     """)
 
-    academic_records = []
-    for report in reports:
-        report_grades = []
-        for grade in all_grades:
-            if grade["report_id"] == report["report_id"]:
-                report_grades.append({
-                    "name": grade["subject_name"],
-                    "score": grade["score"],
-                    "max_score": grade["max_score"]
-                })
-        report["subjects"] = report_grades
-        academic_records.append(report)
+    # 3. Group the grades by report ID and use the Helper to calculate A-F badges!
+    grades_by_report = {}
+    for g in raw_grades:
+        # Pass the score and max_score to your central math engine in helpers.py
+        letter, box, text, badge = get_subject_grade_data(g['score'], g['max_score'])
+        
+        g['grade_letter'] = letter
+        g['box_class'] = box
+        g['text_class'] = text
+        g['badge_class'] = badge
 
-    return render_template("academics.html", academic_records=academic_records, active_students=active_students)
+        rep_id = g['report_id']
+        if rep_id not in grades_by_report:
+            grades_by_report[rep_id] = []
+        grades_by_report[rep_id].append(g)
+
+    # 4. Attach the grouped subjects into the main records list
+    for record in academic_records_raw:
+        record['subjects'] = grades_by_report.get(record['id'], [])
+        
+        # Fallback to student's main grade level if the report doesn't specify one
+        if not record['grade_level']:
+            record['grade_level'] = record['student_grade']
+
+    # 5. Fetch active students for the Quick Add modal
+    active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name")
+
+    return render_template("academics.html", academic_records=academic_records_raw, active_students=active_students)
 
 @app.template_filter('get_badge')
 def get_badge_filter(score, max_score):
@@ -597,6 +610,7 @@ def add_report(student_id):
         if not month or not academic_year:
             return render_template("apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
 
+        # Prevent duplicate reports for the same month/year
         existing_report = db.execute("""
             SELECT id FROM monthly_reports
             WHERE student_id = ? AND month = ? AND academic_year = ?
@@ -605,19 +619,17 @@ def add_report(student_id):
         if existing_report:
             return render_template("apology.html", message=f"A report for {month} {academic_year} already exists! Please use your browser's BACK arrow to return to the form and change the month.")
 
+        # 1. Handle File Upload
         file = request.files.get('scanned_document')
-        scanned_filename = None
-        if file and file.filename != '' and allowed_file(file.filename):
-            original_name = secure_filename(file.filename)
-            scanned_filename = f"report_{student_id}_{int(time.time())}_{original_name}"
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], scanned_filename))
+        scanned_filename, _ = handle_file_upload(file, student_id, "report", app.config['UPLOAD_FOLDER'])
 
+        # 2. Create the core report record
         report_id = db.execute("""
             INSERT INTO monthly_reports (student_id, month, academic_year, semester, class_rank, teacher_comment, attendance_days, scanned_document, grade_level, school_name)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, student_id, month, academic_year, semester, class_rank, teacher_comment, attendance_days, scanned_filename, grade_level, school_name)
 
-        # Subject Logic
+        # 3. Process Standard Subjects
         subjects = db.execute("SELECT * FROM subjects")
         calculated_total = 0.0
         calculated_max = 0.0
@@ -640,9 +652,9 @@ def add_report(student_id):
                         missing_max = True
                     has_numeric = True
                 except ValueError:
-                    pass
+                    pass # Ignore text grades like "Pass" for math calculations
 
-        # Wildcard Row Logic
+        # 4. Process The Wildcard (Custom) Subject
         custom_name = request.form.get("custom_subject_name")
         custom_score = request.form.get("custom_score")
         custom_max = request.form.get("custom_max_score")
@@ -660,22 +672,10 @@ def add_report(student_id):
             except ValueError:
                 pass
 
-        # Calculate Logic
-        if has_numeric and calculated_max > 0 and not missing_max:
-            calculated_avg = round((calculated_total / calculated_max) * 100, 2)
-        else:
-            calculated_avg = None
+        # 5. 🚨 USE THE HELPER TO DO THE HEAVY MATH 🚨
+        calculated_avg, calculated_grade = calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max)
 
-        if calculated_avg is not None:
-            if calculated_avg >= 90: calculated_grade = "A"
-            elif calculated_avg >= 80: calculated_grade = "B"
-            elif calculated_avg >= 70: calculated_grade = "C"
-            elif calculated_avg >= 60: calculated_grade = "D"
-            elif calculated_avg >= 50: calculated_grade = "E"
-            else: calculated_grade = "F"
-        else:
-            calculated_grade = "N/A"
-
+        # 6. Apply Manual Overrides (If user typed them in)
         manual_total = request.form.get("manual_total_score")
         manual_average = request.form.get("manual_average")
         manual_grade = request.form.get("manual_grade")
@@ -692,6 +692,7 @@ def add_report(student_id):
 
         final_grade = str(manual_grade).strip() if manual_grade and str(manual_grade).strip() != "" else calculated_grade
 
+        # 7. Finalize the Database Record
         db.execute("""
             UPDATE monthly_reports
             SET total_score = ?, overall_average = ?, overall_grade = ?
@@ -702,6 +703,7 @@ def add_report(student_id):
         flash("Academic report successfully recorded!", "success")
         return redirect(source_url) if source_url else redirect(f"/student/{student_id}")
 
+    # GET REQUEST: Load the form
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
     return render_template("add_report.html", student=student, subjects=subjects)
@@ -710,6 +712,7 @@ def add_report(student_id):
 @app.route("/edit_report/<int:report_id>", methods=["GET", "POST"])
 @login_required
 def edit_report(report_id):
+    """Edit an existing monthly academic report"""
     report_data = db.execute("SELECT * FROM monthly_reports WHERE id = ?", report_id)
     if len(report_data) != 1:
         return render_template("apology.html", message="Report not found")
@@ -733,6 +736,7 @@ def edit_report(report_id):
         if not month or not academic_year:
             return render_template("apology.html", message="Month and Academic Year are required. Please use your browser's BACK arrow to return without losing data.")
 
+        # Prevent renaming this report to a month/year that already exists
         existing_report = db.execute("""
             SELECT id FROM monthly_reports
             WHERE student_id = ? AND month = ? AND academic_year = ? AND id != ?
@@ -741,20 +745,21 @@ def edit_report(report_id):
         if existing_report:
             return render_template("apology.html", message="Another report for this month and year already exists. Please use your browser's BACK arrow to return and change the month.")
 
+        # 1. Handle File Upload (Only if they provide a new one)
         file = request.files.get('scanned_document')
-        if file and file.filename != '' and allowed_file(file.filename):
-            original_name = secure_filename(file.filename)
-            scanned_filename = f"report_{student_id}_{int(time.time())}_{original_name}"
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], scanned_filename))
-            db.execute("UPDATE monthly_reports SET scanned_document = ? WHERE id = ?", scanned_filename, report_id)
+        if file and file.filename != '':
+            scanned_filename, _ = handle_file_upload(file, student_id, "report", app.config['UPLOAD_FOLDER'])
+            if scanned_filename:
+                db.execute("UPDATE monthly_reports SET scanned_document = ? WHERE id = ?", scanned_filename, report_id)
 
+        # 2. Update Core Report Fields
         db.execute("""
             UPDATE monthly_reports
             SET month = ?, academic_year = ?, semester = ?, attendance_days = ?, teacher_comment = ?, class_rank = ?, grade_level = ?, school_name = ?
             WHERE id = ?
         """, month, academic_year, semester, attendance_days, teacher_comment, class_rank, grade_level, school_name, report_id)
 
-        # 1. Process Standard Subjects
+        # 3. Process Standard Subjects (Update, Insert, or Delete)
         subjects = db.execute("SELECT * FROM subjects")
         for subject in subjects:
             sub_id = subject['id']
@@ -770,7 +775,7 @@ def edit_report(report_id):
             elif existing_grade:
                 db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
 
-        # 2. Process The Wildcard Subject
+        # 4. Process The Wildcard Subject
         custom_name = request.form.get("custom_subject_name")
         custom_score = request.form.get("custom_score")
         custom_max = request.form.get("custom_max_score")
@@ -786,7 +791,7 @@ def edit_report(report_id):
         elif existing_custom:
             db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = 0", report_id)
 
-        # 3. Calculate Math
+        # 5. Extract all grades again to recalculate Math
         current_grades = db.execute("SELECT score, max_score FROM grades WHERE report_id = ?", report_id)
         calculated_total = 0.0
         calculated_max = 0.0
@@ -804,21 +809,10 @@ def edit_report(report_id):
             except ValueError:
                 pass
 
-        if has_numeric and calculated_max > 0 and not missing_max:
-            calculated_avg = round((calculated_total / calculated_max) * 100, 2)
-        else:
-            calculated_avg = None
+        # 6. 🚨 USE THE HELPER TO DO THE HEAVY MATH 🚨
+        calculated_avg, calculated_grade = calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max)
 
-        if calculated_avg is not None:
-            if calculated_avg >= 90: calculated_grade = "A"
-            elif calculated_avg >= 80: calculated_grade = "B"
-            elif calculated_avg >= 70: calculated_grade = "C"
-            elif calculated_avg >= 60: calculated_grade = "D"
-            elif calculated_avg >= 50: calculated_grade = "E"
-            else: calculated_grade = "F"
-        else:
-            calculated_grade = "N/A"
-
+        # 7. Apply Manual Overrides
         manual_total = request.form.get("manual_total_score")
         manual_average = request.form.get("manual_average")
         manual_grade = request.form.get("manual_grade")
@@ -835,15 +829,19 @@ def edit_report(report_id):
 
         final_grade = str(manual_grade).strip() if manual_grade and str(manual_grade).strip() != "" else calculated_grade
 
+        # 8. Finalize the Database Record
         db.execute("UPDATE monthly_reports SET total_score = ?, overall_average = ?, overall_grade = ? WHERE id = ?", final_total, final_avg, final_grade, report_id)
 
         log_action(f"Edited academic report for Student ID: {student_id}")
         flash("Academic report successfully updated!", "success")
         return redirect(source_url) if source_url else redirect(f"/student/{student_id}")
 
+    # GET REQUEST: Load the form
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
     grades = db.execute("SELECT * FROM grades WHERE report_id = ?", report_id)
+    
+    # Pack existing grades into a dictionary for Jinja to easily map to input boxes
     existing_grades = {g['subject_id']: g for g in grades}
 
     return render_template("edit_report.html", student=student, report=report, subjects=subjects, existing_grades=existing_grades)
@@ -1256,45 +1254,13 @@ def student_profile(id):
         """, report["id"])
         
         for sub in subjects:
-            score_val = sub['score']
-            grade_letter = ""
-            badge_class = "bg-secondary"
-            text_class = "text-dark"
+            # 🚨 USE HELPER: One line replaces 25 lines of messy if/else math!
+            letter, box, text, badge = get_subject_grade_data(sub['score'], sub['max_score'])
             
-            if score_val and score_val != '-':
-                try:
-                    num_score = float(score_val)
-                    max_score = float(sub['max_score']) if sub['max_score'] else 100.0
-                    avg = (num_score / max_score) * 100
-                    
-                    if avg >= 90:
-                        grade_letter, badge_class, text_class = "A", "bg-success", "text-success"
-                    elif avg >= 80:
-                        grade_letter, badge_class, text_class = "B", "bg-success", "text-success"
-                    elif avg >= 70:
-                        grade_letter, badge_class, text_class = "C", "bg-warning text-dark", "text-warning text-darken"
-                    elif avg >= 50:
-                        grade_letter, badge_class, text_class = "D", "bg-warning text-dark", "text-warning text-darken"
-                    else:
-                        grade_letter, badge_class, text_class = "F", "bg-danger", "text-danger"
-                        
-                except ValueError:
-                    upper_score = str(score_val).upper()
-                    if upper_score in ['A', 'A+', 'A-', 'B', 'B+', 'B-', 'PASS', 'GOOD', 'EXCELLENT']:
-                        badge_class, text_class = "bg-success", "text-success"
-                        grade_letter = upper_score
-                    elif upper_score in ['C', 'C+', 'C-', 'AVERAGE', 'FAIR']:
-                        badge_class, text_class = "bg-warning text-dark", "text-warning text-darken"
-                        grade_letter = upper_score
-                    elif upper_score in ['D', 'D+', 'D-', 'E', 'F', 'FAIL', 'POOR']:
-                        badge_class, text_class = "bg-danger", "text-danger"
-                        grade_letter = upper_score
-                    else:
-                        grade_letter = str(score_val) 
-
-            sub['grade_letter'] = grade_letter
-            sub['badge_class'] = badge_class
-            sub['text_class'] = text_class
+            sub['grade_letter'] = letter
+            sub['box_class'] = box
+            sub['text_class'] = text
+            sub['badge_class'] = badge
 
         report["subjects"] = subjects
 
