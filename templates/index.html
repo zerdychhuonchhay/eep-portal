@@ -30,9 +30,9 @@
 
         <!-- Native-Style Floating Search Bar -->
         <div id="mobileSearchContainer" class="position-relative">
-            <div class="bg-white bg-opacity-25 rounded-pill p-1 d-flex align-items-center border border-white border-opacity-25 backdrop-blur">
-                <i class="bi bi-search text-white ms-3 me-2 fs-6 opacity-75"></i>
-                <input type="text" id="mobileSearchInput" class="form-control border-0 shadow-none bg-transparent text-white fw-bold custom-placeholder" placeholder="Find a student..." onkeyup="performSearch('mobileSearchInput', 'mobileSearchResults')" autocomplete="off">
+            <div class="bg-white bg-opacity-25 rounded-pill p-2 mt-1 shadow-sm d-flex align-items-center border border-white border-opacity-25 backdrop-blur">
+                <i class="bi bi-search text-white ms-3 me-2 fs-5 opacity-75"></i>
+                <input type="text" id="mobileSearchInput" class="form-control form-control-lg border-0 shadow-none bg-transparent text-white fw-bold custom-placeholder" style="font-size: 1.05rem;" placeholder="Search or ask something..." onkeyup="performSearch('mobileSearchInput', 'mobileSearchResults')" onfocus="performSearch('mobileSearchInput', 'mobileSearchResults')" autocomplete="off">
             </div>
             <!-- Live Search Dropdown -->
             <div id="mobileSearchResults" class="bg-white rounded-4 shadow-lg border mt-2 d-none overflow-hidden position-absolute w-100" style="max-height: 300px; overflow-y: auto; z-index: 1050;"></div>
@@ -135,10 +135,10 @@
                 <!-- LIVE Universal Search Bar (PC) -->
                 <div id="pcSearchContainer" class="position-relative z-index-10">
                     <div class="bg-white rounded-pill shadow-sm p-2 d-flex align-items-center border border-secondary border-opacity-10 transition-hover">
-                        <i class="bi bi-search text-primary ms-3 me-2 fs-5 opacity-75"></i>
-                        <input type="text" id="pcSearchInput" class="form-control border-0 shadow-none bg-transparent fw-bold" placeholder="Jump to a student..." onkeyup="performSearch('pcSearchInput', 'pcSearchResults')" autocomplete="off">
-                        <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm me-1" style="width: 34px; height: 34px;">
-                            <i class="bi bi-lightning-charge-fill"></i>
+                        <i class="bi bi-search text-primary ms-3 me-3 fs-4 opacity-75"></i>
+                        <input type="text" id="pcSearchInput" class="form-control form-control-lg border-0 shadow-none bg-transparent fw-bold" placeholder="Search or ask something..." onkeyup="performSearch('pcSearchInput', 'pcSearchResults')" onfocus="performSearch('pcSearchInput', 'pcSearchResults')" autocomplete="off">
+                        <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm me-1" style="width: 40px; height: 40px;">
+                            <i class="bi bi-lightning-charge-fill fs-5"></i>
                         </div>
                     </div>
                     <!-- Live Search Dropdown -->
@@ -418,7 +418,25 @@
         const resultsBox = document.getElementById(resultsId);
         
         if (query.length < 1) {
-            resultsBox.classList.add('d-none');
+            // Smart "Empty State" - Prepare for AI Phase
+            resultsBox.innerHTML = `
+                <div class="list-group list-group-flush p-2">
+                    <h6 class="dropdown-header text-primary fw-bold small text-uppercase mb-1">Suggested Queries</h6>
+                    <a href="/dashboard" class="list-group-item list-group-item-action border-0 rounded-3 mb-1 py-2 text-dark fw-bold transition-hover">
+                        <i class="bi bi-exclamation-circle-fill text-danger me-2"></i> Who has priority alerts?
+                    </a>
+                    <a href="/academics" class="list-group-item list-group-item-action border-0 rounded-3 mb-1 py-2 text-dark fw-bold transition-hover">
+                        <i class="bi bi-mortarboard-fill text-success me-2"></i> Show master gradebook
+                    </a>
+                    <a href="/dashboard" class="list-group-item list-group-item-action border-0 rounded-3 mb-1 py-2 text-dark fw-bold transition-hover">
+                        <i class="bi bi-envelope-fill text-info me-2"></i> Who needs a sponsor letter?
+                    </a>
+                    <div class="bg-primary bg-opacity-10 p-3 mt-2 rounded-4 text-center border border-primary border-opacity-25">
+                        <i class="bi bi-stars text-primary fs-4 d-block mb-1"></i>
+                        <small class="text-primary fw-bold d-block">AI Assistant (Coming in Phase 13)</small>
+                    </div>
+                </div>`;
+            resultsBox.classList.remove('d-none');
             return;
         }
 

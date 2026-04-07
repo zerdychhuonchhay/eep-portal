@@ -13,18 +13,21 @@ import io
 import csv
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from helpers import login_required, admin_required, calculate_gpa, handle_file_upload, get_subject_grade_data
+from helpers import login_required, admin_required
 
 # 1. Turn on the flask application
 app = Flask(__name__)
 
 # SECURITY: Flask needs a secret key to use 'session' memory
 app.secret_key = "super_secret_eep_key"
+
+# PWA LOGOUT FIX: Make sessions last 30 days instead of expiring when app closes
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 # --- FILE UPLOAD CONFIGURATION ---
 UPLOAD_FOLDER = 'static/uploads/documents'
@@ -1233,14 +1236,6 @@ def student_profile(id):
     for g in raw_grades:
         if g['report_id'] not in grades_by_report:
             grades_by_report[g['report_id']] = []
-            
-        # 🚨 THE NEW BRIDGE: Calculate colors and attach them to the dictionary!
-        letter, b_class, t_class, bdg_class = get_subject_grade_data(g['score'], g['max_score'])
-        g['grade_letter'] = letter
-        g['box_class'] = b_class
-        g['text_class'] = t_class
-        g['badge_class'] = bdg_class
-        
         grades_by_report[g['report_id']].append(g)
 
     # Attach the subjects perfectly into the reports
@@ -1819,6 +1814,8 @@ def login():
             flash("Your account is currently pending. Please ask your Administrator to approve your access.", "warning")
             return redirect("/login")
 
+        # Standard Login Success
+        session.permanent = True  # <--- THIS KEEPS THE APP FROM LOGGING YOU OUT!
         session["user_id"] = rows[0]["id"]
         session["role"] = rows[0]["role"]
         
