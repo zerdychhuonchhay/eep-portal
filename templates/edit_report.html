@@ -1,9 +1,9 @@
-{#
+{# 
    CS50 FINAL PROJECT CITATION:
-   The layout structure, the split-pane UI, the JavaScript hover-to-zoom image viewer,
-   and the dynamic subject filtering logic in this template were developed and refined
-   with the assistance of Google Gemini. The core data architecture, database schema,
-   and integration logic remain my own original work.
+   The layout structure, the split-pane UI, the JavaScript hover-to-zoom image viewer, 
+   and the dynamic subject filtering logic in this template were developed and refined 
+   with the assistance of Google Gemini. The core data architecture, database schema, 
+   and integration logic remain my own original work. 
 #}
 {% extends "layout.html" %}
 
@@ -12,56 +12,103 @@
 {% endblock %}
 
 {% block main %}
-<div class="container-fluid mt-4 px-lg-5 text-start">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Edit Academic Report for <span class="text-warning">{{ student.first_name }} {{ student.last_name }}</span></h2>
+<div class="container-fluid px-lg-4 pt-3 pb-5">
+    
+    <!-- HEADER SECTION -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0 bg-transparent p-0">
+                <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Roster</a></li>
+                <li class="breadcrumb-item"><a href="/student/{{ student.id }}" class="text-decoration-none text-muted fw-bold">{{ student.first_name }}</a></li>
+                <li class="breadcrumb-item active fw-bold text-warning" aria-current="page">Edit Report</li>
+            </ol>
+        </nav>
+        <a href="/student/{{ student.id }}" class="btn btn-light border shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover">
+            <i class="bi bi-x-lg me-1"></i> Cancel
+        </a>
     </div>
 
-    <div class="card shadow-sm mb-5 border-0">
-        <div class="card-body">
+    <!-- PAGE TITLE -->
+    <div class="mb-4 text-center text-md-start">
+        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-pencil-square text-warning me-2"></i>Edit Academic Report</h2>
+        <p class="text-muted small fw-bold">Updating records for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
+    </div>
 
-            <form action="/edit_report/{{ report.id }}" method="post" enctype="multipart/form-data">
+    <!-- THE FORM -->
+    <form action="/edit_report/{{ report.id }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        
+        <!-- Pass the referrer so the app knows where to send the user back to (Profile vs Master Gradebook) -->
+        <input type="hidden" name="source_url" value="{{ request.referrer }}">
 
-                <input type="hidden" name="source_url" value="{{ request.referrer }}">
-
-                <div class="row">
-
-                    <!-- LEFT COLUMN: Live Scan Preview -->
-                    <div class="col-md-5 mb-4 mb-md-0 border-end pe-md-4">
-                        <div class="position-sticky" style="top: 20px;">
-                            <h5 class="text-secondary border-bottom pb-2 mb-3">📸 Reference Scan / <span class="khmer-font">ឯកសារស្កេនយោង</span></h5>
-
-                            <div class="mb-3">
-                                <label class="small fw-bold">Update Scanned Document / <span class="khmer-font">ធ្វើបច្ចុប្បន្នភាពឯកសារស្កេន</span> (Optional)</label>
-                                <input type="file" id="scan_upload" name="scanned_document" class="form-control" accept="image/*,application/pdf">
-                            </div>
-
-                            <div id="scan_container" class="text-center bg-light rounded p-2 border overflow-hidden" style="min-height: 300px; position: relative;">
-                                {% if report.scanned_document %}
-                                    <img id="scan_preview" src="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" style="max-width: 100%; cursor: zoom-in; transition: transform 0.2s ease-out;" class="rounded shadow-sm">
-                                    <span id="scan_placeholder" style="display: none;"></span>
-                                {% else %}
-                                    <img id="scan_preview" src="" style="max-width: 100%; display: none; cursor: zoom-in; transition: transform 0.2s ease-out;" class="rounded shadow-sm">
-                                    <span id="scan_placeholder" class="text-muted d-flex align-items-center justify-content-center h-100 mt-5 pt-5">
-                                        <em>No scan currently uploaded</em>
-                                    </span>
-                                {% endif %}
-                            </div>
-                            <small class="text-muted mt-2 d-block text-center">💡 Hover over the image to zoom in on small grades.</small>
-                        </div>
+        <div class="row g-4">
+            
+            <!-- ========================================== -->
+            <!-- LEFT COLUMN: SMART SCAN PREVIEW (PC Focus) -->
+            <!-- ========================================== -->
+            <div class="col-lg-5">
+                <div class="card shadow-sm border-0 rounded-4 mb-4 sticky-lg-top" style="top: 20px; z-index: 5;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-camera-fill me-2 text-info"></i>1. Reference Scan</h5>
                     </div>
+                    <div class="card-body p-4 pt-2">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Update Report Card Scan</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden mb-3">
+                            <input type="file" name="scanned_document" id="scan_upload" class="form-control bg-white" accept="image/*,application/pdf" capture="environment">
+                            <span class="input-group-text bg-light text-muted"><i class="bi bi-upload"></i></span>
+                        </div>
+                        
+                        <!-- Hover-to-Zoom / PDF Canvas -->
+                        <div class="preview-pane rounded-4 border border-2 border-secondary border-opacity-25" id="preview_container">
+                            {% if report.scanned_document %}
+                                {% if report.scanned_document.lower().endswith('.pdf') %}
+                                    <iframe id="scan_preview_pdf" src="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" style="width: 100%; height: 100%; border: none;"></iframe>
+                                    <img id="scan_preview" src="" class="zoom-image" style="display:none;" alt="Report Card Scan">
+                                {% else %}
+                                    <iframe id="scan_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                                    <img id="scan_preview" src="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" class="zoom-image" alt="Report Card Scan">
+                                {% endif %}
+                                <div id="placeholder_text" style="display: none;"></div>
+                            {% else %}
+                                <div id="placeholder_text" class="text-muted text-center p-5">
+                                    <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
+                                    <span class="fw-bold small text-uppercase">No document uploaded</span>
+                                </div>
+                                <iframe id="scan_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+                                <img id="scan_preview" src="" class="zoom-image" style="display:none;" alt="Report Card Scan">
+                            {% endif %}
+                        </div>
+                        <small class="text-muted mt-3 d-block text-center fw-bold"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Hover over images to zoom. PDFs are fully scrollable.</small>
+                    </div>
+                </div>
+            </div>
 
-                    <!-- RIGHT COLUMN: Grade Inputs -->
-                    <div class="col-md-7 ps-md-4">
-                        <!-- Section 1: Report Details -->
-                        <h5 class="text-info border-bottom pb-2 mb-3">Report Details / <span class="khmer-font">ព័ត៌មានលម្អិតនៃរបាយការណ៍</span></h5>
-                        <div class="row">
-                            <div class="col-md-6 col-lg-3 mb-3">
-                                <label for="month" class="form-label fw-bold small">Month / <span class="khmer-font">ខែ</span></label>
-                                <select class="form-select" id="month" name="month">
+            <!-- ========================================== -->
+            <!-- RIGHT COLUMN: DATA ENTRY CARDS             -->
+            <!-- ========================================== -->
+            <div class="col-lg-7">
+                
+                <!-- CARD 1: Term & Enrollment -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-primary border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>2. Academic Term</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Academic Year *</label>
+                                <input type="text" class="form-control bg-light fw-bold text-dark" id="academic_year" name="academic_year" value="{{ report.academic_year }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Month *</label>
+                                <select name="month" class="form-select bg-light fw-bold text-dark" required>
                                     <option value="{{ report.month }}" selected>{{ report.month if report.month else 'Not Applicable' }}</option>
-                                    <option disabled>-----------</option>
+                                    <option disabled>──────────</option>
                                     <option value="">Not Applicable</option>
+                                    <option value="August">August</option>
+                                    <option value="September">September</option>
+                                    <option value="October">October</option>
+                                    <option value="November">November</option>
+                                    <option value="December">December</option>
                                     <option value="January">January</option>
                                     <option value="February">February</option>
                                     <option value="March">March</option>
@@ -69,45 +116,25 @@
                                     <option value="May">May</option>
                                     <option value="June">June</option>
                                     <option value="July">July</option>
-                                    <option value="August">August</option>
-                                    <option value="September">September</option>
-                                    <option value="October">October</option>
-                                    <option value="November">November</option>
-                                    <option value="December">December</option>
                                 </select>
                             </div>
-
-                            <div class="col-md-6 col-lg-3 mb-3">
-                                <label for="semester" class="form-label fw-bold small text-primary">Semester / <span class="khmer-font">ឆមាស</span></label>
-                                <select class="form-select border-primary" id="semester" name="semester">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small text-primary text-uppercase">Semester</label>
+                                <select class="form-select border-primary fw-bold" name="semester">
                                     <option value="" {% if not report.semester %}selected{% endif %}>Not a Semester Exam</option>
-                                    <option value="Semester 1" {% if report.semester == 'Semester 1' %}selected{% endif %}>Semester 1 Exam</option>
-                                    <option value="Semester 2" {% if report.semester == 'Semester 2' %}selected{% endif %}>Semester 2 Exam</option>
-                                    <option value="Final Exam" {% if report.semester == 'Final Exam' %}selected{% endif %}>Final Exam</option>
+                                    <option value="Semester 1" {% if report.semester == 'Semester 1' %}selected{% endif %}>Semester 1 (Mid-Term)</option>
+                                    <option value="Semester 2" {% if report.semester == 'Semester 2' %}selected{% endif %}>Semester 2 (Final)</option>
+                                    <option value="Final Exam" {% if report.semester == 'Final Exam' %}selected{% endif %}>Annual Final Exam</option>
                                 </select>
                             </div>
-
-                            <div class="col-md-6 col-lg-3 mb-3">
-                                <label for="academic_year" class="form-label fw-bold small">Academic Year / <span class="khmer-font">ឆ្នាំសិក្សា</span> *</label>
-                                <input type="text" class="form-control" id="academic_year" name="academic_year" value="{{ report.academic_year }}" required>
-                            </div>
-
-                            <div class="col-md-6 col-lg-3 mb-3">
-                                <label for="attendance_days" class="form-label fw-bold small">Attendance / <span class="khmer-font">វត្តមាន (ថ្ងៃ)</span></label>
-                                <input type="number" class="form-control" id="attendance_days" name="attendance_days" min="0" max="31" value="{{ report.attendance_days if report.attendance_days else '' }}">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="grade_level" class="form-label fw-bold small">Historical Grade / <span class="khmer-font">កម្រិតថ្នាក់</span> *</label>
-                                <select class="form-select text-primary fw-bold" id="grade_level" name="grade_level" required onchange="filterSubjects()">
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Historical Grade *</label>
+                                <select class="form-select bg-light fw-bold text-primary" id="grade_level" name="grade_level" required onchange="filterSubjects()">
                                     <option value="" disabled>Select Grade...</option>
-
                                     <optgroup label="Early Education">
                                         <option value="Kindergarten" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
                                     </optgroup>
-
                                     <optgroup label="Primary & Secondary (K-12)">
                                         <option value="Grade 1" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 1' %}selected{% endif %}>Grade 1</option>
                                         <option value="Grade 2" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 2' %}selected{% endif %}>Grade 2</option>
@@ -122,7 +149,6 @@
                                         <option value="Grade 11" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 11' %}selected{% endif %}>Grade 11</option>
                                         <option value="Grade 12" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 12' %}selected{% endif %}>Grade 12</option>
                                     </optgroup>
-
                                     <optgroup label="Higher Education">
                                         <option value="University Year 1" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 1' %}selected{% endif %}>University Year 1</option>
                                         <option value="University Year 2" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 2' %}selected{% endif %}>University Year 2</option>
@@ -133,145 +159,271 @@
                                     </optgroup>
                                 </select>
                             </div>
-
-                            <div class="col-md-5 mb-3">
-                                <label for="school_name" class="form-label fw-bold small">Historical School / <span class="khmer-font">សាលារៀន</span></label>
-                                <input type="text" class="form-control text-primary fw-bold khmer-font" id="school_name" name="school_name" value="{{ report.school_name if report.school_name else student.current_school }}" required>
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-                                <label for="class_rank" class="form-label fw-bold small">Class Rank / <span class="khmer-font">ចំណាត់ថ្នាក់</span></label>
-                                <input type="text" class="form-control" id="class_rank" name="class_rank" value="{{ report.class_rank if report.class_rank else '' }}">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Historical School</label>
+                                <input type="text" name="school_name" class="form-control bg-light khmer-font" value="{{ report.school_name if report.school_name else student.current_school }}" placeholder="Enter school name...">
                             </div>
                         </div>
+                    </div>
+                </div>
 
+                <!-- CARD 2: Performance Metrics -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-success border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-bar-chart-fill me-2 text-success"></i>3. Performance Overview</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Overall Average</label>
+                                <div class="input-group input-group-merge shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calculator"></i></span>
+                                    <input type="number" step="0.01" name="overall_average" class="form-control border-start-0 ps-0 fw-bold fs-5 text-dark" value="{{ report.overall_average if report.overall_average else '' }}" placeholder="e.g. 85.5">
+                                    <span class="input-group-text bg-light text-muted fw-bold">%</span>
+                                </div>
+                                <div class="form-text small opacity-75">Leave blank if only using letter grades.</div>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Letter Grade / Status</label>
+                                <input type="text" name="overall_grade" class="form-control form-control-lg bg-light fw-bold" value="{{ report.overall_grade if report.overall_grade else '' }}" placeholder="e.g. A, B+, Pass">
+                            </div>
+                            
+                            <div class="col-sm-6 mt-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Class Rank</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-trophy"></i></span>
+                                    <input type="text" name="class_rank" class="form-control border-start-0 ps-0 fw-bold" value="{{ report.class_rank if report.class_rank else '' }}" placeholder="e.g. 5/40">
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mt-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Attendance</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-check"></i></span>
+                                    <input type="number" name="attendance_days" class="form-control border-start-0 ps-0 fw-bold" value="{{ report.attendance_days if report.attendance_days else '' }}" placeholder="e.g. 22">
+                                    <span class="input-group-text bg-light text-muted small">days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 3: Subject Scores & Smart Overrides -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-warning border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>4. Detailed Subjects</h5>
+                    </div>
+                    <div class="card-body p-4 bg-light bg-opacity-50">
+                        
                         <!-- Row 3: Smart Override Inputs -->
-                        <div class="row bg-light rounded pt-3 pb-1 mb-3 mx-1 border">
+                        <div class="row bg-white rounded pt-3 pb-1 mb-4 mx-0 border shadow-sm">
                             <div class="col-12 mb-2">
                                 <span class="fw-bold text-secondary">⚙️ Smart Overrides / <span class="khmer-font">ការកែតម្រូវដោយដៃ</span></span> <span class="small text-muted">(Leave blank to auto-calculate)</span>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label small">Manual Total Score / <span class="khmer-font">ពិន្ទុសរុប</span></label>
-                                <input type="number" step="0.01" class="form-control form-control-sm" name="manual_total_score" value="{{ report.total_score if report.total_score else '' }}">
+                                <label class="form-label small fw-bold text-muted">Manual Total Score</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm bg-light" name="manual_total_score" value="{{ report.total_score if report.total_score else '' }}">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label small">Manual Overall Average / <span class="khmer-font">មធ្យមភាគ</span></label>
-                                <input type="number" step="0.01" class="form-control form-control-sm" name="manual_average" value="{{ report.overall_average if report.overall_average else '' }}">
+                                <label class="form-label small fw-bold text-muted">Manual Overall Average</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm bg-light" name="manual_average" value="{{ report.overall_average if report.overall_average else '' }}">
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label small">Manual Overall Grade / <span class="khmer-font">និទ្ទេសសរុប</span></label>
-                                <input type="text" class="form-control form-control-sm" name="manual_grade" value="{{ report.overall_grade if report.overall_grade else '' }}">
+                                <label class="form-label small fw-bold text-muted">Manual Overall Grade</label>
+                                <input type="text" class="form-control form-control-sm bg-light" name="manual_grade" value="{{ report.overall_grade if report.overall_grade else '' }}">
                             </div>
                         </div>
 
-                        <div class="mb-4 mt-2">
-                            <label for="teacher_comment" class="form-label fw-bold small">Teacher Comment / <span class="khmer-font">មតិយោបល់របស់គ្រូ</span></label>
-                            <textarea class="form-control khmer-font" id="teacher_comment" name="teacher_comment" rows="2">{{ report.teacher_comment if report.teacher_comment else '' }}</textarea>
-                        </div>
-
-                        <!-- Section 2: Subject Scores -->
-                        <h5 class="text-success border-bottom pb-2 mb-3 mt-4">Subject Scores / <span class="khmer-font">ពិន្ទុតាមមុខវិជ្ជា</span></h5>
                         <div class="alert alert-secondary py-2 mb-3">
-                            <i class="fw-bold bi bi-magic"></i> <span class="small">The subject list is automatically filtered based on the student's <strong>Historical Grade</strong>. Note: Any subjects with existing grades will always be shown, regardless of filter.</span>
+                            <i class="fw-bold bi bi-magic"></i> <span class="small">The subject list is automatically filtered based on the student's <strong>Historical Grade</strong>. Note: Any subjects with existing grades will always be shown.</span>
                         </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover align-middle mb-4" id="subjectsTable">
+                        <!-- Pre-populated Subject Table -->
+                        <div class="table-responsive bg-white border rounded shadow-sm">
+                            <table class="table table-bordered table-hover align-middle mb-0" id="subjectsTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 40%;">Subject / <span class="khmer-font">មុខវិជ្ជា</span></th>
-                                        <th style="width: 30%;">Score / <span class="khmer-font">ពិន្ទុ</span></th>
-                                        <th style="width: 30%;">Max Score / <span class="khmer-font">ពិន្ទុអតិបរមា</span></th>
+                                        <th style="width: 45%;" class="small text-muted text-uppercase">Subject / <span class="khmer-font">មុខវិជ្ជា</span></th>
+                                        <th style="width: 25%;" class="small text-muted text-uppercase text-center">Score</th>
+                                        <th style="width: 30%;" class="small text-muted text-uppercase text-center">Max Score</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for subject in subjects %}
                                         <!-- Add has-grade attribute so filter logic knows not to hide it if data exists -->
                                         <tr class="subject-row" data-category="{{ subject.category }}" data-has-grade="{% if subject.id in existing_grades %}true{% else %}false{% endif %}">
-                                            <td>
+                                            <td class="ps-3">
                                                 <span class="badge bg-light text-secondary border me-1 float-end" style="font-size: 0.6rem;">{{ subject.category }}</span>
-                                                <strong>{{ subject.name }}</strong>
+                                                <strong class="khmer-font text-dark">{{ subject.name }}</strong>
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control" name="score_{{ subject.id }}" value="{{ existing_grades[subject.id].score if subject.id in existing_grades else '' }}">
+                                                <input type="text" class="form-control text-center fw-bold" name="score_{{ subject.id }}" value="{{ existing_grades[subject.id].score if subject.id in existing_grades else '' }}" placeholder="Value">
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control" name="max_score_{{ subject.id }}" value="{{ existing_grades[subject.id].max_score if subject.id in existing_grades else '' }}">
+                                                <input type="number" class="form-control text-center text-muted bg-light" name="max_score_{{ subject.id }}" value="{{ existing_grades[subject.id].max_score if subject.id in existing_grades else '100' }}">
                                             </td>
                                         </tr>
                                     {% endfor %}
 
-                                    <!-- THE WILDCARD ROW (Pre-fill if they used it before) -->
+                                    <!-- THE WILDCARD ROW -->
                                     <tr class="table-warning border-warning">
-                                        <td>
+                                        <td class="ps-3">
                                             <div class="small fw-bold text-warning-emphasis mb-1">
                                                 <i class="bi bi-stars"></i> Custom Subject / <span class="khmer-font">មុខវិជ្ជាផ្សេងៗ</span>
                                             </div>
                                             <!-- existing_grades[0] is our clever trick: subject_id=0 represents the wildcard -->
                                             <input type="text" class="form-control form-control-sm border-warning" name="custom_subject_name" placeholder="e.g. Art Project" value="{{ existing_grades[0].custom_subject_name if 0 in existing_grades else '' }}">
                                         </td>
-                                        <td>
-                                            <div class="small text-muted mb-1">&nbsp;</div>
-                                            <input type="text" class="form-control form-control-sm" name="custom_score" placeholder="Score" value="{{ existing_grades[0].score if 0 in existing_grades else '' }}">
+                                        <td class="align-bottom">
+                                            <input type="text" class="form-control text-center fw-bold text-dark" name="custom_score" placeholder="Score" value="{{ existing_grades[0].score if 0 in existing_grades else '' }}">
                                         </td>
-                                        <td>
-                                            <div class="small text-muted mb-1">&nbsp;</div>
-                                            <input type="text" class="form-control form-control-sm" name="custom_max_score" placeholder="Max" value="{{ existing_grades[0].max_score if 0 in existing_grades else '' }}">
+                                        <td class="align-bottom">
+                                            <input type="number" class="form-control text-center text-muted bg-light" name="custom_max_score" placeholder="100" value="{{ existing_grades[0].max_score if 0 in existing_grades else '100' }}">
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Form Submission Buttons -->
-                        <div class="d-flex gap-2 mt-4 pt-3 border-top">
-                            <button type="submit" class="btn btn-warning btn-lg px-4 shadow-sm fw-bold">
-                                <i class="bi bi-save me-1"></i> Update Report Card
-                            </button>
-                            <button type="button" onclick="history.back()" class="btn btn-light border btn-lg px-4 ms-auto text-dark shadow-sm fw-bold">
-                                Cancel
-                            </button>
+                    </div>
+                </div>
+
+                <!-- CARD 4: Comments -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-secondary border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-chat-left-text me-2 text-secondary"></i>5. Additional Notes</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div>
+                            <label class="form-label fw-bold small text-muted text-uppercase">Teacher's Comment</label>
+                            <textarea name="teacher_comment" class="form-control bg-light khmer-font" rows="4" placeholder="Enter translated teacher notes here...">{{ report.teacher_comment if report.teacher_comment else '' }}</textarea>
                         </div>
                     </div>
                 </div>
-            </form>
+
+                <!-- STICKY ACTION FOOTER (Docked to the bottom of the right column) -->
+                <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border mt-4 mb-3">
+                    <button type="button" onclick="history.back()" class="btn btn-light border fw-bold px-4 rounded-pill d-none d-md-inline-block text-dark">Cancel</button>
+                    <button type="submit" class="btn btn-warning fw-bold px-5 py-2 rounded-pill shadow-sm ms-auto w-100 w-md-auto fs-5 transition-hover text-dark">
+                        <i class="bi bi-save me-2"></i>Update Report Card
+                    </button>
+                </div>
+
+            </div>
         </div>
-    </div>
+    </form>
 </div>
+
+<!-- Custom UI Polish & Zoom CSS -->
+<style>
+    .transition-hover {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .transition-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    
+    /* Clean input focus states */
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        background-color: #fff !important;
+    }
+    
+    /* Input Group styling */
+    .input-group-merge .form-control:focus {
+        box-shadow: none;
+        border-color: #dee2e6;
+    }
+    .input-group-merge:focus-within {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        border-radius: 0.375rem;
+    }
+
+    /* ---------------------------------------------------
+       SMART UX: Preview & Zoom Canvas
+       --------------------------------------------------- */
+    .preview-pane {
+        height: calc(100vh - 340px); /* Smart height based on viewport */
+        min-height: 400px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+    }
+    .zoom-image {
+        transition: transform 0.1s ease-out;
+        cursor: crosshair;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        transform-origin: center center;
+    }
+    /* Increase scale dramatically on hover for tiny text */
+    .zoom-image:hover {
+        transform: scale(2.8);
+    }
+
+    /* Mobile specific adjustments */
+    @media (max-width: 767.98px) {
+        .preview-pane {
+            min-height: 300px;
+            height: 300px; /* Shorter on mobile so they can scroll past it quickly */
+        }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // --- SMART UX: Image & PDF Preview Engine ---
     document.getElementById('scan_upload').addEventListener('change', function(event) {
         const [file] = event.target.files;
-        if (file && file.type.startsWith('image/')) {
-            const preview = document.getElementById('scan_preview');
-            const placeholder = document.getElementById('scan_placeholder');
+        if (file) {
+            const previewImg = document.getElementById('scan_preview');
+            const previewPdf = document.getElementById('scan_preview_pdf');
+            const placeholder = document.getElementById('placeholder_text');
+            
+            const objectUrl = URL.createObjectURL(file);
 
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = 'block';
-            if (placeholder) placeholder.style.display = 'none';
+            if (file.type === 'application/pdf') {
+                previewPdf.src = objectUrl;
+                previewPdf.style.display = 'block';
+                previewImg.style.display = 'none';
+                if(placeholder) placeholder.style.display = 'none';
+            } else if (file.type.startsWith('image/')) {
+                previewImg.src = objectUrl;
+                previewImg.style.display = 'block';
+                previewPdf.style.display = 'none';
+                if(placeholder) placeholder.style.display = 'none';
+            }
         }
     });
 
-    const scanContainer = document.getElementById('scan_container');
+    const previewContainer = document.getElementById('preview_container');
     const scanPreview = document.getElementById('scan_preview');
 
-    scanContainer.addEventListener('mousemove', function(e) {
+    previewContainer.addEventListener('mousemove', function(e) {
+        // Only apply zoom logic to images, not PDFs
         if (scanPreview.style.display !== 'none' && scanPreview.src) {
-            const { left, top, width, height } = scanContainer.getBoundingClientRect();
-            const x = (e.clientX - left) / width * 100;
-            const y = (e.clientY - top) / height * 100;
+            // Get the bounding rectangle of the container
+            const rect = previewContainer.getBoundingClientRect();
+            
+            // Calculate cursor position as a percentage
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
 
+            // Move the transform origin to exactly where the mouse is pointing
             scanPreview.style.transformOrigin = `${x}% ${y}%`;
-            scanPreview.style.transform = 'scale(2.5)';
         }
     });
 
-    scanContainer.addEventListener('mouseleave', function() {
+    previewContainer.addEventListener('mouseleave', function() {
         if (scanPreview.style.display !== 'none' && scanPreview.src) {
+            // Reset to center when mouse leaves the image
             scanPreview.style.transformOrigin = 'center center';
-            scanPreview.style.transform = 'scale(1)';
         }
     });
 
@@ -292,7 +444,7 @@
             // General subjects ALWAYS show
             else if (category === 'General') {
                 showRow = true;
-            }
+            } 
             // If they are in Kg to Grade 6, show Primary/Lower
             else if ((gradeLevel.includes('Kindergarten') || gradeLevel.includes('Grade 1') || gradeLevel.includes('Grade 2') || gradeLevel.includes('Grade 3') || gradeLevel.includes('Grade 4') || gradeLevel.includes('Grade 5') || gradeLevel.includes('Grade 6')) && category === 'Primary / Lower Grade') {
                 showRow = true;
@@ -316,5 +468,26 @@
 
     // Run the filter immediately when the page loads
     window.addEventListener('DOMContentLoaded', filterSubjects);
+
+    // Bootstrap Form Validation (Standard block to prevent empty submissions)
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        // Scroll to the first invalid element
+                        const firstInvalid = form.querySelector(':invalid');
+                        if(firstInvalid) {
+                            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
 </script>
 {% endblock %}
