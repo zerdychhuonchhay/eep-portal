@@ -20,7 +20,7 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # 🚨 THE DRY REFACTOR: Importing all our tools from helpers.py!
-from helpers import login_required, admin_required, permission_required, calculate_gpa, get_subject_grade_data, allowed_file, handle_file_upload
+from helpers import login_required, admin_required, permission_required, real_admin_required, calculate_gpa, get_subject_grade_data, allowed_file, handle_file_upload
 
 # 1. Turn on the flask application
 app = Flask(__name__)
@@ -329,6 +329,71 @@ def logout():
     flash("You have been successfully logged out.", "success")
     return redirect("/login")
 
+
+@app.route("/view_as/<role>")
+@login_required
+@real_admin_required
+def view_as(role):
+    """Allows an Admin to masquerade as another role to test UI/Permissions."""
+    # 1. Save their real admin status if not already saved
+    if "real_role" not in session:
+        session["real_role"] = session["role"]
+        # Save original permissions just in case
+        for key in list(session.keys()):
+            if key.startswith("can_"):
+                session[f"real_{key}"] = session[key]
+
+    # 2. Fetch the permissions for the target role
+    perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", role)
+    if not perms:
+        flash("Role not found.", "danger")
+        return redirect(request.referrer or "/")
+        
+    p = perms[0]
+    
+    # 3. Apply the fake role and permissions to the active session
+    session["role"] = role
+    session["can_create_profiles"] = bool(p.get("can_create_profiles", p.get("can_edit_profiles", 0)))
+    session["can_update_profiles"] = bool(p.get("can_update_profiles", p.get("can_edit_profiles", 0)))
+    session["can_create_academics"] = bool(p.get("can_create_academics", p.get("can_manage_academics", 0)))
+    session["can_update_academics"] = bool(p.get("can_update_academics", p.get("can_manage_academics", 0)))
+    session["can_delete_academics"] = bool(p.get("can_delete_academics", 0))
+    session["can_create_followups"] = bool(p.get("can_create_followups", p.get("can_manage_followups", 0)))
+    session["can_update_followups"] = bool(p.get("can_update_followups", p.get("can_manage_followups", 0)))
+    session["can_create_files"] = bool(p.get("can_create_files", p.get("can_upload_files", 0)))
+    session["can_delete_files"] = bool(p.get("can_delete_files", 0))
+    session["can_create_expenses"] = bool(p.get("can_create_expenses", 0))
+    session["can_export_data"] = bool(p.get("can_export_data", 0))
+
+    # Map fallbacks for legacy templates
+    session["can_edit_profiles"] = session["can_update_profiles"]
+    session["can_manage_academics"] = session["can_update_academics"]
+    session["can_manage_followups"] = session["can_update_followups"]
+    session["can_upload_files"] = session["can_create_files"]
+
+    log_action(f"Started VIEW AS mode: {role}")
+    flash(f"You are now viewing the system as a {role}.", "warning")
+    return redirect("/")
+
+
+@app.route("/view_as_revert")
+@login_required
+@real_admin_required
+def view_as_revert():
+    """Restores the Admin to their true powers."""
+    if "real_role" in session:
+        session["role"] = session.pop("real_role")
+        
+        # Restore all original permissions
+        keys_to_restore = [k for k in session.keys() if k.startswith("real_can_")]
+        for key in keys_to_restore:
+            orig_key = key.replace("real_", "", 1)
+            session[orig_key] = session.pop(key)
+            
+        log_action("Ended VIEW AS mode.")
+        flash("Welcome back! Your Admin privileges have been restored.", "success")
+        
+    return redirect(request.referrer or "/")
 
 # ==============================================================================
 # NEIGHBORHOOD: DASHBOARD, ROUTING & HUB

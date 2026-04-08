@@ -26,6 +26,17 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def real_admin_required(f):
+    """Ensures the user is genuinely an Admin, even if they are using 'View As' to test a lower role."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        actual_role = session.get("real_role", session.get("role"))
+        if actual_role != "Admin":
+            flash("System Security: Only true Admins can use the View As feature.", "danger")
+            return redirect(request.referrer or "/")
+        return f(*args, **kwargs)
+    return decorated_function
+
 def permission_required(permission_key):
     """Checks the granular RBAC permissions loaded into the user session at login."""
     def decorator(f):
