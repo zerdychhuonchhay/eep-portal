@@ -44,6 +44,30 @@
         </div>
     </div>
 
+    <!-- NGO LEADERBOARD / QUICK INSIGHTS -->
+    <div class="row mb-4 d-none d-md-flex">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-primary text-white h-100 rounded-4">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <i class="bi bi-trophy-fill display-4 me-3 opacity-50"></i>
+                    <div>
+                        <h6 class="fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Top Performer</h6>
+                        <p class="mb-0 small opacity-75">Table is sorted by 'Avg %' to show current rankings.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="alert alert-light border shadow-sm rounded-4 h-100 mb-0 p-4 d-flex align-items-center">
+                <i class="bi bi-grid-3x3-gap-fill fs-3 text-info me-3"></i>
+                <div>
+                    <strong class="d-block text-dark mb-1">Dynamic Heatmap Active</strong>
+                    <span class="text-muted small">Select a specific Grade Tier to instantly hide unused subjects and condense the table. Green (A/B), Yellow (C), Red (D/F).</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN DATA CONTAINER -->
     <div class="card shadow-sm border-0 bg-white rounded-4 overflow-hidden">
         <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex flex-column flex-xl-row justify-content-between align-items-center gap-3">
@@ -118,6 +142,14 @@
                     <tbody>
                         {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
                         {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
+                        
+                        <!-- 🚨 CAMBODIAN ACADEMIC CALENDAR WEIGHTS 🚨 -->
+                        {% set month_weights = {
+                            'September': '01', 'October': '02', 'November': '03', 'December': '04',
+                            'January': '05', 'February': '06', 'March': '07', 'Semester 1': '08',
+                            'April': '09', 'May': '10', 'June': '11', 'July': '12', 
+                            'August': '13', 'Semester 2': '14', 'Final Exam': '15'
+                        } %}
 
                         {% for record in academic_records %}
                         
@@ -144,8 +176,9 @@
                                 <span class="d-block text-muted mt-0 text-truncate" style="max-width: 180px; font-size: 0.65rem;">{{ record.school_name if record.school_name else '-' }}</span>
                             </td>
                             
-                            <!-- Term & Grade Info -->
-                            <td class="text-center align-middle py-1" style="line-height: 1.1;">
+                            <!-- Term & Grade Info (With Chronological Data-Sort) -->
+                            <!-- Combine Year and Month Weight (e.g., 2025-2026-03) so DataTables sorts perfectly by time! -->
+                            <td data-sort="{{ record.academic_year }}-{% if record.month in month_weights %}{{ month_weights[record.month] }}{% else %}99{% endif %}" class="text-center align-middle py-1" style="line-height: 1.1;">
                                 <span class="d-block text-dark fw-bold" style="font-size: 0.75rem;">{{ record.month }}{% if record.semester %} {{ record.semester }}{% endif %}</span>
                                 {% if record.grade_level %}
                                     <span class="text-muted fw-bold" style="font-size: 0.65rem;">{{ record.grade_level }}</span>
@@ -341,15 +374,17 @@
             yearFilter.append(new Option(year, year));
         });
 
+        // 🚨 CAMBODIAN ACADEMIC CALENDAR JAVASCRIPT ORDER 🚨
         const academicOrder = [
-            "August", "September", "October", "November", "December", 
-            "Semester 1", "January", "February", "March", "April", 
-            "May", "June", "July", "Semester 2", "Final Exam"
+            "September", "October", "November", "December", 
+            "January", "February", "March", "Semester 1", 
+            "April", "May", "June", "July", 
+            "August", "Semester 2", "Final Exam"
         ];
         
         function populateMonths(selectedYear) {
             const currentMonth = monthFilter.val();
-            monthFilter.find('option:not(:first)').remove(); 
+            monthFilter.find('option:not(:first)').remove(); // Keep "All"
             
             let monthsToUse = new Set();
             if (selectedYear === 'all') {
@@ -375,6 +410,7 @@
             if (currentMonth && currentMonth !== 'all' && sortedMonths.includes(currentMonth)) {
                 monthFilter.val(currentMonth);
             } else if (sortedMonths.length > 0) {
+                // If they are on a new year, default to the most recent chronological entry
                 monthFilter.val(sortedMonths[sortedMonths.length - 1]);
             } else {
                 monthFilter.val('all');
@@ -389,7 +425,7 @@
         // 5. Initialize DataTables
         academicTable = $('#academicTable').DataTable({
             "pageLength": 50,
-            "order": [[2, "desc"]], // Default sort by Avg %
+            "order": [[1, "desc"]], // Default sort by the "Term & Grade" column (chronologically)
             "language": {
                 "search": "",
                 "searchPlaceholder": "🔍 Search Leaderboard...",
@@ -435,7 +471,7 @@
         filterGradebook();
     });
 
-    // 🚨 THE FIX: BULLETPROOF DOM PARSER FOR HIDING EMPTY COLUMNS
+    // 🚨 BULLETPROOF DOM PARSER FOR HIDING EMPTY COLUMNS
     function filterGradebook() {
         if (academicTable) {
             // First, apply the row filters (Year/Month/Tier)

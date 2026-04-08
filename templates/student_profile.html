@@ -236,10 +236,8 @@
                                 </select>
                             </div>
                             
-                            <!-- FEATURE CONTROL -->
-                            {% if session.get('role') == 'Admin' or session.get('can_manage_academics') %}
+                            <!-- FEATURE CONTROL (UNLOCKED) -->
                             <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-success fw-bold shadow-sm d-none d-md-inline-block rounded-pill ms-2 px-3 text-nowrap transition-hover"><i class="bi bi-plus-lg me-1"></i> Add</a>
-                            {% endif %}
                         </div>
                     </div>
                     
@@ -404,16 +402,12 @@
                                     {% endif %}
                                     
                                     <div>
-                                        <!-- FEATURE CONTROL -->
-                                        {% if session.get('role') == 'Admin' or session.get('can_manage_academics') %}
+                                        <!-- FEATURE CONTROL (UNLOCKED) -->
                                         <a href="/edit_report/{{ report.id }}" class="btn btn-sm btn-white border fw-bold text-dark me-2 d-none d-md-inline-block shadow-sm transition-hover rounded-pill px-3">Edit Data</a>
-                                        {% endif %}
                                         
-                                        {% if session.get("role") in ["Admin", "Director"] %}
                                         <form action="/delete_report/{{ report.id }}" method="post" class="d-inline d-none d-md-inline-block" onsubmit="return confirm('Are you sure you want to permanently delete this report?');">
                                             <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-pill px-3" title="Delete Report"><i class="bi bi-trash-fill"></i></button>
                                         </form>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -452,10 +446,8 @@
                                 </select>
                             </div>
                             
-                            <!-- FEATURE CONTROL -->
-                            {% if session.get('role') == 'Admin' or session.get('can_manage_followups') %}
+                            <!-- FEATURE CONTROL (UNLOCKED) -->
                             <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-primary fw-bold shadow-sm rounded-pill px-4 text-nowrap transition-hover"><i class="bi bi-plus-lg me-1"></i> New Note</a>
-                            {% endif %}
                         </div>
                     </div>
                     
@@ -535,10 +527,8 @@
                                     <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10 bg-light mx-n4 mb-n4 p-4 rounded-bottom-4">
                                         <span class="small text-muted fw-bold"><i class="bi bi-person-badge-fill text-secondary me-2"></i>{{ note.completed_by }}</span>
                                         
-                                        <!-- FEATURE CONTROL -->
-                                        {% if session.get('role') == 'Admin' or session.get('can_manage_followups') %}
+                                        <!-- FEATURE CONTROL (UNLOCKED) -->
                                         <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-1 px-3 d-none d-md-inline-block shadow-sm rounded-pill transition-hover">Edit Note</a>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -570,12 +560,10 @@
                         <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                             <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-folder-fill text-secondary me-2"></i>Digital Filing Cabinet</h5>
                             
-                            <!-- FEATURE CONTROL -->
-                            {% if session.get('role') == 'Admin' or session.get('can_upload_files') %}
+                            <!-- FEATURE CONTROL (UNLOCKED) -->
                             <button class="btn btn-sm btn-outline-secondary text-dark fw-bold shadow-sm rounded-pill px-3 transition-hover" data-bs-toggle="collapse" data-bs-target="#uploadForm">
                                 <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload
                             </button>
-                            {% endif %}
                         </div>
                         <div class="card-body px-0 px-md-4 pb-4">
                             
@@ -628,13 +616,9 @@
                                             </td>
                                             <td data-label="Date" class="small text-muted fw-bold py-2 py-md-3">{{ doc.upload_date[:10] }}</td>
                                             <td data-label="Action" class="d-print-none text-end pe-3 py-2 py-md-3">
-                                                {% if session.get("role") in ["Admin", "Director"] %}
                                                 <form action="/delete_document/{{ doc.id }}" method="post" class="d-inline m-0" onsubmit="return confirm('Permanently delete this file?');">
                                                     <button type="submit" class="btn btn-sm btn-white border text-danger shadow-sm py-1 transition-hover" title="Delete Document"><i class="bi bi-trash-fill"></i></button>
                                                 </form>
-                                                {% else %}
-                                                <span class="small text-muted"><i class="bi bi-lock-fill"></i></span>
-                                                {% endif %}
                                             </td>
                                         </tr>
                                         {% else %}
@@ -659,12 +643,10 @@
                                 <small class="text-muted fw-bold">Total Spent: <strong class="text-success fs-6">${{ total_spent|default('0.00') }}</strong></small>
                             </div>
                             
-                            <!-- RESTRICTED TO ADMIN -->
-                            {% if session.get('role') == 'Admin' %}
+                            <!-- RESTRICTED TO ADMIN (UNLOCKED) -->
                             <button class="btn btn-sm btn-dark text-white fw-bold d-none d-md-inline-block shadow-sm rounded-pill px-3 transition-hover" data-bs-toggle="modal" data-bs-target="#expenseModal">
                                 <i class="bi bi-plus-lg me-1"></i> Log Expense
                             </button>
-                            {% endif %}
                         </div>
                         <div class="card-body px-0 px-md-4 pb-4">
                             <div class="table-responsive px-3 px-md-0">
