@@ -32,6 +32,13 @@
         <!-- Live Search Dropdown -->
         <div id="mobileSearchResults" class="bg-white rounded-4 shadow-lg border mt-2 d-none overflow-hidden position-absolute w-100" style="max-height: 300px; overflow-y: auto; z-index: 1050;"></div>
     </div>
+
+    <!-- PWA Install Banner (Hidden by default, shown via JS if app is not installed) -->
+    <div id="pwaInstallBanner" class="d-none mt-3">
+        <button id="pwaInstallBtn" class="btn btn-light text-primary fw-bold rounded-pill w-100 shadow-sm d-flex align-items-center justify-content-center py-2 transition-hover">
+            <i class="bi bi-phone-vibrate fs-5 me-2"></i> Install App (Hide URL Bar)
+        </button>
+    </div>
 </div>
 
 <div class="container-fluid px-3 px-lg-4 mt-3 mb-5">
@@ -408,6 +415,51 @@
     if(document.getElementById('pcGreeting')) {
         document.getElementById('pcGreeting').innerText = greetingText + " 👋";
         document.getElementById('pcDate').innerText = dateText;
+    }
+
+    // =======================================================
+    // PWA INSTALLATION LOGIC (Trigger Install Banner)
+    // =======================================================
+    let deferredPrompt;
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later.
+        deferredPrompt = e;
+        
+        // Show our custom Install Button on the Mobile Header
+        const installBanner = document.getElementById('pwaInstallBanner');
+        if (installBanner) {
+            installBanner.classList.remove('d-none');
+        }
+    });
+
+    document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            // Show the native browser install prompt
+            deferredPrompt.prompt();
+            // Wait for the user to respond to the prompt
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('User accepted the PWA prompt');
+                // Hide the banner once installed
+                document.getElementById('pwaInstallBanner').classList.add('d-none');
+            }
+            // We've used the prompt, and can't use it again, discard it
+            deferredPrompt = null;
+        }
+    });
+
+    // iOS Standalone Link Fix (Prevents links from bouncing out to Safari)
+    if (window.navigator.standalone) {
+        document.addEventListener('click', function(event) {
+            let a = event.target.closest('a');
+            if (a && a.href && !a.hasAttribute('download') && a.host === location.host) {
+                event.preventDefault();
+                window.location = a.href;
+            }
+        }, false);
     }
 
     // =======================================================
