@@ -10,16 +10,24 @@
         <h2 class="text-center text-md-start mb-0"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
         
         <div class="d-flex flex-wrap justify-content-center gap-2">
+            <!-- 🛡️ SECURITY CONTROL: Export Data -->
+            {% if session.get('can_export_data') %}
             <a href="/export_grades" class="btn btn-outline-success shadow-sm fw-bold">
                 <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel
             </a>
+            {% endif %}
+            
+            <!-- 🛡️ SECURITY CONTROL: Manage Academics -->
+            {% if session.get('can_manage_academics') %}
             <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#quickAddModal">
                 <i class="bi bi-journal-plus me-1"></i> Add Report
             </button>
+            {% endif %}
         </div>
     </div>
 
-    <!-- The Quick Add Modal -->
+    <!-- The Quick Add Modal (Secured) -->
+    {% if session.get('can_manage_academics') %}
     <div class="modal fade" id="quickAddModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
@@ -43,6 +51,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <!-- NGO LEADERBOARD / QUICK INSIGHTS -->
     <div class="row mb-4 d-none d-md-flex">
@@ -97,7 +106,7 @@
                 <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
                     <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
                     <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
-                        <option value="all">All Months/Terms</option>
+                        <option value="all">All Months</option>
                         <!-- Months injected via Javascript -->
                     </select>
                 </div>
@@ -143,12 +152,11 @@
                         {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
                         {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
                         
-                        <!-- 🚨 CAMBODIAN ACADEMIC CALENDAR WEIGHTS 🚨 -->
+                        <!-- 🚨 PURIFIED CALENDAR WEIGHTS (Strictly Months) 🚨 -->
                         {% set month_weights = {
                             'September': '01', 'October': '02', 'November': '03', 'December': '04',
-                            'January': '05', 'February': '06', 'March': '07', 'Semester 1': '08',
-                            'April': '09', 'May': '10', 'June': '11', 'July': '12', 
-                            'August': '13', 'Semester 2': '14', 'Final Exam': '15'
+                            'January': '05', 'February': '06', 'March': '07', 'April': '08', 
+                            'May': '09', 'June': '10', 'July': '11', 'August': '12'
                         } %}
 
                         {% for record in academic_records %}
@@ -162,10 +170,22 @@
                         {% elif record.grade_level and ('University' in record.grade_level or 'Vocational' in record.grade_level) %}
                             {% set tier = 'highered' %}
                         {% endif %}
+                        
+                        <!-- Determine secondary sort weight based on exam type -->
+                        {% set term_weight = '1' %}
+                        {% if record.semester %}
+                            {% if '1' in record.semester %}
+                                {% set term_weight = '2' %}
+                            {% elif '2' in record.semester %}
+                                {% set term_weight = '3' %}
+                            {% elif 'Final' in record.semester %}
+                                {% set term_weight = '4' %}
+                            {% endif %}
+                        {% endif %}
 
                         <tr class="bg-white gradebook-row" 
                             data-year="{{ record.academic_year }}" 
-                            data-month="{{ record.month }}{% if record.semester %} {{ record.semester }}{% endif %}"
+                            data-month="{{ record.month }}"
                             data-tier="{{ tier }}">
                             
                             <!-- Student Info (Sticky on all devices) -->
@@ -176,18 +196,21 @@
                                 <span class="d-block text-muted mt-0 text-truncate" style="max-width: 180px; font-size: 0.65rem;">{{ record.school_name if record.school_name else '-' }}</span>
                             </td>
                             
-                            <!-- Term & Grade Info (With Chronological Data-Sort) -->
-                            <!-- Combine Year and Month Weight (e.g., 2025-2026-03) so DataTables sorts perfectly by time! -->
-                            <td data-sort="{{ record.academic_year }}-{% if record.month in month_weights %}{{ month_weights[record.month] }}{% else %}99{% endif %}" class="text-center align-middle py-1" style="line-height: 1.1;">
-                                <span class="d-block text-dark fw-bold" style="font-size: 0.75rem;">{{ record.month }}{% if record.semester %} {{ record.semester }}{% endif %}</span>
+                            <!-- Term & Grade Info (With Sub-Term Sorting) -->
+                            <!-- e.g. 2025-2026-07-2 (March Semester 1 sorts after March Regular) -->
+                            <td data-sort="{{ record.academic_year }}-{{ month_weights.get(record.month, '99') }}-{{ term_weight }}" class="text-center align-middle py-1" style="line-height: 1.1;">
+                                <span class="d-block text-dark fw-bold" style="font-size: 0.75rem;">{{ record.month }}</span>
+                                {% if record.semester %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-0 mt-1 d-inline-block text-truncate" style="font-size: 0.6rem; max-width: 80px;" title="{{ record.semester }}">{{ record.semester }}</span>
+                                {% endif %}
                                 {% if record.grade_level %}
-                                    <span class="text-muted fw-bold" style="font-size: 0.65rem;">{{ record.grade_level }}</span>
+                                    <span class="text-muted fw-bold d-block mt-1" style="font-size: 0.65rem;">{{ record.grade_level }}</span>
                                 {% endif %}
                             </td>
                             
                             <!-- Overall Average & Overall A-F Rating -->
                             <td data-sort="{{ record.overall_average if record.overall_average else -1 }}" class="text-center align-middle bg-light py-1 border-end border-2">
-                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                <div class="d-flex flex-column align-items-center justify-content-center gap-1">
                                     {% if record.overall_average %}
                                         <span class="fw-bold {% if record.overall_average >= 85 %}text-success{% elif record.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}" style="font-size: 0.9rem;">
                                             {{ record.overall_average }}%
@@ -247,11 +270,15 @@
                                 {{ record.class_rank if record.class_rank else '-' }}
                             </td>
                             
-                            <!-- Action Column (Edit Report) -->
+                            <!-- Action Column (Edit Report - SECURED) -->
                             <td class="text-center align-middle">
-                                <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-light border fw-bold text-primary px-2 py-0 rounded" style="font-size: 0.75rem;">
-                                    Edit
-                                </a>
+                                {% if session.get('can_manage_academics') %}
+                                    <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-light border fw-bold text-primary px-2 py-0 rounded" style="font-size: 0.75rem;">
+                                        Edit
+                                    </a>
+                                {% else %}
+                                    <span class="small text-muted"><i class="bi bi-lock-fill" title="Editing Restricted"></i></span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -374,12 +401,11 @@
             yearFilter.append(new Option(year, year));
         });
 
-        // 🚨 CAMBODIAN ACADEMIC CALENDAR JAVASCRIPT ORDER 🚨
+        // 🚨 PURE MONTHLY ORDER 🚨
         const academicOrder = [
             "September", "October", "November", "December", 
-            "January", "February", "March", "Semester 1", 
-            "April", "May", "June", "July", 
-            "August", "Semester 2", "Final Exam"
+            "January", "February", "March", "April", 
+            "May", "June", "July", "August"
         ];
         
         function populateMonths(selectedYear) {
@@ -449,7 +475,7 @@
                 if (!rowNode) return true;
                 
                 var rowYear = ($(rowNode).attr('data-year') || "").trim();
-                var rowMonth = ($(rowNode).attr('data-month') || "").replace(/\s+/g, ' ').trim();
+                var rowMonth = ($(rowNode).attr('data-month') || "").trim();
                 var rowTier = ($(rowNode).attr('data-tier') || "").trim();
                 
                 var yearMatch = (selectedYear === 'all' || rowYear === selectedYear);

@@ -20,8 +20,8 @@
                 <i class="bi bi-archive-fill me-1"></i> Archive
             </a>
             
-            <!-- FEATURE CONTROL: Export Data -->
-            {% if session.get('role') == 'Admin' or session.get('can_export_data') %}
+            <!-- 🛡️ SECURITY CONTROL: Export Data -->
+            {% if session.get('can_export_data') %}
             <a href="/export_students" class="btn btn-success shadow-sm fw-bold d-none d-md-inline-block rounded-pill px-3">
                 <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Data
             </a>
@@ -117,22 +117,22 @@
                                 <td class="action-cell text-end pe-2 pe-md-3 border-bottom-md">
                                     <div class="btn-group shadow-sm w-100 w-md-auto">
                                         
-                                        <!-- FEATURE CONTROL: Edit Profile -->
-                                        {% if session.get('role') == 'Admin' or session.get('can_edit_profiles') %}
+                                        <!-- 🛡️ SECURITY CONTROL: Edit Profile -->
+                                        {% if session.get('can_edit_profiles') %}
                                         <a href="/edit_student/{{ student.id }}" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center" title="Edit Profile">
                                             <i class="bi bi-pencil-square"></i> <span class="ms-1 d-none d-md-inline">Edit</span>
                                         </a>
                                         {% endif %}
                                         
-                                        <!-- FEATURE CONTROL: Add Report / Grades -->
-                                        {% if session.get('role') == 'Admin' or session.get('can_manage_academics') %}
+                                        <!-- 🛡️ SECURITY CONTROL: Add Report / Grades -->
+                                        {% if session.get('can_manage_academics') %}
                                         <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold d-none d-md-inline-flex align-items-center justify-content-center" title="Add Report">
                                             <i class="bi bi-journal-plus"></i> <span class="ms-1">Grades</span>
                                         </a>
                                         {% endif %}
                                         
-                                        <!-- FEATURE CONTROL: Follow-Ups / Notes -->
-                                        {% if session.get('role') == 'Admin' or session.get('can_manage_followups') %}
+                                        <!-- 🛡️ SECURITY CONTROL: Follow-Ups / Notes -->
+                                        {% if session.get('can_manage_followups') %}
                                         <a href="/add_followup/{{ student.id }}" class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center w-100 w-md-auto" title="Add Follow-Up">
                                             <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1 d-none d-md-inline">Notes</span>
                                         </a>

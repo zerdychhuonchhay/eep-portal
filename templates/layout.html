@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="manifest" href="/manifest.json">
+    
+    <!-- PWA / Mobile App Links -->
+    <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#212529">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3281/3281307.png">
     
@@ -50,7 +52,6 @@
 
         /* ---------------------------------------------------
            CRITICAL FIX: Profile Avatar Sizing
-           These ensure user uploads don't blow up the screen!
            --------------------------------------------------- */
         .avatar-sm { width: 40px; height: 40px; object-fit: cover; }
         .avatar-md { width: 60px; height: 60px; object-fit: cover; }
@@ -68,13 +69,12 @@
             position: sticky;
             top: 0;
             height: 100vh;
-            overflow-y: auto; /* Allows the sidebar to scroll independently */
-            background-color: #212529 !important; /* Force dark background */
-            color: white !important; /* Force light text */
+            overflow-y: auto; 
+            background-color: #212529 !important; 
+            color: white !important; 
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
         
-        /* Custom subtle scrollbar for the sidebar */
         .sidebar::-webkit-scrollbar { width: 5px; }
         .sidebar::-webkit-scrollbar-track { background: transparent; }
         .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
@@ -98,7 +98,7 @@
         }
         .main-content {
             flex: 1;
-            min-width: 0; /* CRITICAL FIX: Prevents DataTables/Images from causing horizontal overflow! */
+            min-width: 0; 
             padding-bottom: 5rem;
         }
         /* Mobile Sidebar Overrides */
@@ -106,12 +106,23 @@
             .sidebar { 
                 height: 100%; 
                 min-height: auto; 
-                position: fixed; /* Bootstrap Offcanvas handles this */
+                position: fixed; 
             }
             .offcanvas-body { padding: 0; }
         }
     </style>
     {% block head %}{% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('Service Worker Registered!', reg))
+                    .catch(err => console.log('Service Worker Failed!', err));
+            });
+        }
+    </script>
 </head>
 <body class="d-flex flex-column flex-lg-row bg-light">
 
@@ -137,8 +148,10 @@
                 <li><a href="/" class="nav-link"><i class="bi bi-house-door me-2"></i> Field Hub</a></li>
                 <li><a href="/roster" class="nav-link"><i class="bi bi-people me-2"></i> Student Roster</a></li>
                 
-                <!-- MOBILE UX FIX: Hide Master Gradebook on smartphones (Too complex for small screens) -->
+                <!-- 🛡️ SECURITY CONTROL: Only show Gradebook if they have permission -->
+                {% if session.get('can_manage_academics') %}
                 <li class="d-none d-md-block"><a href="/academics" class="nav-link"><i class="bi bi-journal-check me-2"></i> Master Gradebook</a></li>
+                {% endif %}
                 
                 <li><a href="/manage_households" class="nav-link"><i class="bi bi-house-heart me-2"></i> Households</a></li>
                 <li><a href="/calendar" class="nav-link"><i class="bi bi-calendar-event me-2"></i> Field Calendar</a></li>
@@ -156,8 +169,8 @@
         <hr class="border-white opacity-25">
 
         <ul class="nav nav-pills flex-column">
+            <!-- 🛡️ SECURITY CONTROL: Admin Only Settings -->
             {% if session.get('role') == 'Admin' %}
-                <!-- MOBILE UX FIX: Hide complex System Settings & Security features on mobile -->
                 <li class="nav-item mb-2 d-none d-md-block">
                     <span class="text-uppercase text-white-50 small fw-bold px-2">System & Security</span>
                 </li>
@@ -185,7 +198,7 @@
             <div class="container-fluid px-0">
                 
                 {% if session.get('user_id') %}
-                    <!-- MOBILE HAMBURGER MENU (Only visible when logged in) -->
+                    <!-- MOBILE HAMBURGER MENU -->
                     <button class="navbar-toggler border-0 shadow-none d-lg-none me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
                         <span class="navbar-toggler-icon"></span>
                     </button>
@@ -215,12 +228,14 @@
 
                     <div class="d-flex align-items-center gap-3">
                         
-                        <!-- DISABLED / COMING SOON: Phase 6 Localization Toggle -->
+                        <!-- Phase 6: Khmer Localization Engine (Coming Soon) -->
                         <div class="btn-group border rounded shadow-sm d-none d-sm-flex bg-light" style="cursor: pointer;" onclick="alert('Khmer Localization Engine (Phase 6) is under construction and will be available soon!');">
                             <button type="button" class="btn btn-sm btn-light fw-bold text-muted px-2" disabled>🇰🇭 KH</button>
                             <button type="button" class="btn btn-sm btn-white fw-bold px-2" disabled>🇺🇸 EN</button>
                         </div>
 
+                        <!-- 🛡️ SECURITY CONTROL: Admin Notifications -->
+                        {% if session.get("role") == "Admin" %}
                         <div class="dropdown">
                             <a href="#" class="text-dark position-relative" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-bell-fill fs-5"></i>
@@ -251,6 +266,7 @@
                                 {% endif %}
                             </ul>
                         </div>
+                        {% endif %}
 
                         <div class="dropdown">
                             <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
@@ -262,7 +278,11 @@
                                 <li><h6 class="dropdown-header">Signed in as <b>{{ session.get('username') }}</b></h6></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="/change_password"><i class="bi bi-key me-2 text-muted"></i> Change Password</a></li>
-                                <li><a class="dropdown-item text-danger fw-bold" href="/logout"><i class="bi bi-box-arrow-right me-2"></i> Sign out</a></li>
+                                {% if session.get("role") == "Admin" %}
+                                <li><a class="dropdown-item fw-bold py-2" href="/settings"><i class="bi bi-gear-fill text-secondary me-2"></i>System Settings</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item fw-bold py-2 text-danger" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
                             </ul>
                         </div>
                     </div>
@@ -281,7 +301,6 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <!-- Ensure flash colors render correctly based on Flask categories -->
                         {% set alert_class = category %}
                         {% if category == 'error' %}{% set alert_class = 'danger' %}{% endif %}
                         {% if category == 'message' %}{% set alert_class = 'primary' %}{% endif %}
@@ -305,7 +324,7 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- SCRIPTS (Restored Dependencies)            -->
+    <!-- SCRIPTS (Dependencies & Core Logic)        -->
     <!-- ========================================== -->
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -333,17 +352,6 @@
             if (text.includes("vocational")) return 300 + num;
             return 9999; 
         };
-    </script>
-
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('Service Worker Registered!', reg))
-                    .catch(err => console.log('Service Worker Failed!', err));
-            });
-        }
     </script>
     
     {% block scripts %}{% endblock %}
