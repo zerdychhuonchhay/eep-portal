@@ -228,6 +228,19 @@
 
                     <div class="d-flex align-items-center gap-3">
                         
+                        <!-- 🛡️ RBAC: EXPORT DATA ENGINE -->
+                        {% if session.get('can_export_data') %}
+                        <div class="dropdown d-none d-md-block">
+                            <button class="btn btn-light border fw-bold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-download text-secondary me-1"></i> Export
+                            </button>
+                            <ul class="dropdown-menu shadow border-0 dropdown-menu-end">
+                                <li><a class="dropdown-item" href="/export_students"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i> Students CSV</a></li>
+                                <li><a class="dropdown-item" href="/export_grades"><i class="bi bi-file-earmark-spreadsheet text-success me-2"></i> Grades CSV</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+
                         <!-- Phase 6: Khmer Localization Engine (Coming Soon) -->
                         <div class="btn-group border rounded shadow-sm d-none d-sm-flex bg-light" style="cursor: pointer;" onclick="alert('Khmer Localization Engine (Phase 6) is under construction and will be available soon!');">
                             <button type="button" class="btn btn-sm btn-light fw-bold text-muted px-2" disabled>🇰🇭 KH</button>

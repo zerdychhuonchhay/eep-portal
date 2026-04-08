@@ -133,19 +133,19 @@
         </div>
 
         <!-- ============================================== -->
-        <!-- TAB 2: SECURITY (RBAC PERMISSIONS MATRIX)      -->
+        <!-- TAB 2: SECURITY (RBAC CRUD PERMISSIONS MATRIX) -->
         <!-- ============================================== -->
         <div class="tab-pane fade" id="permissions" role="tabpanel">
             
             <div class="alert alert-danger bg-danger bg-opacity-10 border-danger small py-3 mb-4 rounded-3 d-flex shadow-sm">
                 <i class="bi bi-shield-exclamation me-3 fs-3 text-danger mt-1"></i> 
                 <div>
-                    <strong class="d-block text-danger text-uppercase mb-1">Global Security Matrix</strong>
-                    <span class="text-dark">Define exactly what each job role is allowed to do across the entire application. Changes here apply instantly to all staff members assigned to these roles.</span>
+                    <strong class="d-block text-danger text-uppercase mb-1">Granular CRUD Security Matrix</strong>
+                    <span class="text-dark">Define exact Create, Read, Update, and Delete actions for each role. Admins automatically bypass these locks.</span>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-danger border-4">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-danger border-4 overflow-hidden">
                 <div class="card-header bg-white text-dark fw-bold pt-4 pb-2 px-4 border-bottom-0 d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-ui-checks-grid text-danger me-2"></i> Role-Based Access Control</span>
                 </div>
@@ -154,15 +154,15 @@
                         <input type="hidden" name="action" value="update_permissions">
                         
                         <div class="table-responsive p-0">
-                            <table class="table table-hover align-middle mb-0 text-center table-bordered">
+                            <table class="table table-hover align-middle mb-0 table-bordered" style="min-width: 900px;">
                                 <thead class="table-light text-muted small text-uppercase">
                                     <tr>
-                                        <th class="text-start ps-4 py-3 bg-light">Job Role</th>
-                                        <th class="py-3" style="width: 15%;"><i class="bi bi-person-gear text-primary d-block fs-5 mb-1"></i> Edit Profiles</th>
-                                        <th class="py-3" style="width: 15%;"><i class="bi bi-mortarboard-fill text-success d-block fs-5 mb-1"></i> Academics</th>
-                                        <th class="py-3" style="width: 15%;"><i class="bi bi-clipboard2-heart-fill text-danger d-block fs-5 mb-1"></i> Case Notes</th>
-                                        <th class="py-3" style="width: 15%;"><i class="bi bi-cloud-arrow-up-fill text-info d-block fs-5 mb-1"></i> Upload Files</th>
-                                        <th class="py-3" style="width: 15%;"><i class="bi bi-file-earmark-excel-fill text-success d-block fs-5 mb-1"></i> Export Data</th>
+                                        <th class="text-start ps-4 py-3 bg-light" style="width: 15%;">Job Role</th>
+                                        <th class="py-3" style="width: 17%;"><i class="bi bi-person-gear text-primary d-block fs-5 mb-1 text-center"></i> Profiles</th>
+                                        <th class="py-3" style="width: 17%;"><i class="bi bi-mortarboard-fill text-success d-block fs-5 mb-1 text-center"></i> Academics</th>
+                                        <th class="py-3" style="width: 17%;"><i class="bi bi-clipboard2-heart-fill text-warning text-darken d-block fs-5 mb-1 text-center"></i> Notes</th>
+                                        <th class="py-3" style="width: 17%;"><i class="bi bi-folder-fill text-secondary d-block fs-5 mb-1 text-center"></i> Files & Funds</th>
+                                        <th class="py-3" style="width: 17%;"><i class="bi bi-gear-fill text-dark d-block fs-5 mb-1 text-center"></i> System</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -175,48 +175,68 @@
                                             {% endif %}
                                         </td>
                                         
-                                        <!-- Edit Profiles -->
-                                        <td>
-                                            <div class="form-check form-switch d-flex justify-content-center m-0">
-                                                <input class="form-check-input fs-4" type="checkbox" name="{{ p.role }}_edit_profiles" value="1" 
-                                                    {% if p.can_edit_profiles %}checked{% endif %} 
-                                                    {% if p.role == 'Admin' %}onclick="return false;" style="cursor: not-allowed; opacity: 0.7;"{% endif %}>
+                                        <!-- PROFILES (Create, Update) -->
+                                        <td class="px-3">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_profiles" value="1" {% if p.can_create_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Add Student</label>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_update_profiles" value="1" {% if p.can_update_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Edit Profile</label>
                                             </div>
                                         </td>
                                         
-                                        <!-- Manage Academics -->
-                                        <td>
-                                            <div class="form-check form-switch d-flex justify-content-center m-0">
-                                                <input class="form-check-input fs-4" type="checkbox" name="{{ p.role }}_manage_academics" value="1" 
-                                                    {% if p.can_manage_academics %}checked{% endif %} 
-                                                    {% if p.role == 'Admin' %}onclick="return false;" style="cursor: not-allowed; opacity: 0.7;"{% endif %}>
+                                        <!-- ACADEMICS (Create, Update, Delete) -->
+                                        <td class="px-3">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_academics" value="1" {% if p.can_create_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Add Report</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_update_academics" value="1" {% if p.can_update_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Edit Report</label>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input border-danger" type="checkbox" name="{{ p.role }}_delete_academics" value="1" {% if p.can_delete_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small text-danger fw-bold">Delete Report</label>
                                             </div>
                                         </td>
                                         
-                                        <!-- Manage Notes / Follow-ups -->
-                                        <td>
-                                            <div class="form-check form-switch d-flex justify-content-center m-0">
-                                                <input class="form-check-input fs-4" type="checkbox" name="{{ p.role }}_manage_followups" value="1" 
-                                                    {% if p.can_manage_followups %}checked{% endif %} 
-                                                    {% if p.role == 'Admin' %}onclick="return false;" style="cursor: not-allowed; opacity: 0.7;"{% endif %}>
+                                        <!-- NOTES (Create, Update) -->
+                                        <td class="px-3">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_followups" value="1" {% if p.can_create_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Add Note</label>
+                                            </div>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_update_followups" value="1" {% if p.can_update_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Edit Note</label>
                                             </div>
                                         </td>
                                         
-                                        <!-- Upload Files -->
-                                        <td>
-                                            <div class="form-check form-switch d-flex justify-content-center m-0">
-                                                <input class="form-check-input fs-4" type="checkbox" name="{{ p.role }}_upload_files" value="1" 
-                                                    {% if p.can_upload_files %}checked{% endif %} 
-                                                    {% if p.role == 'Admin' %}onclick="return false;" style="cursor: not-allowed; opacity: 0.7;"{% endif %}>
+                                        <!-- FILES & FUNDS (Create/Delete File, Create Expense) -->
+                                        <td class="px-3 border-end border-2">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_files" value="1" {% if p.can_create_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small fw-bold">Upload Files</label>
+                                            </div>
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input border-danger" type="checkbox" name="{{ p.role }}_delete_files" value="1" {% if p.can_delete_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small text-danger fw-bold">Delete Files</label>
+                                            </div>
+                                            <hr class="my-2 opacity-10">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input border-success" type="checkbox" name="{{ p.role }}_create_expenses" value="1" {% if p.can_create_expenses %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small text-success fw-bold">Log Expenses</label>
                                             </div>
                                         </td>
                                         
-                                        <!-- Export Data -->
-                                        <td>
-                                            <div class="form-check form-switch d-flex justify-content-center m-0">
-                                                <input class="form-check-input fs-4 border-danger" type="checkbox" name="{{ p.role }}_export_data" value="1" 
-                                                    {% if p.can_export_data %}checked{% endif %} 
-                                                    {% if p.role == 'Admin' %}onclick="return false;" style="cursor: not-allowed; opacity: 0.7;"{% endif %}>
+                                        <!-- SYSTEM (Export) -->
+                                        <td class="px-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input border-dark" type="checkbox" name="{{ p.role }}_export_data" value="1" {% if p.can_export_data %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <label class="form-check-label small text-dark fw-bold">Export CSVs</label>
                                             </div>
                                         </td>
                                     </tr>
@@ -226,7 +246,7 @@
                         </div>
                         
                         <div class="card-footer bg-light border-top text-end py-3 px-4 rounded-bottom-4 d-flex justify-content-between align-items-center">
-                            <span class="small text-muted fw-bold"><i class="bi bi-info-circle-fill text-warning me-1"></i> Admin privileges cannot be removed to prevent system lockout.</span>
+                            <span class="small text-muted fw-bold"><i class="bi bi-info-circle-fill text-warning me-1"></i> Admin privileges are hard-coded to prevent system lockout.</span>
                             <button type="submit" class="btn btn-danger text-white shadow-sm fw-bold px-4 rounded-pill transition-hover">
                                 <i class="bi bi-shield-check me-2"></i>Deploy Security Matrix
                             </button>

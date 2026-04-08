@@ -20,7 +20,7 @@ from flask import Flask, flash, redirect, render_template, request, session, url
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # 🚨 THE DRY REFACTOR: Importing all our tools from helpers.py!
-from helpers import login_required, admin_required, calculate_gpa, get_subject_grade_data, allowed_file, handle_file_upload
+from helpers import login_required, admin_required, permission_required, calculate_gpa, get_subject_grade_data, allowed_file, handle_file_upload
 
 # 1. Turn on the flask application
 app = Flask(__name__)
@@ -124,7 +124,7 @@ def register():
         hash_pass = generate_password_hash(password)
         try:
             # 🚨 Hardcoded to 'Pending' so they can't see any data yet!
-            db.execute("INSERT INTO staff (username, hash, role, program_scope) VALUES (?, ?, 'Pending', 'None')", 
+            db.execute("INSERT INTO staff (username, hash, role, program_id) VALUES (?, ?, 'Pending', 1)", 
                        username, hash_pass)
             
             log_action(f"New public account request submitted: {username}")
@@ -167,24 +167,44 @@ def login():
         session["username"] = rows[0]["username"]
         session["role"] = rows[0]["role"]
         
-        # 🛡️ THE DYNAMIC PERMISSIONS MATRIX
+        # 🛡️ THE DYNAMIC CRUD PERMISSIONS MATRIX
         try:
             perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", rows[0]["role"])
             if perms:
                 p = perms[0]
+                # Coarse legacy fallbacks
                 session["can_edit_profiles"] = bool(p["can_edit_profiles"])
                 session["can_manage_academics"] = bool(p["can_manage_academics"])
                 session["can_manage_followups"] = bool(p["can_manage_followups"])
                 session["can_upload_files"] = bool(p["can_upload_files"])
+                
+                # Granular CRUD 
+                session["can_create_profiles"] = bool(p.get("can_create_profiles", p["can_edit_profiles"]))
+                session["can_update_profiles"] = bool(p.get("can_update_profiles", p["can_edit_profiles"]))
+                session["can_create_academics"] = bool(p.get("can_create_academics", p["can_manage_academics"]))
+                session["can_update_academics"] = bool(p.get("can_update_academics", p["can_manage_academics"]))
+                session["can_delete_academics"] = bool(p.get("can_delete_academics", 0))
+                session["can_create_followups"] = bool(p.get("can_create_followups", p["can_manage_followups"]))
+                session["can_update_followups"] = bool(p.get("can_update_followups", p["can_manage_followups"]))
+                session["can_create_files"] = bool(p.get("can_create_files", p["can_upload_files"]))
+                session["can_delete_files"] = bool(p.get("can_delete_files", 0))
+                session["can_create_expenses"] = bool(p.get("can_create_expenses", 0))
                 session["can_export_data"] = bool(p["can_export_data"])
             else:
-                session["can_edit_profiles"] = False
-                session["can_manage_academics"] = False
-                session["can_manage_followups"] = False
-                session["can_upload_files"] = False
+                session["can_create_profiles"] = False
+                session["can_update_profiles"] = False
+                session["can_create_academics"] = False
+                session["can_update_academics"] = False
+                session["can_delete_academics"] = False
+                session["can_create_followups"] = False
+                session["can_update_followups"] = False
+                session["can_create_files"] = False
+                session["can_delete_files"] = False
+                session["can_create_expenses"] = False
                 session["can_export_data"] = False
-        except Exception:
-            pass # Failsafe if the table hasn't been built yet
+        except Exception as e:
+            print("RBAC LOAD ERROR: Make sure /settings has run the auto-healer.", str(e))
+            pass
         
         # Establish Program Context (Hat)
         program_id = rows[0].get("program_id", 1) 
@@ -253,16 +273,16 @@ def manage_staff():
             username = request.form.get("username")
             password = request.form.get("password")
             role = request.form.get("role")
-            program_scope = request.form.get("program_scope")
+            program_id = request.form.get("program_id")
             
-            if not username or not password or not role or not program_scope:
+            if not username or not password or not role or not program_id:
                 flash("Error: All fields are required to create an account.", "danger")
                 return redirect("/manage_staff")
                 
             hash_pass = generate_password_hash(password)
             try:
-                db.execute("INSERT INTO staff (username, hash, role, program_scope) VALUES (?, ?, ?, ?)", 
-                           username, hash_pass, role, program_scope)
+                db.execute("INSERT INTO staff (username, hash, role, program_id) VALUES (?, ?, ?, ?)", 
+                           username, hash_pass, role, program_id)
                 log_action(f"Registered new staff member: {username} ({role})")
                 flash(f"Account created successfully for {username}!", "success")
             except ValueError:
@@ -271,13 +291,13 @@ def manage_staff():
         elif action == "edit":
             staff_id = request.form.get("staff_id")
             new_role = request.form.get("role")
-            new_scope = request.form.get("program_scope")
+            new_pid = request.form.get("program_id")
             
             if int(staff_id) == session["user_id"] and new_role != "Admin":
                 flash("Security Warning: You cannot remove your own Admin privileges.", "warning")
             else:
-                db.execute("UPDATE staff SET role = ?, program_scope = ? WHERE id = ?", new_role, new_scope, staff_id)
-                log_action(f"Updated permissions for Staff ID {staff_id} to {new_role}/{new_scope}")
+                db.execute("UPDATE staff SET role = ?, program_id = ? WHERE id = ?", new_role, new_pid, staff_id)
+                log_action(f"Updated permissions for Staff ID {staff_id} to {new_role}/Program {new_pid}")
                 flash("Staff permissions updated successfully. Takes effect on their next login.", "success")
                 
         elif action == "reset_password":
@@ -291,8 +311,14 @@ def manage_staff():
 
         return redirect("/manage_staff")
     else:
-        staff_members = db.execute("SELECT id, username, role, program_scope FROM staff ORDER BY role ASC, username ASC")
-        return render_template("manage_staff.html", staff_members=staff_members)
+        staff_members = db.execute("""
+            SELECT s.id, s.username, s.role, s.program_id, p.name as program_name 
+            FROM staff s 
+            LEFT JOIN programs p ON s.program_id = p.id 
+            ORDER BY s.role ASC, s.username ASC
+        """)
+        programs = db.execute("SELECT * FROM programs ORDER BY id ASC")
+        return render_template("manage_staff.html", staff_members=staff_members, programs=programs)
 
 
 @app.route("/logout")
@@ -341,20 +367,18 @@ def index():
         staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
         return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
         
-    elif program_id == 1:
+    elif program_id > 0:
         staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
         username = staff[0]["username"] if staff else "Staff"
 
-        # For the Mobile Smart Feed
         recent_students = db.execute("""
             SELECT id, first_name, last_name, khmer_name, ngo_id, profile_picture 
             FROM students 
-            WHERE status = 'Active' 
+            WHERE status = 'Active' AND program_id = ?
             ORDER BY COALESCE(updated_at, joined_date, id) DESC LIMIT 5
-        """)
+        """, program_id)
         
-        # For the PC Side-by-Side Roster
-        all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' ORDER BY first_name")
+        all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' AND program_id = ? ORDER BY first_name", program_id)
         
         return render_template("index.html", username=username, recent_students=recent_students, students=all_active_students)
 
@@ -370,38 +394,38 @@ def dashboard():
         today_date = datetime.now().strftime('%Y-%m-%d')
         return render_template("dashboard_global.html", date_now=today_date)
         
-    # HAT 2: EEP MANAGEMENT
-    elif program_id == 1:
+    # HAT 2: PROGRAM MANAGEMENT
+    elif program_id > 0:
         try:
             months = int(request.args.get('timeframe', 1))
         except ValueError:
             months = 1
 
-        # Stats: Enrollment Breakdown
-        active_kids = db.execute("SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' GROUP BY gender")
+        active_kids = db.execute("SELECT gender, COUNT(*) as count FROM students WHERE status = 'Active' AND program_id = ? GROUP BY gender", program_id)
         total_active = sum(row['count'] for row in active_kids)
         boys = next((row['count'] for row in active_kids if row['gender'] == 'Male'), 0)
         girls = next((row['count'] for row in active_kids if row['gender'] == 'Female'), 0)
 
-        uni_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%University%'")[0]['count']
-        vocal_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND grade_level LIKE '%Vocational%'")[0]['count']
+        uni_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND program_id = ? AND grade_level LIKE '%University%'", program_id)[0]['count']
+        vocal_kids = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND program_id = ? AND grade_level LIKE '%Vocational%'", program_id)[0]['count']
 
-        # Stats: Services (Smart Lunch Calculation)
-        lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND meal_plan = 'Daily Hot Lunch'")[0]['count']
+        lunch_kids_count = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Active' AND program_id = ? AND meal_plan = 'Daily Hot Lunch'", program_id)[0]['count']
         estimated_workdays = months * 22
         max_possible_meals = lunch_kids_count * estimated_workdays
 
         missed_meals = db.execute("""
-            SELECT COUNT(*) as total FROM student_services
-            WHERE service_type = 'Missed Hot Lunch'
-            AND service_date >= date('now', ?)
-        """, f'-{months} month')[0]['total'] or 0
+            SELECT COUNT(*) as total FROM student_services ss
+            JOIN students s ON ss.student_id = s.id
+            WHERE ss.service_type = 'Missed Hot Lunch'
+            AND ss.service_date >= date('now', ?) AND s.program_id = ?
+        """, f'-{months} month', program_id)[0]['total'] or 0
 
         holidays_logged = db.execute("""
-            SELECT COUNT(*) as total FROM student_services
-            WHERE service_type = 'Holiday - No Meals'
-            AND service_date >= date('now', ?)
-        """, f'-{months} month')[0]['total'] or 0
+            SELECT COUNT(*) as total FROM student_services ss
+            JOIN students s ON ss.student_id = s.id
+            WHERE ss.service_type = 'Holiday - No Meals'
+            AND ss.service_date >= date('now', ?) AND s.program_id = ?
+        """, f'-{months} month', program_id)[0]['total'] or 0
         
         holiday_missed_meals = holidays_logged * lunch_kids_count
         meals = max(0, max_possible_meals - missed_meals - holiday_missed_meals)
@@ -411,7 +435,6 @@ def dashboard():
             WHERE activity_type = 'Parent Meeting' AND activity_date >= date('now', ?)
         """, f'-{months} month')[0]['total'] or 0
 
-        # Stats: Impact
         housing_supports = db.execute("""
             SELECT SUM(attendance_count) as total FROM activities
             WHERE activity_type = 'Housing Support' AND activity_date >= date('now', ?)
@@ -423,18 +446,20 @@ def dashboard():
             AND activity_date >= date('now', ?)
         """, f'-{months} month')[0]['total'] or 0
 
-        # Stats: Academic Excellence
-        top_performers = db.execute("SELECT COUNT(*) as count FROM monthly_reports WHERE CAST(class_rank AS INTEGER) <= 10 AND CAST(class_rank AS INTEGER) > 0")[0]['count']
-        graduates = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Graduated'")[0]['count']
+        top_performers = db.execute("""
+            SELECT COUNT(*) as count FROM monthly_reports r
+            JOIN students s ON r.student_id = s.id
+            WHERE CAST(r.class_rank AS INTEGER) <= 10 AND CAST(r.class_rank AS INTEGER) > 0 AND s.program_id = ?
+        """, program_id)[0]['count']
+        graduates = db.execute("SELECT COUNT(*) as count FROM students WHERE status = 'Graduated' AND program_id = ?", program_id)[0]['count']
 
-        # Priority Alerts
         academic_alerts = db.execute("""
             SELECT s.first_name, s.last_name, s.id, r.overall_average, r.academic_year, r.month
             FROM students s JOIN monthly_reports r ON s.id = r.student_id
             WHERE r.overall_average < 50 AND r.overall_average IS NOT NULL
-            AND s.status = 'Active'
+            AND s.status = 'Active' AND s.program_id = ?
             ORDER BY r.academic_year DESC, r.id DESC LIMIT 5
-        """)
+        """, program_id)
 
         protection_alerts = db.execute("""
             SELECT s.first_name, s.last_name, s.id, f.id as followup_id, f.child_protection_concerns
@@ -442,11 +467,10 @@ def dashboard():
             WHERE f.child_protection_concerns NOT IN ('No', 'None', 'N/A', '')
             AND f.child_protection_concerns IS NOT NULL
             AND (f.alert_status IS NULL OR f.alert_status = 'Active')
-            AND s.status = 'Active'
+            AND s.status = 'Active' AND s.program_id = ?
             ORDER BY f.followup_date DESC LIMIT 5
-        """)
+        """, program_id)
 
-        # Smart Sponsor Letters Logic
         current_month = datetime.now().month
         current_year = str(datetime.now().year)
         if current_month <= 3: current_quarter = 'Q1'
@@ -463,11 +487,11 @@ def dashboard():
                    MAX(f.id) as followup_id
             FROM students s
             LEFT JOIN followups f ON s.id = f.student_id AND f.letter_quarter = ? AND f.letter_year = ?
-            WHERE s.status = 'Active'
+            WHERE s.status = 'Active' AND s.program_id = ?
             GROUP BY s.id
             HAVING sent IS NULL OR sent != 'Yes'
             ORDER BY s.first_name ASC
-        """, current_quarter, current_year)
+        """, current_quarter, current_year, program_id)
 
         missing_letters = []
         for student in missing_letters_raw:
@@ -481,7 +505,6 @@ def dashboard():
                 student['status_badge'], student['status_color'] = "Not Started", "danger"
             missing_letters.append(student)
 
-        # Audit Log Feed
         recent_activity = []
         if session.get("role") in ["Admin", "System PM", "Director"]:
             try:
@@ -520,14 +543,16 @@ def dashboard():
 @login_required
 def roster():
     """Show the full active roster"""
-    students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' ORDER BY first_name")
+    pid = session.get("program_id", 0)
+    students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
     return render_template("roster.html", students=students, title="Active Roster")
 
 @app.route("/archive")
 @login_required
 def archive():
     """Show dropped out / graduated students"""
-    students = db.execute("SELECT * FROM students WHERE status = 'Dropped Out' OR status = 'Graduated' ORDER BY first_name")
+    pid = session.get("program_id", 0)
+    students = db.execute("SELECT * FROM students WHERE (status = 'Dropped Out' OR status = 'Graduated') AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
     return render_template("roster.html", students=students, title="Archived Students")
 
 @app.route("/guide")
@@ -538,6 +563,7 @@ def guide():
 
 @app.route("/add_student", methods=["GET", "POST"])
 @login_required
+@permission_required("can_create_profiles")
 def add_student():
     """Add a new student to the database"""
     if request.method == "POST":
@@ -563,17 +589,20 @@ def add_student():
         father_name = request.form.get("father_name")
 
         if not ngo_id or not first_name or not last_name:
-            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required.")
 
         if not household_id:
             household_id = None 
 
+        pid = session.get("program_id", 1)
+        if pid == 0: pid = 1 # Fallback to default if central admin adds a student
+
         try:
             db.execute("""
                 INSERT INTO students
-                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
-            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name)
+                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, program_id, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, pid)
             
             student_id = db.execute("SELECT id FROM students WHERE ngo_id = ?", ngo_id)[0]['id']
             
@@ -588,7 +617,7 @@ def add_student():
             return redirect("/")
 
         except ValueError:
-            return render_template("apology.html", message="A student with that NGO ID already exists. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("apology.html", message="A student with that NGO ID already exists.")
 
     else:
         today_date = datetime.now().strftime('%Y-%m-%d')
@@ -601,6 +630,7 @@ def add_student():
 
 @app.route("/edit_student/<int:id>", methods=["GET", "POST"])
 @login_required
+@permission_required("can_update_profiles")
 def edit_student(id):
     """Edit an existing student's profile"""
     if request.method == "POST":
@@ -629,7 +659,7 @@ def edit_student(id):
             household_id = None 
 
         if not ngo_id or not first_name or not last_name:
-            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required.")
 
         try:
             db.execute("""
@@ -649,7 +679,7 @@ def edit_student(id):
             return redirect(f"/student/{id}")
 
         except ValueError:
-            return render_template("apology.html", message="Update failed. NGO ID might conflict with another student. Please use your browser's BACK arrow to return.")
+            return render_template("apology.html", message="Update failed. NGO ID might conflict with another student.")
 
     else:
         student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
@@ -669,6 +699,7 @@ def edit_student(id):
 
 @app.route("/update_avatar/<int:id>", methods=["POST"])
 @login_required
+@permission_required("can_update_profiles")
 def update_avatar(id):
     file = request.files.get('profile_picture')
     if file and file.filename != '':
@@ -796,13 +827,11 @@ def household_profile(id):
 def student_profile(id):
     """Single source of truth for a student's full profile, grades, notes, and files."""
     
-    # 1. Core Identity
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
         return render_template("apology.html", message="Student not found")
     student = student_data[0]
 
-    # 2. Household & Kinship Linkage
     household = None
     siblings = []
     if student.get("household_id"):
@@ -817,7 +846,6 @@ def student_profile(id):
             ORDER BY dob ASC
         """, student["household_id"], id)
 
-    # 3. Academic Engine & Filters
     academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
     unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
 
@@ -830,7 +858,6 @@ def student_profile(id):
     else:
         reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC", id)
 
-    # 🚨 THE FIX: Loop through every report, fetch subjects, and use helper to calculate badges!
     for report in reports:
         subjects = db.execute("""
             SELECT COALESCE(s.name, g.custom_subject_name) as subject_name, 
@@ -844,7 +871,6 @@ def student_profile(id):
         """, report["id"])
         
         for sub in subjects:
-            # 🚨 USE HELPER: One line replaces 25 lines of messy if/else math!
             letter, box, text, badge = get_subject_grade_data(sub['score'], sub['max_score'])
             sub['grade_letter'] = letter
             sub['box_class'] = box
@@ -853,16 +879,13 @@ def student_profile(id):
 
         report["subjects"] = subjects
 
-    # 4. Social Work Timeline
     followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC, id DESC", id)
     
-    # 5. Digital Filing Cabinet
     try:
         docs = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY upload_date DESC", id)
     except Exception:
         docs = []
 
-    # 6. Financial Ledger
     try:
         expenses = db.execute("SELECT * FROM student_expenses WHERE student_id = ? ORDER BY expense_date DESC", id)
         total_spent_raw = sum(exp['amount'] for exp in expenses) if expenses else 0.00
@@ -893,13 +916,14 @@ def student_profile(id):
 @login_required
 def academics():
     """Master Gradebook - Shows all students and all grades dynamically"""
+    pid = session.get("program_id", 0)
     academic_records_raw = db.execute("""
         SELECT r.*, s.first_name, s.last_name, s.ngo_id, s.khmer_name, s.gender, s.current_school, s.grade_level as student_grade
         FROM monthly_reports r
         JOIN students s ON r.student_id = s.id
-        WHERE s.status = 'Active'
+        WHERE s.status = 'Active' AND (s.program_id = ? OR ? = 0)
         ORDER BY r.academic_year DESC, r.id DESC
-    """)
+    """, pid, pid)
 
     raw_grades = db.execute("""
         SELECT g.*, COALESCE(subj.name, g.custom_subject_name) as subject_name,
@@ -926,12 +950,13 @@ def academics():
         if not record['grade_level']:
             record['grade_level'] = record['student_grade']
 
-    active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name")
+    active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
 
     return render_template("academics.html", academic_records=academic_records_raw, active_students=active_students)
 
 @app.route("/add_report/<int:student_id>", methods=["GET", "POST"])
 @login_required
+@permission_required("can_create_academics")
 def add_report(student_id):
     """Add a monthly academic report for a student"""
     if request.method == "POST":
@@ -951,7 +976,6 @@ def add_report(student_id):
         if not month or not academic_year:
             return render_template("apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
 
-        # Prevent duplicate reports ONLY if they are the exact same Month AND Exam Type
         existing_report = db.execute("""
             SELECT id FROM monthly_reports
             WHERE student_id = ? AND month = ? AND academic_year = ? AND IFNULL(semester, '') = IFNULL(?, '')
@@ -1043,6 +1067,7 @@ def add_report(student_id):
 
 @app.route("/edit_report/<int:report_id>", methods=["GET", "POST"])
 @login_required
+@permission_required("can_update_academics")
 def edit_report(report_id):
     report_data = db.execute("SELECT * FROM monthly_reports WHERE id = ?", report_id)
     if len(report_data) != 1:
@@ -1167,7 +1192,7 @@ def edit_report(report_id):
 
 @app.route("/delete_report/<int:report_id>", methods=["POST"])
 @login_required
-@admin_required 
+@permission_required("can_delete_academics")
 def delete_report(report_id):
     report = db.execute("SELECT student_id, scanned_document FROM monthly_reports WHERE id = ?", report_id)
     if not report:
@@ -1196,6 +1221,7 @@ def delete_report(report_id):
 
 @app.route("/add_followup/<int:student_id>", methods=["GET", "POST"])
 @login_required
+@permission_required("can_create_followups")
 def add_followup(student_id):
     if request.method == "POST":
         followup_date = request.form.get("followup_date")
@@ -1242,6 +1268,7 @@ def add_followup(student_id):
 
 @app.route("/edit_followup/<int:followup_id>", methods=["GET", "POST"])
 @login_required
+@permission_required("can_update_followups")
 def edit_followup(followup_id):
     followup_data = db.execute("SELECT * FROM followups WHERE id = ?", followup_id)
     if len(followup_data) != 1:
@@ -1288,6 +1315,7 @@ def edit_followup(followup_id):
 
 @app.route("/bulk_followup", methods=["GET", "POST"])
 @login_required
+@permission_required("can_create_followups")
 def bulk_followup():
     """Log a single follow-up note for multiple students at once"""
     if request.method == "POST":
@@ -1317,12 +1345,13 @@ def bulk_followup():
         flash(f"Successfully logged group follow-up for {len(student_ids)} students!", "success")
         return redirect("/dashboard")
 
+    pid = session.get("program_id", 0)
     students = db.execute("""
         SELECT id, first_name, last_name, khmer_name, ngo_id, grade_level 
         FROM students 
-        WHERE status = 'Active' 
+        WHERE status = 'Active' AND (program_id = ? OR ? = 0)
         ORDER BY first_name ASC
-    """)
+    """, pid, pid)
     today_date = datetime.now().strftime('%Y-%m-%d')
     
     staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
@@ -1332,6 +1361,7 @@ def bulk_followup():
 
 @app.route("/resolve_alert/<int:followup_id>", methods=["POST"])
 @login_required
+@permission_required("can_update_followups")
 def resolve_alert(followup_id):
     """Mark a protection alert as resolved"""
     db.execute("UPDATE followups SET alert_status = 'Resolved' WHERE id = ?", followup_id)
@@ -1346,6 +1376,7 @@ def resolve_alert(followup_id):
 
 @app.route('/upload_document/<int:student_id>', methods=['POST'])
 @login_required
+@permission_required("can_create_files")
 def upload_document(student_id):
     file = request.files.get('document_file')
     doc_type = request.form.get('document_type')
@@ -1367,7 +1398,7 @@ def upload_document(student_id):
 
 @app.route("/delete_document/<int:doc_id>", methods=["POST", "GET"])
 @login_required
-@admin_required 
+@permission_required("can_delete_files")
 def delete_document(doc_id):
     doc = db.execute("SELECT * FROM documents WHERE id = ?", doc_id)
     if not doc:
@@ -1386,8 +1417,8 @@ def delete_document(doc_id):
 
 @app.route("/log_expense/<int:student_id>", methods=["POST"])
 @login_required
+@permission_required("can_create_expenses")
 def log_expense(student_id):
-    """Log financial support (Restricted to Admins in UI, but endpoint here for completeness)"""
     amount = request.form.get("amount")
     category = request.form.get("category")
     vendor_name = request.form.get("vendor_name")
@@ -1433,7 +1464,8 @@ def log_services():
         flash(f"Successfully logged '{service_type}' for {len(student_ids)} students!", "success")
         return redirect("/dashboard")
 
-    students = db.execute("SELECT id, first_name, last_name, khmer_name, grade_level, meal_plan FROM students WHERE status = 'Active' ORDER BY first_name ASC")
+    pid = session.get("program_id", 0)
+    students = db.execute("SELECT id, first_name, last_name, khmer_name, grade_level, meal_plan FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name ASC", pid, pid)
     today_date = datetime.now().strftime('%Y-%m-%d')
     return render_template("log_services.html", students=students, today_date=today_date)
 
@@ -1462,7 +1494,8 @@ def setup_calendar():
             priority TEXT DEFAULT 'Medium',
             status TEXT DEFAULT 'Pending',
             student_id INTEGER,
-            staff_id INTEGER
+            staff_id INTEGER,
+            program_id INTEGER DEFAULT 1
         )
     """)
     flash("Calendar Database Table successfully created! You are ready to go.", "success")
@@ -1471,24 +1504,26 @@ def setup_calendar():
 @app.route("/calendar")
 @login_required
 def field_calendar():
-    students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' ORDER BY first_name ASC")
+    pid = session.get("program_id", 0)
+    students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name ASC", pid, pid)
     pending_tasks = db.execute("""
         SELECT t.*, s.first_name, s.last_name 
         FROM tasks t 
         LEFT JOIN students s ON t.student_id = s.id 
-        WHERE t.status = 'Pending' AND t.staff_id = ?
+        WHERE t.status = 'Pending' AND t.staff_id = ? AND (t.program_id = ? OR ? = 0)
         ORDER BY t.due_date ASC LIMIT 15
-    """, session["user_id"])
+    """, session["user_id"], pid, pid)
     return render_template("calendar.html", students=students, pending_tasks=pending_tasks)
 
 @app.route("/api/tasks")
 @login_required
 def api_tasks():
     view_mode = request.args.get("view", "my")
+    pid = session.get("program_id", 0)
     if view_mode == "team":
-        tasks = db.execute("SELECT * FROM tasks")
+        tasks = db.execute("SELECT * FROM tasks WHERE (program_id = ? OR ? = 0)", pid, pid)
     else:
-        tasks = db.execute("SELECT * FROM tasks WHERE staff_id = ?", session["user_id"])
+        tasks = db.execute("SELECT * FROM tasks WHERE staff_id = ? AND (program_id = ? OR ? = 0)", session["user_id"], pid, pid)
         
     events = []
     for t in tasks:
@@ -1524,8 +1559,11 @@ def add_task():
         flash("Task Title and Date are required.", "danger")
         return redirect("/calendar")
         
-    db.execute("INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id) VALUES (?, ?, ?, ?, 'Pending', ?, ?)", 
-               title, description, due_date, priority, student_id, session["user_id"])
+    pid = session.get("program_id", 1)
+    if pid == 0: pid = 1 
+        
+    db.execute("INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id, program_id) VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?)", 
+               title, description, due_date, priority, student_id, session["user_id"], pid)
     log_action(f"Created new task: {title}")
     flash("Task successfully added to your calendar!", "success")
     return redirect("/calendar")
@@ -1572,7 +1610,7 @@ def settings():
         with open(translation_file, 'w', encoding='utf-8') as f:
             json.dump({}, f)
 
-    # 2. DYNAMIC PERMISSIONS SETUP
+    # 2. DYNAMIC PERMISSIONS SETUP (WITH AUTO-HEALER FOR CRUD UPGRADE)
     db.execute("""
         CREATE TABLE IF NOT EXISTS role_permissions (
             role TEXT PRIMARY KEY,
@@ -1583,21 +1621,37 @@ def settings():
             can_export_data INTEGER DEFAULT 0
         )
     """)
+    
+    # Auto-Healer: Add CRUD Columns if they don't exist
+    try:
+        db.execute("SELECT can_create_academics FROM role_permissions LIMIT 1")
+    except Exception:
+        print("Upgrading role_permissions table to Granular CRUD...")
+        columns = [
+            "can_create_profiles", "can_update_profiles",
+            "can_create_academics", "can_update_academics", "can_delete_academics",
+            "can_create_followups", "can_update_followups",
+            "can_create_files", "can_delete_files", "can_create_expenses"
+        ]
+        for col in columns:
+            try:
+                db.execute(f"ALTER TABLE role_permissions ADD COLUMN {col} INTEGER DEFAULT 0")
+            except Exception:
+                pass
+        
+        # Migrate old coarse settings to granular
+        db.execute("UPDATE role_permissions SET can_create_profiles = can_edit_profiles, can_update_profiles = can_edit_profiles")
+        db.execute("UPDATE role_permissions SET can_create_academics = can_manage_academics, can_update_academics = can_manage_academics")
+        db.execute("UPDATE role_permissions SET can_create_followups = can_manage_followups, can_update_followups = can_manage_followups")
+        db.execute("UPDATE role_permissions SET can_create_files = can_upload_files")
+        db.execute("UPDATE role_permissions SET can_delete_academics = 1, can_delete_files = 1, can_create_expenses = 1 WHERE role = 'Admin'")
+
     existing_roles = db.execute("SELECT COUNT(*) as count FROM role_permissions")[0]['count']
     if existing_roles == 0:
-        default_roles = [
-            ("Admin", 1, 1, 1, 1, 1),
-            ("Director", 0, 0, 0, 0, 1),
-            ("Program Manager", 1, 1, 1, 1, 0),
-            ("Field Officer", 0, 0, 1, 1, 0),
-            ("Teacher", 0, 1, 0, 0, 0)
-        ]
+        default_roles = ["Admin", "Director", "Program Manager", "Field Officer", "Teacher"]
         for r in default_roles:
-            db.execute("""
-                INSERT INTO role_permissions 
-                (role, can_edit_profiles, can_manage_academics, can_manage_followups, can_upload_files, can_export_data)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, r[0], r[1], r[2], r[3], r[4], r[5])
+            db.execute("INSERT INTO role_permissions (role) VALUES (?)", r)
+        db.execute("UPDATE role_permissions SET can_create_profiles = 1, can_update_profiles = 1, can_create_academics = 1, can_update_academics = 1, can_delete_academics = 1, can_create_followups = 1, can_update_followups = 1, can_create_files = 1, can_delete_files = 1, can_create_expenses = 1, can_export_data = 1 WHERE role = 'Admin'")
 
     db.execute("CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT)")
     if not db.execute("SELECT * FROM system_settings WHERE key = 'current_academic_year'"):
@@ -1688,7 +1742,7 @@ def settings():
                     json.dump(translations, f, ensure_ascii=False, indent=4)
                 flash(f"Added translation for '{new_key}'.", "success")
         elif action == "update_translations":
-            pass # Bulk update simplified for snippet length
+            pass 
             flash("Translations deployed successfully!", "success")
         elif action == "delete_translation":
             del_key = request.form.get("translation_key")
@@ -1700,20 +1754,35 @@ def settings():
                     json.dump(translations, f, ensure_ascii=False, indent=4)
                 flash(f"Deleted translation key '{del_key}'.", "success")
 
-        # DYNAMIC PERMISSIONS
+        # DYNAMIC PERMISSIONS (CRUD UPDATE)
         elif action == "update_permissions":
             roles = ["Admin", "Director", "Program Manager", "Field Officer", "Teacher"]
             for r in roles:
-                can_edit = 1 if request.form.get(f"{r}_edit_profiles") else 0
-                can_acad = 1 if request.form.get(f"{r}_manage_academics") else 0
-                can_foll = 1 if request.form.get(f"{r}_manage_followups") else 0
-                can_up = 1 if request.form.get(f"{r}_upload_files") else 0
-                can_exp = 1 if request.form.get(f"{r}_export_data") else 0
+                c_prof = 1 if request.form.get(f"{r}_create_profiles") else 0
+                u_prof = 1 if request.form.get(f"{r}_update_profiles") else 0
+                c_acad = 1 if request.form.get(f"{r}_create_academics") else 0
+                u_acad = 1 if request.form.get(f"{r}_update_academics") else 0
+                d_acad = 1 if request.form.get(f"{r}_delete_academics") else 0
+                c_foll = 1 if request.form.get(f"{r}_create_followups") else 0
+                u_foll = 1 if request.form.get(f"{r}_update_followups") else 0
+                c_file = 1 if request.form.get(f"{r}_create_files") else 0
+                d_file = 1 if request.form.get(f"{r}_delete_files") else 0
+                c_exp = 1 if request.form.get(f"{r}_create_expenses") else 0
+                exp_data = 1 if request.form.get(f"{r}_export_data") else 0
+                
                 db.execute("""
                     UPDATE role_permissions
-                    SET can_edit_profiles = ?, can_manage_academics = ?, can_manage_followups = ?, can_upload_files = ?, can_export_data = ?
+                    SET can_edit_profiles = ?, can_create_profiles = ?, can_update_profiles = ?,
+                        can_manage_academics = ?, can_create_academics = ?, can_update_academics = ?, can_delete_academics = ?,
+                        can_manage_followups = ?, can_create_followups = ?, can_update_followups = ?,
+                        can_upload_files = ?, can_create_files = ?, can_delete_files = ?, can_create_expenses = ?,
+                        can_export_data = ?
                     WHERE role = ?
-                """, can_edit, can_acad, can_foll, can_up, can_exp, r)
+                """, u_prof, c_prof, u_prof, 
+                     u_acad, c_acad, u_acad, d_acad, 
+                     u_foll, c_foll, u_foll, 
+                     c_file, c_file, d_file, c_exp, 
+                     exp_data, r)
             log_action("Updated Global Role Permissions Matrix")
             flash("Role permissions successfully updated!", "success")
 
@@ -1732,8 +1801,10 @@ def settings():
 
 @app.route('/export_students')
 @login_required
+@permission_required("can_export_data")
 def export_students():
-    students = db.execute("SELECT id, ngo_id, first_name, last_name, gender, dob, status, slum_area, current_school, grade_level FROM students ORDER BY last_name")
+    pid = session.get("program_id", 0)
+    students = db.execute("SELECT id, ngo_id, first_name, last_name, gender, dob, status, slum_area, current_school, grade_level FROM students WHERE (program_id = ? OR ? = 0) ORDER BY last_name", pid, pid)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['System ID', 'NGO ID', 'First Name', 'Last Name', 'Gender', 'DOB', 'Status', 'Slum Area', 'School', 'Grade Level'])
@@ -1745,13 +1816,16 @@ def export_students():
 
 @app.route('/export_grades')
 @login_required
+@permission_required("can_export_data")
 def export_grades():
+    pid = session.get("program_id", 0)
     reports = db.execute("""
         SELECT s.ngo_id, s.first_name, s.last_name, m.academic_year, m.month, m.grade_level, m.overall_average, m.class_rank
         FROM monthly_reports m
         JOIN students s ON m.student_id = s.id
+        WHERE (s.program_id = ? OR ? = 0)
         ORDER BY m.academic_year DESC, m.month DESC
-    """)
+    """, pid, pid)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['NGO ID', 'First Name', 'Last Name', 'Academic Year', 'Month', 'Grade Level', 'Overall Average', 'Class Rank'])

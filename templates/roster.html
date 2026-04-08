@@ -20,6 +20,13 @@
                 <i class="bi bi-archive-fill me-1"></i> Archive
             </a>
             
+            <!-- 🛡️ SECURITY CONTROL: Add New Student -->
+            {% if session.get('can_edit_profiles') %}
+            <a href="/add_student" class="btn btn-info text-white shadow-sm fw-bold rounded-pill px-3">
+                <i class="bi bi-person-plus-fill me-1"></i> Add Student
+            </a>
+            {% endif %}
+            
             <!-- 🛡️ SECURITY CONTROL: Export Data -->
             {% if session.get('can_export_data') %}
             <a href="/export_students" class="btn btn-success shadow-sm fw-bold d-none d-md-inline-block rounded-pill px-3">
@@ -121,6 +128,10 @@
                                         {% if session.get('can_edit_profiles') %}
                                         <a href="/edit_student/{{ student.id }}" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center" title="Edit Profile">
                                             <i class="bi bi-pencil-square"></i> <span class="ms-1 d-none d-md-inline">Edit</span>
+                                        </a>
+                                        {% else %}
+                                        <a href="/student/{{ student.id }}" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center" title="View Profile">
+                                            <i class="bi bi-eye-fill"></i> <span class="ms-1 d-none d-md-inline">View</span>
                                         </a>
                                         {% endif %}
                                         
@@ -256,7 +267,7 @@
             "pageLength": 25,
             "order": [[ 0, "asc" ]], 
             "columnDefs": [
-                { "type": "custom-grade", "targets": 2 }, // Updated target index for Grade Level
+                { "type": "custom-grade-pre", "targets": 2 }, // Apply custom grade sort
                 { "orderable": false, "targets": 6 } // Disabled sorting for Actions column
             ],
             "language": {

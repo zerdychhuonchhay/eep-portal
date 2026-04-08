@@ -26,6 +26,19 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def permission_required(permission_key):
+    """Checks the granular RBAC permissions loaded into the user session at login."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Always allow Admins, otherwise check specific boolean flag
+            if session.get("role") != "Admin" and not session.get(permission_key):
+                flash(f"Unauthorized Access: You lack the required permission to perform this action.", "danger")
+                return redirect(request.referrer or "/")
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
 
 # =========================================================
 # 2. THE MATH ENGINE

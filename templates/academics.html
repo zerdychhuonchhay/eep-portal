@@ -197,7 +197,6 @@
                             </td>
                             
                             <!-- Term & Grade Info (With Sub-Term Sorting) -->
-                            <!-- e.g. 2025-2026-07-2 (March Semester 1 sorts after March Regular) -->
                             <td data-sort="{{ record.academic_year }}-{{ month_weights.get(record.month, '99') }}-{{ term_weight }}" class="text-center align-middle py-1" style="line-height: 1.1;">
                                 <span class="d-block text-dark fw-bold" style="font-size: 0.75rem;">{{ record.month }}</span>
                                 {% if record.semester %}
