@@ -206,6 +206,25 @@ def login():
             print("RBAC LOAD ERROR: Make sure /settings has run the auto-healer.", str(e))
             pass
         
+        # 🛡️ BULLETPROOF ADMIN OVERRIDE
+        # No matter what the database says, Admins ALWAYS get full UI buttons
+        if session["role"] == "Admin":
+            session["can_edit_profiles"] = True
+            session["can_create_profiles"] = True
+            session["can_update_profiles"] = True
+            session["can_manage_academics"] = True
+            session["can_create_academics"] = True
+            session["can_update_academics"] = True
+            session["can_delete_academics"] = True
+            session["can_manage_followups"] = True
+            session["can_create_followups"] = True
+            session["can_update_followups"] = True
+            session["can_upload_files"] = True
+            session["can_create_files"] = True
+            session["can_delete_files"] = True
+            session["can_create_expenses"] = True
+            session["can_export_data"] = True
+
         # Establish Program Context (Hat)
         program_id = rows[0].get("program_id", 1) 
         try:
@@ -392,6 +411,15 @@ def view_as_revert():
             
         log_action("Ended VIEW AS mode.")
         flash("Welcome back! Your Admin privileges have been restored.", "success")
+        
+    return redirect(request.referrer or "/")
+
+@app.route("/set_language/<lang>")
+@login_required
+def set_language(lang):
+    """Phase 6: Toggles the active session language between English and Khmer"""
+    if lang in ['en', 'kh']:
+        session['lang'] = lang
         
     return redirect(request.referrer or "/")
 
@@ -1741,10 +1769,12 @@ def settings():
         elif action == "update_subjects":
             subjects = db.execute("SELECT id FROM subjects")
             for subject in subjects:
-                sort_order = request.form.get(f"sort_{subject['id']}")
-                category = request.form.get(f"category_{subject['id']}")
-                if sort_order is not None and str(sort_order).strip() != "":
-                    db.execute("UPDATE subjects SET sort_order = ?, category = ? WHERE id = ?", sort_order, category, subject['id'])
+                sub_id = subject['id']
+                new_name = request.form.get(f"name_{sub_id}")
+                sort_order = request.form.get(f"sort_{sub_id}")
+                category = request.form.get(f"category_{sub_id}")
+                if new_name and sort_order is not None and str(sort_order).strip() != "":
+                    db.execute("UPDATE subjects SET name = ?, sort_order = ?, category = ? WHERE id = ?", new_name, sort_order, category, sub_id)
             log_action("Updated Subject Master Settings")
             flash("Subjects successfully updated!", "success")
         elif action == "delete_subject":
@@ -1788,11 +1818,16 @@ def settings():
 
         # SYSTEM
         elif action == "update_system":
-            acad_year = request.form.get("current_academic_year")
-            if acad_year:
-                db.execute("UPDATE system_settings SET value = ? WHERE key = 'current_academic_year'", acad_year)
-                log_action(f"Updated Global Academic Year to {acad_year}")
-                flash("System variables updated successfully!", "success")
+            # DYNAMIC KEY-VALUE STORE: Upsert ANY form field sent from the System tab
+            for key, value in request.form.items():
+                if key != "action" and value and value.strip():
+                    existing = db.execute("SELECT key FROM system_settings WHERE key = ?", key)
+                    if existing:
+                        db.execute("UPDATE system_settings SET value = ? WHERE key = ?", value, key)
+                    else:
+                        db.execute("INSERT INTO system_settings (key, value) VALUES (?, ?)", key, value)
+            log_action("Updated Global System Configurations")
+            flash("System variables updated successfully!", "success")
 
         # LOCALIZATION
         elif action == "add_translation":

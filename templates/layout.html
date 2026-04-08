@@ -255,10 +255,10 @@
                         </div>
                         {% endif %}
 
-                        <!-- Phase 6: Khmer Localization Engine (Coming Soon) -->
-                        <div class="btn-group border rounded shadow-sm d-none d-sm-flex bg-light" style="cursor: pointer;" onclick="alert('Khmer Localization Engine (Phase 6) is under construction and will be available soon!');">
-                            <button type="button" class="btn btn-sm btn-light fw-bold text-muted px-2" disabled>🇰🇭 KH</button>
-                            <button type="button" class="btn btn-sm btn-white fw-bold px-2" disabled>🇺🇸 EN</button>
+                        <!-- Phase 6: Khmer Localization Engine -->
+                        <div class="btn-group border rounded shadow-sm d-none d-sm-flex bg-light">
+                            <a href="/set_language/kh" class="btn btn-sm {% if session.get('lang') == 'kh' %}btn-primary text-white border-primary{% else %}btn-light text-muted{% endif %} fw-bold px-2">🇰🇭 KH</a>
+                            <a href="/set_language/en" class="btn btn-sm {% if session.get('lang', 'en') == 'en' %}btn-primary text-white border-primary{% else %}btn-light text-muted{% endif %} fw-bold px-2">🇺🇸 EN</a>
                         </div>
 
                         <!-- 🛡️ SECURITY CONTROL: Admin Notifications -->

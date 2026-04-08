@@ -172,17 +172,20 @@
                                             {{ p.role }}
                                             {% if p.role == 'Admin' %}
                                                 <span class="badge bg-danger ms-2"><i class="bi bi-lock-fill"></i> Locked</span>
+                                            {% else %}
+                                                <!-- Powerful JS Toggle -->
+                                                <button type="button" class="btn btn-sm btn-outline-secondary d-block mt-2 px-2 py-0" onclick="toggleRoleRow('{{ p.role }}')" style="font-size: 0.7rem;">Toggle All</button>
                                             {% endif %}
                                         </td>
                                         
                                         <!-- PROFILES (Create, Update) -->
                                         <td class="px-3">
                                             <div class="form-check form-switch mb-2">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_profiles" value="1" {% if p.can_create_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_create_profiles" value="1" {% if p.can_create_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Add Student</label>
                                             </div>
                                             <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_update_profiles" value="1" {% if p.can_update_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_update_profiles" value="1" {% if p.can_update_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Edit Profile</label>
                                             </div>
                                         </td>
@@ -190,15 +193,15 @@
                                         <!-- ACADEMICS (Create, Update, Delete) -->
                                         <td class="px-3">
                                             <div class="form-check form-switch mb-2">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_academics" value="1" {% if p.can_create_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_create_academics" value="1" {% if p.can_create_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Add Report</label>
                                             </div>
                                             <div class="form-check form-switch mb-2">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_update_academics" value="1" {% if p.can_update_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_update_academics" value="1" {% if p.can_update_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Edit Report</label>
                                             </div>
                                             <div class="form-check form-switch">
-                                                <input class="form-check-input border-danger" type="checkbox" name="{{ p.role }}_delete_academics" value="1" {% if p.can_delete_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input border-danger role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_delete_academics" value="1" {% if p.can_delete_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small text-danger fw-bold">Delete Report</label>
                                             </div>
                                         </td>
@@ -206,11 +209,11 @@
                                         <!-- NOTES (Create, Update) -->
                                         <td class="px-3">
                                             <div class="form-check form-switch mb-2">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_followups" value="1" {% if p.can_create_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_create_followups" value="1" {% if p.can_create_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Add Note</label>
                                             </div>
                                             <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_update_followups" value="1" {% if p.can_update_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_update_followups" value="1" {% if p.can_update_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Edit Note</label>
                                             </div>
                                         </td>
@@ -218,16 +221,16 @@
                                         <!-- FILES & FUNDS (Create/Delete File, Create Expense) -->
                                         <td class="px-3 border-end border-2">
                                             <div class="form-check form-switch mb-2">
-                                                <input class="form-check-input" type="checkbox" name="{{ p.role }}_create_files" value="1" {% if p.can_create_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_create_files" value="1" {% if p.can_create_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small fw-bold">Upload Files</label>
                                             </div>
                                             <div class="form-check form-switch mb-2">
-                                                <input class="form-check-input border-danger" type="checkbox" name="{{ p.role }}_delete_files" value="1" {% if p.can_delete_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input border-danger role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_delete_files" value="1" {% if p.can_delete_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small text-danger fw-bold">Delete Files</label>
                                             </div>
                                             <hr class="my-2 opacity-10">
                                             <div class="form-check form-switch">
-                                                <input class="form-check-input border-success" type="checkbox" name="{{ p.role }}_create_expenses" value="1" {% if p.can_create_expenses %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input border-success role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_create_expenses" value="1" {% if p.can_create_expenses %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small text-success fw-bold">Log Expenses</label>
                                             </div>
                                         </td>
@@ -235,7 +238,7 @@
                                         <!-- SYSTEM (Export) -->
                                         <td class="px-3">
                                             <div class="form-check form-switch">
-                                                <input class="form-check-input border-dark" type="checkbox" name="{{ p.role }}_export_data" value="1" {% if p.can_export_data %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
+                                                <input class="form-check-input border-dark role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" name="{{ p.role }}_export_data" value="1" {% if p.can_export_data %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;" style="opacity: 0.7;"{% endif %}>
                                                 <label class="form-check-label small text-dark fw-bold">Export CSVs</label>
                                             </div>
                                         </td>
@@ -271,16 +274,24 @@
             <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-info border-4">
                 <div class="card-header bg-white text-dark fw-bold pt-4 pb-2 px-4 border-bottom-0 d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-translate text-info me-1"></i> Dictionary Manager</span>
-                    <button class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addTranslationModal">
-                        <i class="bi bi-plus-lg me-1"></i> New Phrase
-                    </button>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Live Search Bar -->
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" id="langSearch" class="form-control border-start-0 bg-light" placeholder="Find key...">
+                        </div>
+                        <button class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-3 text-nowrap" data-bs-toggle="modal" data-bs-target="#addTranslationModal">
+                            <i class="bi bi-plus-lg me-1"></i> New Phrase
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <form action="/settings" method="post">
                         <input type="hidden" name="action" value="update_translations">
-                        <div class="table-responsive p-3">
+                        <div class="table-responsive p-3" style="max-height: 500px; overflow-y: auto;">
                             <table class="table table-hover align-middle mb-0" id="localizationTable">
-                                <thead class="table-light text-muted small text-uppercase">
+                                <thead class="table-light text-muted small text-uppercase sticky-top">
                                     <tr>
                                         <th style="width: 25%;">Template Key <i class="bi bi-code-slash ms-1"></i></th>
                                         <th style="width: 35%;">English <span class="badge bg-secondary ms-1">en</span></th>
@@ -288,12 +299,12 @@
                                         <th class="text-end pe-3" style="width: 5%;">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="langTableBody">
                                     {% if translations %}
                                         {% for key, langs in translations.items() %}
                                         <tr>
                                             <td>
-                                                <input type="text" class="form-control form-control-sm bg-light text-muted font-monospace" name="key_{{ loop.index }}" value="{{ key }}" readonly>
+                                                <input type="text" class="form-control form-control-sm bg-light text-muted font-monospace border-0" name="key_{{ loop.index }}" value="{{ key }}" readonly>
                                             </td>
                                             <td>
                                                 <input type="text" class="form-control form-control-sm fw-bold" name="en_{{ loop.index }}" value="{{ langs.en }}">
@@ -307,19 +318,7 @@
                                         </tr>
                                         {% endfor %}
                                     {% else %}
-                                        <!-- Mockup Rows to show UI structure -->
-                                        <tr>
-                                            <td><input type="text" class="form-control form-control-sm bg-light text-muted font-monospace" value="nav_hub" readonly></td>
-                                            <td><input type="text" class="form-control form-control-sm fw-bold" value="Field Hub"></td>
-                                            <td><input type="text" class="form-control form-control-sm khmer-font" value="មជ្ឈមណ្ឌល"></td>
-                                            <td class="text-end pe-3"><button type="button" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i></button></td>
-                                        </tr>
-                                        <tr>
-                                            <td><input type="text" class="form-control form-control-sm bg-light text-muted font-monospace" value="btn_save" readonly></td>
-                                            <td><input type="text" class="form-control form-control-sm fw-bold" value="Save Changes"></td>
-                                            <td><input type="text" class="form-control form-control-sm khmer-font" value="រក្សាទុក"></td>
-                                            <td class="text-end pe-3"><button type="button" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i></button></td>
-                                        </tr>
+                                        <tr><td colspan="4" class="text-center text-muted py-4">No translations found in dictionary.</td></tr>
                                     {% endif %}
                                 </tbody>
                             </table>
@@ -337,34 +336,52 @@
         {% if session.get('program_id') == 1 %}
         
         <!-- ============================================== -->
-        <!-- TAB 4: EEP PREFERENCES                         -->
+        <!-- TAB 4: SYSTEM PREFERENCES (DYNAMIC KEY-VALUE)  -->
         <!-- ============================================== -->
         <div class="tab-pane fade" id="system" role="tabpanel">
             
             <div class="alert alert-success bg-success bg-opacity-10 border-success small py-3 mb-4 rounded-3 d-flex">
                 <i class="bi bi-info-circle-fill me-2 fs-5 text-success"></i> 
-                <span><strong>Program Scope (EEP):</strong> These variables only affect the Education Empowerment Program's report cards and dashboards.</span>
+                <span><strong>Dynamic System Configurations:</strong> These variables adapt the entire program's defaults and math.</span>
             </div>
 
             <div class="card shadow-sm border-0 rounded-4">
                 <div class="card-header bg-dark text-white fw-bold pt-3 pb-2 px-4">
-                    <i class="bi bi-sliders me-1"></i> EEP Form Variables
+                    <i class="bi bi-sliders me-1"></i> Global Variables
                 </div>
                 <div class="card-body p-4 bg-light">
                     <form action="/settings" method="post">
                         <input type="hidden" name="action" value="update_system">
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <div class="row g-4">
+                            <!-- Existing Key -->
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold text-muted small">Default Academic Year</label>
                                 <input type="text" class="form-control fw-bold text-success border-success" name="current_academic_year" value="{{ sys_settings.current_academic_year }}" required>
-                                <small class="text-muted mt-1 d-block">This automatically pre-fills the "Academic Year" box when adding new EEP report cards.</small>
+                                <small class="text-muted mt-1 d-block">Automatically pre-fills the "Academic Year" box when adding new report cards.</small>
+                            </div>
+                            
+                            <!-- New Keys that auto-upsert into the database -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Organization Name</label>
+                                <input type="text" class="form-control fw-bold" name="organization_name" value="{{ sys_settings.organization_name | default('ELM Program', true) }}">
+                                <small class="text-muted mt-1 d-block">Changes the default brand name across exports and documents.</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Base Currency Symbol</label>
+                                <input type="text" class="form-control fw-bold" name="currency_symbol" value="{{ sys_settings.currency_symbol | default('$', true) }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small">Timezone</label>
+                                <input type="text" class="form-control fw-bold" name="timezone" value="{{ sys_settings.timezone | default('Asia/Phnom_Penh', true) }}">
                             </div>
                         </div>
                         
                         <hr class="opacity-25 my-4">
                         
-                        <button type="submit" class="btn btn-success fw-bold px-4 shadow-sm rounded-pill"><i class="bi bi-save me-1"></i> Save EEP Preferences</button>
+                        <button type="submit" class="btn btn-success fw-bold px-4 shadow-sm rounded-pill"><i class="bi bi-save me-1"></i> Save System Preferences</button>
                     </form>
                 </div>
             </div>
@@ -415,7 +432,7 @@
                                 <thead class="table-light text-muted small text-uppercase">
                                     <tr>
                                         <th style="width: 15%;">Sort Order</th>
-                                        <th style="width: 40%;">Subject Name</th>
+                                        <th style="width: 40%;">Subject Name (Editable)</th>
                                         <th style="width: 35%;">Tier / Category</th>
                                         <th class="text-end pe-3">Action</th>
                                     </tr>
@@ -426,9 +443,12 @@
                                         <td>
                                             <input type="number" class="form-control form-control-sm text-center fw-bold" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}" style="max-width: 80px;">
                                         </td>
-                                        <td class="fw-bold">{{ subject.name }}</td>
                                         <td>
-                                            <select class="form-select form-select-sm" name="category_{{ subject.id }}">
+                                            <!-- POWER FEATURE: Inline Editing for Subject Names -->
+                                            <input type="text" class="form-control form-control-sm fw-bold border-0 bg-light" name="name_{{ subject.id }}" value="{{ subject.name }}">
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm border-0 bg-light" name="category_{{ subject.id }}">
                                                 <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Primary / Lower Grade</option>
                                                 <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>High School</option>
                                                 <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>University / Vocational</option>
@@ -554,6 +574,53 @@
 
 {% block scripts %}
 <script>
+    // ---------------------------------------------------------
+    // RBAC MATRIX: TOGGLE ALL BUTTON
+    // ---------------------------------------------------------
+    function toggleRoleRow(roleName) {
+        const safeRole = roleName.replace(/\s+/g, '');
+        const checkboxes = document.querySelectorAll(`.role-cb-${safeRole}`);
+        
+        // Check if they are all currently checked
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        
+        // If all are checked, uncheck them. Otherwise, check them all.
+        checkboxes.forEach(cb => {
+            if (!cb.disabled) {
+                cb.checked = !allChecked;
+            }
+        });
+    }
+
+    // ---------------------------------------------------------
+    // LIVE DICTIONARY SEARCH
+    // ---------------------------------------------------------
+    document.getElementById('langSearch')?.addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let rows = document.querySelectorAll('#langTableBody tr');
+        
+        rows.forEach(row => {
+            // Find all input fields inside the row and get their values
+            let inputs = row.querySelectorAll('input[type="text"]');
+            let match = false;
+            
+            inputs.forEach(input => {
+                if (input.value.toLowerCase().includes(filter)) {
+                    match = true;
+                }
+            });
+            
+            if (match) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // ---------------------------------------------------------
+    // SAFELY DELETE ENTRIES
+    // ---------------------------------------------------------
     function deleteSubject(subjectId, subjectName) {
         if(confirm(`Are you sure you want to delete the subject '${subjectName}'? Note: It will block deletion if grades exist for this subject to protect student records.`)) {
             document.getElementById('delete_subject_id').value = subjectId;
@@ -567,19 +634,5 @@
             document.getElementById('deleteTranslationForm').submit();
         }
     }
-
-    // Optional: DataTables for localization if the list gets too long
-    $(document).ready(function() {
-        if ($('#localizationTable tbody tr').length > 5) {
-            $('#localizationTable').DataTable({
-                "pageLength": 25,
-                "ordering": false,
-                "language": {
-                    "search": "",
-                    "searchPlaceholder": "🔍 Search translations..."
-                }
-            });
-        }
-    });
 </script>
 {% endblock %}
