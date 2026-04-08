@@ -4,139 +4,113 @@
 
 {% block main %}
 
-<!-- ========================================== -->
-<!-- MOBILE-ONLY HEADER (Gradient & Search)     -->
-<!-- ========================================== -->
-<div class="d-lg-none mx-n4 mt-n4 pb-5 px-4 mobile-header-gradient">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="d-flex align-items-center">
-            <!-- User Avatar -->
-            <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-3 overflow-hidden flex-shrink-0" style="width: 50px; height: 50px; border: 2px solid rgba(255,255,255,0.4);">
-                <img src="https://ui-avatars.com/api/?name={{ username }}&background=ffffff&color=005a9c&bold=true" alt="User" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-            <div class="text-white">
-                <p class="text-white-50 fw-bold mb-0 text-uppercase tracking-wide" id="currentDateMobile" style="font-size: 0.65rem;"></p>
-                <h4 class="fw-bold mb-0 lh-1" id="mobileGreeting">Hello, {{ username }}</h4>
-            </div>
-        </div>
-        <!-- Settings / Notifications -->
-        <a href="/settings" class="text-white opacity-75 transition-hover"><i class="bi bi-gear-fill fs-4"></i></a>
-    </div>
+<div class="dashboard-wrapper pb-5">
 
-    <!-- Native-Style Floating Search Bar -->
-    <div id="mobileSearchContainer" class="position-relative mt-2">
-        <div class="bg-white bg-opacity-25 rounded-pill p-2 shadow-sm d-flex align-items-center border border-white border-opacity-25 backdrop-blur">
-            <i class="bi bi-search text-white ms-3 me-2 fs-5 opacity-75"></i>
-            <input type="text" id="mobileSearchInput" class="form-control border-0 shadow-none bg-transparent text-white fw-bold custom-placeholder" style="font-size: 16px;" placeholder="Search or ask something..." onkeyup="performSearch('mobileSearchInput', 'mobileSearchResults')" onfocus="performSearch('mobileSearchInput', 'mobileSearchResults')" autocomplete="off">
-        </div>
-        <!-- Live Search Dropdown -->
-        <div id="mobileSearchResults" class="bg-white rounded-4 shadow-lg border mt-2 d-none overflow-hidden position-absolute w-100" style="max-height: 300px; overflow-y: auto; z-index: 1050;"></div>
-    </div>
-
-    <!-- PWA Install Banner (Hidden by default, shown via JS if app is not installed) -->
-    <div id="pwaInstallBanner" class="d-none mt-3">
-        <button id="pwaInstallBtn" class="btn btn-light text-primary fw-bold rounded-pill w-100 shadow-sm d-flex align-items-center justify-content-center py-2 transition-hover">
-            <i class="bi bi-phone-vibrate fs-5 me-2"></i> Install App (Hide URL Bar)
-        </button>
-    </div>
-</div>
-
-<div class="container-fluid px-3 px-lg-4 mt-3 mb-5">
-    <div class="row g-4">
-
-        <!-- ========================================== -->
-        <!-- LEFT COLUMN: THE UNIFIED ACTION HUB        -->
-        <!-- (Stacks on mobile, Sidebar on PC)          -->
-        <!-- ========================================== -->
-        <div class="col-12 col-lg-4 col-xl-3 mobile-pull-up">
+    <!-- ========================================== -->
+    <!-- 1. HERO HEADER (Unified for Mobile & PC)   -->
+    <!-- ========================================== -->
+    <div class="hero-header mx-n3 mt-n3 mx-md-0 mt-md-0 rounded-0 rounded-md-4 mb-4 pb-5 position-relative shadow-sm" style="background: linear-gradient(135deg, #005a9c 0%, #0d6efd 100%);">
+        <div class="p-4 p-md-5">
             
-            <!-- PC-ONLY HEADER (Greeting & Search) -->
-            <div class="d-none d-lg-block mb-5 text-start">
-                <p class="text-muted small mb-0 fw-bold text-uppercase tracking-wide" id="pcDate"></p>
-                <h3 class="fw-bold text-dark mb-4" id="pcGreeting">Hello, {{ username }}</h3>
-                
-                <!-- LIVE Universal Search Bar (PC) -->
-                <div id="pcSearchContainer" class="position-relative z-index-10">
-                    <div class="bg-white rounded-pill shadow-sm p-2 d-flex align-items-center border border-secondary border-opacity-10 transition-hover">
-                        <i class="bi bi-search text-primary ms-3 me-3 fs-4 opacity-75"></i>
-                        <input type="text" id="pcSearchInput" class="form-control form-control-lg border-0 shadow-none bg-transparent fw-bold" placeholder="Search directory..." onkeyup="performSearch('pcSearchInput', 'pcSearchResults')" onfocus="performSearch('pcSearchInput', 'pcSearchResults')" autocomplete="off">
-                        <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center shadow-sm me-1" style="width: 40px; height: 40px;">
-                            <i class="bi bi-lightning-charge-fill fs-5"></i>
-                        </div>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <!-- User Avatar -->
+                    <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-3 overflow-hidden flex-shrink-0" style="width: 60px; height: 60px; border: 3px solid rgba(255,255,255,0.4);">
+                        <img src="https://ui-avatars.com/api/?name={{ username }}&background=ffffff&color=005a9c&bold=true" alt="User" style="width: 100%; height: 100%; object-fit: cover;">
                     </div>
-                    <!-- Live Search Dropdown -->
-                    <div id="pcSearchResults" class="bg-white rounded-4 shadow-lg border mt-2 d-none overflow-hidden position-absolute w-100" style="max-height: 350px; overflow-y: auto; z-index: 1050;"></div>
+                    <div class="text-white">
+                        <p class="text-white-50 fw-bold mb-0 text-uppercase tracking-wide" id="unifiedDate" style="font-size: 0.75rem;"></p>
+                        <h3 class="fw-bold mb-0 lh-1" id="unifiedGreeting">Hello, {{ username }}</h3>
+                    </div>
                 </div>
+                <!-- Settings (Mobile only, PC uses Sidebar) -->
+                <a href="/settings" class="text-white opacity-75 transition-hover d-lg-none"><i class="bi bi-gear-fill fs-3"></i></a>
             </div>
 
-            <!-- UNIFIED QUICK TOOLS (Both Screens) -->
-            <div class="d-flex justify-content-between align-items-end mb-3">
-                <h6 class="fw-bold text-secondary text-uppercase small mb-0" style="letter-spacing: 1px;">Quick Tools</h6>
+            <!-- Unified Floating Search Bar -->
+            <div id="universalSearchContainer" class="position-relative mt-2" style="max-width: 600px;">
+                <div class="bg-white bg-opacity-25 rounded-pill p-2 shadow-sm d-flex align-items-center border border-white border-opacity-25 backdrop-blur transition-hover">
+                    <i class="bi bi-search text-white ms-3 me-2 fs-5 opacity-75"></i>
+                    <input type="text" id="universalSearchInput" class="form-control border-0 shadow-none bg-transparent text-white fw-bold custom-placeholder" style="font-size: 16px;" placeholder="Search the directory..." onkeyup="performSearch('universalSearchInput', 'universalSearchResults')" onfocus="performSearch('universalSearchInput', 'universalSearchResults')" autocomplete="off">
+                </div>
+                <!-- Live Search Dropdown -->
+                <div id="universalSearchResults" class="bg-white rounded-4 shadow-lg border mt-2 d-none overflow-hidden position-absolute w-100 text-dark" style="max-height: 350px; overflow-y: auto; z-index: 1050;"></div>
             </div>
             
-            <!-- UX FIX: 'col' enables auto-sizing flexbox instead of hardcoded 'col-3' -->
-            <div class="row g-2 g-lg-3 mb-4">
-                <!-- 🛡️ CRUD SECURITY: Add Student -->
-                {% if session.get('can_create_profiles') or session.get('can_edit_profiles') %}
-                <div class="col col-lg-6">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-2 p-lg-3 position-relative overflow-hidden tool-card border-light">
-                        <a href="/add_student" class="stretched-link text-decoration-none"></a>
-                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-1 mb-lg-2 icon-wrapper" style="width: 48px; height: 48px;">
-                            <i class="bi bi-person-plus-fill text-success fs-5 fs-lg-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark mb-0 mobile-tool-text text-truncate px-1">Add Kid</h6>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- 🛡️ CRUD SECURITY: Group Notes -->
-                {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
-                <div class="col col-lg-6">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-2 p-lg-3 position-relative overflow-hidden tool-card border-light">
-                        <a href="/bulk_followup" class="stretched-link text-decoration-none"></a>
-                        <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-1 mb-lg-2 icon-wrapper" style="width: 48px; height: 48px;">
-                            <i class="bi bi-clipboard2-heart-fill text-danger fs-5 fs-lg-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark mb-0 mobile-tool-text text-truncate px-1">Groups</h6>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Log Nutrition -->
-                <div class="col col-lg-6">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-2 p-lg-3 position-relative overflow-hidden tool-card border-light">
-                        <a href="/log_services" class="stretched-link text-decoration-none"></a>
-                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-1 mb-lg-2 icon-wrapper" style="width: 48px; height: 48px;">
-                            <i class="bi bi-basket2-fill text-warning text-darken fs-5 fs-lg-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark mb-0 mobile-tool-text text-truncate px-1">Meals</h6>
-                    </div>
-                </div>
-                
-                <!-- Field Calendar -->
-                <div class="col col-lg-6">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-2 p-lg-3 position-relative overflow-hidden tool-card border-light">
-                        <a href="/calendar" class="stretched-link text-decoration-none"></a>
-                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-1 mb-lg-2 icon-wrapper" style="width: 48px; height: 48px;">
-                            <i class="bi bi-calendar2-week-fill text-primary fs-5 fs-lg-4"></i>
-                        </div>
-                        <h6 class="fw-bold text-dark mb-0 mobile-tool-text text-truncate px-1">Calendar</h6>
-                    </div>
-                </div>
-            </div>
+        </div>
+    </div>
 
-            <!-- UNIFIED RECENT FEED (Both Screens) -->
-            <div class="d-flex justify-content-between align-items-end mb-3">
+    <!-- ========================================== -->
+    <!-- 2. QUICK TOOLS (Overlaps the Hero)         -->
+    <!-- ========================================== -->
+    <div class="row g-2 g-md-3 mb-4 px-1 px-md-0 position-relative z-2" style="margin-top: -65px;">
+        
+        <!-- 🛡️ CRUD SECURITY: Add Student -->
+        {% if session.get('can_create_profiles') or session.get('can_edit_profiles') %}
+        <div class="col-6 col-md-3 col-lg">
+            <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-3 position-relative overflow-hidden tool-card border-light">
+                <a href="/add_student" class="stretched-link text-decoration-none"></a>
+                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2 icon-wrapper" style="width: 55px; height: 55px;">
+                    <i class="bi bi-person-plus-fill text-success fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-0 tool-text">Add Kid</h6>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 🛡️ CRUD SECURITY: Group Notes -->
+        {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+        <div class="col-6 col-md-3 col-lg">
+            <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-3 position-relative overflow-hidden tool-card border-light">
+                <a href="/bulk_followup" class="stretched-link text-decoration-none"></a>
+                <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2 icon-wrapper" style="width: 55px; height: 55px;">
+                    <i class="bi bi-clipboard2-heart-fill text-danger fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-0 tool-text">Groups</h6>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Log Nutrition -->
+        <div class="col-6 col-md-3 col-lg">
+            <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-3 position-relative overflow-hidden tool-card border-light">
+                <a href="/log_services" class="stretched-link text-decoration-none"></a>
+                <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2 icon-wrapper" style="width: 55px; height: 55px;">
+                    <i class="bi bi-basket2-fill text-warning text-darken fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-0 tool-text">Meals</h6>
+            </div>
+        </div>
+        
+        <!-- Field Calendar -->
+        <div class="col-6 col-md-3 col-lg">
+            <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-3 position-relative overflow-hidden tool-card border-light">
+                <a href="/calendar" class="stretched-link text-decoration-none"></a>
+                <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2 icon-wrapper" style="width: 55px; height: 55px;">
+                    <i class="bi bi-calendar2-week-fill text-primary fs-4"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-0 tool-text">Calendar</h6>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. MAIN CONTENT SPLIT                      -->
+    <!-- ========================================== -->
+    <div class="row g-4 px-1 px-md-0">
+        
+        <!-- LEFT COL: RECENT ACTIVITY -->
+        <div class="col-12 col-lg-4 col-xl-3">
+            <div class="d-flex justify-content-between align-items-end mb-3 mt-2">
                 <h6 class="fw-bold text-secondary text-uppercase small mb-0" style="letter-spacing: 1px;">Recently Active</h6>
                 <a href="/roster" class="small text-decoration-none fw-bold text-primary d-lg-none">Directory <i class="bi bi-chevron-right fs-6 align-middle"></i></a>
             </div>
             
-            <div class="mb-5 text-start">
+            <div class="mb-4 text-start">
                 {% for student in recent_students %}
                 <div class="card border-0 shadow-sm rounded-4 mb-3 transition-hover overflow-hidden border-light">
                     <div class="card-body p-3 d-flex align-items-center justify-content-between position-relative">
                         
-                        <!-- Tap identity to go to profile -->
                         <a href="/student/{{ student.id }}" class="d-flex align-items-center text-decoration-none text-dark w-100 me-2 stretched-link">
                             {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=50" %}
                             <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border border-2 border-white shadow-sm me-3 avatar-sm" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
@@ -150,7 +124,6 @@
                             </div>
                         </a>
                         
-                        <!-- 🛡️ CRUD SECURITY: 1-Click Action (Brought to front to bypass stretched-link) -->
                         {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
                         <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-light border text-primary rounded-circle shadow-sm d-flex align-items-center justify-content-center transition-hover flex-shrink-0 position-relative z-1" style="width: 38px; height: 38px;" title="Quick Note">
                             <i class="bi bi-journal-plus fs-6"></i>
@@ -170,29 +143,25 @@
                         <i class="bi bi-wind fs-2 text-muted opacity-50"></i>
                     </div>
                     <small class="fw-bold d-block">No recent activity.</small>
-                    <small class="opacity-75">Updated student records will appear here.</small>
+                    <small class="opacity-75">Updated records appear here.</small>
                 </div>
                 {% endfor %}
             </div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- RIGHT COLUMN: THE PC ROSTER (PC ONLY)      -->
-        <!-- (Hidden entirely on mobile to prioritize UX)-->
-        <!-- ========================================== -->
-        <div class="col-lg-8 col-xl-9 d-none d-lg-block text-start">
+        <!-- RIGHT COL: MASTER ROSTER (Hidden on Mobile) -->
+        <div class="col-12 col-lg-8 col-xl-9 d-none d-lg-block">
             <div class="card shadow-sm border-0 rounded-4 h-100 border-top border-primary border-4">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-3 px-md-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-primary me-2"></i>Active EEP Roster</h5>
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-table text-primary me-2"></i>Active Roster</h5>
                     
-                    <!-- SECURITY AUDIT: Only Admins can mass export data from the Hub -->
                     {% if session.get('role') == 'Admin' or session.get('can_export_data') %}
                     <a href="/export_students" class="btn btn-sm btn-outline-success fw-bold shadow-sm rounded-pill px-3 transition-hover"><i class="bi bi-file-earmark-excel-fill me-1"></i> Export</a>
                     {% endif %}
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive p-3 p-md-4 pt-0">
-                        <table id="hubRosterTable" class="table table-hover align-middle mb-0 mobile-cards-table" style="width: 100%;">
+                    <div class="table-responsive p-4 pt-0">
+                        <table id="hubRosterTable" class="table table-hover align-middle mb-0" style="width: 100%;">
                             <thead class="table-light text-muted small text-uppercase">
                                 <tr>
                                     <th class="ps-3">Student</th>
@@ -206,7 +175,7 @@
                                 {% for student in students %}
                                     <tr>
                                         <!-- Core Identity (Avatar + Name) -->
-                                        <td class="py-3 ps-md-3" data-label="Student">
+                                        <td class="py-3 ps-3">
                                             <div class="d-flex align-items-center">
                                                 {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=50" %}
                                                 <a href="/student/{{ student.id }}" class="text-decoration-none">
@@ -221,17 +190,16 @@
                                             </div>
                                         </td>
                                         <!-- Khmer Name -->
-                                        <td class="khmer-font text-muted fw-semibold" data-label="Khmer Name">{{ student.khmer_name if student.khmer_name else '-' }}</td>
+                                        <td class="khmer-font text-muted fw-semibold">{{ student.khmer_name if student.khmer_name else '-' }}</td>
                                         <!-- Gender -->
-                                        <td class="text-muted fw-bold small" data-label="Gender">{{ student.gender }}</td>
+                                        <td class="text-muted fw-bold small">{{ student.gender }}</td>
                                         <!-- Grade -->
-                                        <td class="fw-bold text-dark" data-label="Grade Level">
+                                        <td class="fw-bold text-dark">
                                             <span class="badge bg-light text-dark border border-secondary border-opacity-25 px-2 py-1 rounded-pill">{{ student.grade_level }}</span>
                                         </td>
                                         <!-- Action Buttons -->
-                                        <td class="text-end pe-md-3 action-cell" data-label="Actions">
-                                            <div class="btn-group shadow-sm w-100 w-md-auto">
-                                                <!-- 🛡️ CRUD SECURITY: Action Buttons -->
+                                        <td class="text-end pe-3">
+                                            <div class="btn-group shadow-sm">
                                                 {% if session.get('can_create_academics') or session.get('can_manage_academics') %}
                                                 <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-outline-success fw-bold transition-hover" title="Add Report"><i class="bi bi-journal-plus"></i></a>
                                                 {% endif %}
@@ -241,7 +209,7 @@
                                                 {% endif %}
                                                 
                                                 {% if not session.get('can_create_academics') and not session.get('can_create_followups') and not session.get('can_manage_academics') and not session.get('can_manage_followups') %}
-                                                <a href="/student/{{ student.id }}" class="btn btn-sm btn-outline-primary fw-bold transition-hover w-100" title="View Profile"><i class="bi bi-eye-fill"></i> View Profile</a>
+                                                <a href="/student/{{ student.id }}" class="btn btn-sm btn-outline-primary fw-bold transition-hover w-100" title="View Profile"><i class="bi bi-eye-fill"></i> Profile</a>
                                                 {% endif %}
                                             </div>
                                         </td>
@@ -268,7 +236,7 @@
         box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
     }
     
-    /* Beautiful hover effect for the Quick Tools */
+    /* Hover effect for Quick Tools */
     .tool-card:hover .icon-wrapper {
         transform: scale(1.1);
         transition: transform 0.2s ease;
@@ -297,21 +265,17 @@
         color: #ffffff !important;
     }
     
-    /* Responsive pulling for mobile to overlap the gradient safely */
-    .mobile-header-gradient {
-        background: linear-gradient(135deg, #005a9c 0%, #0d6efd 100%);
-        padding-top: calc(1.5rem + env(safe-area-inset-top)) !important;
-    }
-    
-    @media (max-width: 991.98px) {
-        .mobile-pull-up {
-            margin-top: -50px;
-            position: relative;
-            z-index: 10;
-        }
-        .mobile-tool-text {
+    @media (max-width: 767.98px) {
+        .tool-text {
             font-size: 0.65rem !important;
             letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* Safely clear the iPhone Notch / Android Camera cutout */
+        .hero-header {
+            padding-top: env(safe-area-inset-top) !important;
         }
     }
     
@@ -326,68 +290,6 @@
         outline: 0;
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
-    
-    /* ---------------------------------------------------
-       BEAUTIFUL MOBILE CARDS CSS FOR UNIFIED ROSTER
-       --------------------------------------------------- */
-    @media (max-width: 767.98px) {
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_info { display: none !important; }
-        .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1.5rem; }
-        .dataTables_wrapper .dataTables_filter label { width: 100%; font-weight: 600; color: #6c757d; }
-        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; margin-top: 0.5rem; border: 2px solid #0d6efd; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.1); }
-        
-        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td { display: block; width: 100%; }
-        .mobile-cards-table thead { display: none !important; }
-        
-        /* The Card Container */
-        .mobile-cards-table tr { 
-            margin-bottom: 1.5rem; 
-            border: 1px solid rgba(0,0,0,0.08); 
-            border-radius: 16px; 
-            background-color: #ffffff; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.03); 
-            padding: 1.25rem; 
-            position: relative;
-        }
-        
-        /* The Data Rows */
-        .mobile-cards-table td { 
-            border: none !important; 
-            padding: 0.6rem 0 !important; 
-            text-align: right; 
-            border-bottom: 1px dashed #e9ecef !important; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .mobile-cards-table td:last-child { border-bottom: none !important; }
-        
-        /* The Pseudo-Labels */
-        .mobile-cards-table td::before { 
-            content: attr(data-label); 
-            font-weight: 700; 
-            color: #adb5bd; 
-            text-transform: uppercase; 
-            font-size: 0.7rem; 
-            letter-spacing: 0.5px; 
-        }
-        
-        .action-cell { 
-            display: flex !important; 
-            justify-content: center !important; 
-            padding-top: 1.25rem !important; 
-            margin-top: 0.5rem;
-        }
-        .action-cell::before { display: none; }
-        .action-cell .btn-group { width: 100%; }
-        .action-cell .btn { 
-            border-radius: 12px !important; 
-            padding: 0.75rem; 
-            font-size: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-    }
 </style>
 {% endblock %}
 
@@ -401,57 +303,18 @@
     else if (hour < 18) greeting = "Good Afternoon";
     
     const greetingText = greeting + ", {{ username }}";
-    
-    // Format the date like "Monday, Oct 24"
     const options = { weekday: 'long', month: 'short', day: 'numeric' };
     const dateText = now.toLocaleDateString('en-US', options);
 
-    // Apply to Mobile Header
-    if(document.getElementById('mobileGreeting')) {
-        document.getElementById('mobileGreeting').innerText = greetingText;
-        document.getElementById('currentDateMobile').innerText = dateText;
-    }
-    // Apply to PC Header
-    if(document.getElementById('pcGreeting')) {
-        document.getElementById('pcGreeting').innerText = greetingText + " 👋";
-        document.getElementById('pcDate').innerText = dateText;
+    // Apply to Unified Header
+    if(document.getElementById('unifiedGreeting')) {
+        document.getElementById('unifiedGreeting').innerText = greetingText + " 👋";
+        document.getElementById('unifiedDate').innerText = dateText;
     }
 
     // =======================================================
-    // PWA INSTALLATION LOGIC (Trigger Install Banner)
+    // PWA STANDALONE FIX FOR iOS
     // =======================================================
-    let deferredPrompt;
-    
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent Chrome 67 and earlier from automatically showing the prompt
-        e.preventDefault();
-        // Stash the event so it can be triggered later.
-        deferredPrompt = e;
-        
-        // Show our custom Install Button on the Mobile Header
-        const installBanner = document.getElementById('pwaInstallBanner');
-        if (installBanner) {
-            installBanner.classList.remove('d-none');
-        }
-    });
-
-    document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
-        if (deferredPrompt) {
-            // Show the native browser install prompt
-            deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('User accepted the PWA prompt');
-                // Hide the banner once installed
-                document.getElementById('pwaInstallBanner').classList.add('d-none');
-            }
-            // We've used the prompt, and can't use it again, discard it
-            deferredPrompt = null;
-        }
-    });
-
-    // iOS Standalone Link Fix (Prevents links from bouncing out to Safari)
     if (window.navigator.standalone) {
         document.addEventListener('click', function(event) {
             let a = event.target.closest('a');
@@ -481,7 +344,6 @@
         const resultsBox = document.getElementById(resultsId);
         
         if (query.length < 1) {
-            // Smart "Empty State" - Prepare for AI Phase
             resultsBox.innerHTML = `
                 <div class="list-group list-group-flush p-2">
                     <h6 class="dropdown-header text-primary fw-bold small text-uppercase mb-1">Suggested Queries</h6>
@@ -494,21 +356,16 @@
                     <a href="/dashboard" class="list-group-item list-group-item-action border-0 rounded-3 mb-1 py-2 text-dark fw-bold transition-hover">
                         <i class="bi bi-envelope-fill text-info me-2"></i> Who needs a sponsor letter?
                     </a>
-                    <div class="bg-primary bg-opacity-10 p-3 mt-2 rounded-4 text-center border border-primary border-opacity-25">
-                        <i class="bi bi-stars text-primary fs-4 d-block mb-1"></i>
-                        <small class="text-primary fw-bold d-block">AI Assistant (Coming in Phase 13)</small>
-                    </div>
                 </div>`;
             resultsBox.classList.remove('d-none');
             return;
         }
 
-        // Filter the offline array
         const filtered = studentDatabase.filter(s => 
             s.name.toLowerCase().includes(query) || 
             s.ngo_id.toLowerCase().includes(query) ||
             s.khmer.includes(query)
-        ).slice(0, 5); // Show max 5 top results
+        ).slice(0, 5); 
 
         if (filtered.length > 0) {
             let html = '<div class="list-group list-group-flush p-1">';
@@ -545,11 +402,8 @@
     
     // Hide search dropdowns when clicking outside
     document.addEventListener('click', function(e) {
-        if (!e.target.closest('#mobileSearchContainer')) {
-            document.getElementById('mobileSearchResults')?.classList.add('d-none');
-        }
-        if (!e.target.closest('#pcSearchContainer')) {
-            document.getElementById('pcSearchResults')?.classList.add('d-none');
+        if (!e.target.closest('#universalSearchContainer')) {
+            document.getElementById('universalSearchResults')?.classList.add('d-none');
         }
     });
 
@@ -569,7 +423,6 @@
                 "searchPlaceholder": "🔍 Filter directory..."
             },
             "drawCallback": function(settings) {
-                // Ensure pagination styling remains consistent after searching/paging
                 $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-outline-secondary border-0 m-1');
             }
         });
