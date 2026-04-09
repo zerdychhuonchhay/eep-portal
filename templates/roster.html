@@ -3,282 +3,251 @@
 {% block title %}{{ title if title else 'Student Roster' }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid px-lg-4 mt-4 mb-5">
+<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
     
-    <!-- Top Action Bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <h2 class="text-center text-md-start fw-bold mb-0">
-            <i class="bi bi-people-fill text-primary me-2"></i>{{ title if title else 'Student Roster' }}
-        </h2>
+    <!-- Header Section & Actions -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
+        <div>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-people-fill text-primary me-2"></i>{{ title if title else 'Student Roster' }}</h2>
+            <p class="text-muted small mb-0 d-none d-md-block">Manage your students, update profiles, and log quick actions.</p>
+        </div>
         
-        <div class="d-flex flex-wrap justify-content-center gap-2">
-            <!-- Context-Aware Navigation: Highlights the active view -->
-            <a href="/roster" class="btn {% if request.path == '/' or request.path == '/roster' %}btn-primary{% else %}btn-outline-primary bg-white{% endif %} shadow-sm fw-bold rounded-pill px-3">
+        <div class="d-flex flex-wrap justify-content-start justify-content-md-end gap-2">
+            <!-- Context-Aware Navigation -->
+            <a href="/roster" class="btn btn-sm {% if request.path == '/' or request.path == '/roster' %}btn-primary{% else %}btn-white text-muted{% endif %} shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover">
                 <i class="bi bi-person-check-fill me-1"></i> Active
             </a>
-            <a href="/archive" class="btn {% if request.path == '/archive' %}btn-secondary{% else %}btn-outline-secondary bg-white{% endif %} shadow-sm fw-bold rounded-pill px-3">
+            <a href="/archive" class="btn btn-sm {% if request.path == '/archive' %}btn-secondary{% else %}btn-white text-muted{% endif %} shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover">
                 <i class="bi bi-archive-fill me-1"></i> Archive
             </a>
             
             <!-- 🛡️ SECURITY CONTROL: Add New Student -->
-            {% if session.get('can_edit_profiles') %}
-            <a href="/add_student" class="btn btn-info text-white shadow-sm fw-bold rounded-pill px-3">
-                <i class="bi bi-person-plus-fill me-1"></i> Add Student
+            {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
+            <a href="/add_student" class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover">
+                <i class="bi bi-person-plus-fill me-1"></i> Add Kid
             </a>
             {% endif %}
             
             <!-- 🛡️ SECURITY CONTROL: Export Data -->
             {% if session.get('can_export_data') %}
-            <a href="/export_students" class="btn btn-success shadow-sm fw-bold d-none d-md-inline-block rounded-pill px-3">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Data
+            <a href="/export_students" class="btn btn-sm btn-success shadow-sm fw-bold d-none d-lg-inline-block rounded-pill px-3 py-2 transition-hover">
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- The Data Container -->
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-body p-0">
-            
-            <div class="table-responsive p-0 p-md-4">
-                <table id="rosterTable" class="table table-hover align-middle mb-0 mobile-cards-table" style="width: 100%;">
-                    <thead class="table-light text-muted small text-uppercase">
-                        <tr>
-                            <th class="ps-3">Student</th>
-                            <th>Gender</th>
-                            <th>Grade</th>
-                            <th>School</th>
-                            <th>Area & Contact</th>
-                            <th>Status</th>
-                            <th class="text-end pe-3">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students %}
-                            <tr class="transition-hover">
-                                <!-- Core Identity (Avatar + Name + Khmer Name + NGO ID) -->
-                                <td class="student-identity-cell border-bottom-md ps-md-3">
-                                    <div class="d-flex align-items-center">
-                                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=60" %}
-                                        
-                                        <div class="position-relative">
-                                            <a href="/student/{{ student.id }}" class="text-decoration-none">
-                                                <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" 
-                                                     class="rounded-circle border border-3 border-white shadow-sm" 
-                                                     style="width: 55px; height: 55px; object-fit: cover;" 
-                                                     alt="Photo of {{ student.first_name }}"
-                                                     onerror="this.onerror=null; this.src='{{ thumb_url }}';">
-                                            </a>
-                                            <span class="position-absolute bottom-0 end-0 p-1 border border-white border-2 rounded-circle d-none d-md-block {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %}" style="margin-bottom: 2px; margin-right: 2px;"></span>
-                                        </div>
-                                        
-                                        <div class="ms-3 lh-sm text-start">
-                                            <a href="/student/{{ student.id }}" class="text-decoration-none fw-bold text-dark fs-5 hover-primary">
-                                                {{ student.first_name }} {{ student.last_name }}
-                                            </a>
-                                            {% if student.khmer_name %}
-                                                <span class="khmer-font text-muted fw-normal ms-1 small">{{ student.khmer_name }}</span>
-                                            {% endif %}
-                                            <span class="d-block text-muted small mt-1 fw-bold">
-                                                <i class="bi bi-person-badge-fill text-secondary opacity-50 me-1"></i>{{ student.ngo_id }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </td>
-                                
-                                <!-- Gender -->
-                                <td data-label="Gender" class="text-muted border-bottom-md">{{ student.gender }}</td>
-                                
-                                <!-- Grade -->
-                                <td data-label="Grade" class="fw-bold text-dark border-bottom-md">
-                                    <span class="badge bg-light text-dark border border-secondary border-opacity-25 px-2 py-1 rounded-pill">
-                                        {{ student.grade_level }}
-                                    </span>
-                                </td>
-
-                                <!-- School -->
-                                <td data-label="School" class="khmer-font text-muted border-bottom-md">
-                                    {{ student.current_school if student.current_school else '-' }}
-                                </td>
-
-                                <!-- Area & Contact -->
-                                <td data-label="Area & Contact" class="border-bottom-md">
-                                    <div class="small fw-bold text-dark khmer-font"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
-                                    <div class="small text-muted mt-1">
-                                        {% if student.phone_number %}
-                                            <a href="tel:{{ student.phone_number }}" class="text-decoration-none text-secondary"><i class="bi bi-telephone-fill me-1"></i>{{ student.phone_number }}</a>
-                                        {% else %}
-                                            <span class="fst-italic"><i class="bi bi-telephone-x me-1"></i>No Phone</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                
-                                <!-- Status -->
-                                <td data-label="Status" class="border-bottom-md">
-                                    <span class="badge {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if student.status == 'Active' %}success{% elif student.status == 'Dropped Out' %}danger{% else %}secondary{% endif %} border border-{% if student.status == 'Active' %}success{% elif student.status == 'Dropped Out' %}danger{% else %}secondary{% endif %} rounded-pill px-3 py-2">
-                                        <i class="bi {% if student.status == 'Active' %}bi-check-circle-fill{% elif student.status == 'Dropped Out' %}bi-x-circle-fill{% else %}bi-info-circle-fill{% endif %} me-1"></i> {{ student.status }}
-                                    </span>
-                                </td>
-                                
-                                <!-- Action Buttons -->
-                                <td class="action-cell text-end pe-2 pe-md-3 border-bottom-md">
-                                    <div class="btn-group shadow-sm w-100 w-md-auto">
-                                        
-                                        <!-- 🛡️ SECURITY CONTROL: Edit Profile -->
-                                        {% if session.get('can_edit_profiles') %}
-                                        <a href="/edit_student/{{ student.id }}" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center" title="Edit Profile">
-                                            <i class="bi bi-pencil-square"></i> <span class="ms-1 d-none d-md-inline">Edit</span>
-                                        </a>
-                                        {% else %}
-                                        <a href="/student/{{ student.id }}" class="btn btn-outline-secondary fw-bold d-flex align-items-center justify-content-center" title="View Profile">
-                                            <i class="bi bi-eye-fill"></i> <span class="ms-1 d-none d-md-inline">View</span>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        <!-- 🛡️ SECURITY CONTROL: Add Report / Grades -->
-                                        {% if session.get('can_manage_academics') %}
-                                        <a href="/add_report/{{ student.id }}" class="btn btn-outline-success fw-bold d-none d-md-inline-flex align-items-center justify-content-center" title="Add Report">
-                                            <i class="bi bi-journal-plus"></i> <span class="ms-1">Grades</span>
-                                        </a>
-                                        {% endif %}
-                                        
-                                        <!-- 🛡️ SECURITY CONTROL: Follow-Ups / Notes -->
-                                        {% if session.get('can_manage_followups') %}
-                                        <a href="/add_followup/{{ student.id }}" class="btn btn-outline-primary fw-bold d-flex align-items-center justify-content-center w-100 w-md-auto" title="Add Follow-Up">
-                                            <i class="bi bi-clipboard2-heart-fill"></i> <span class="ms-1 d-none d-md-inline">Notes</span>
-                                        </a>
-                                        {% endif %}
-                                        
-                                    </div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Active Roster List (Native App Style) -->
+    <div class="card shadow-sm border-0 native-card rounded-4">
+        
+        <!-- Live Search & Filter Header -->
+        <div class="card-header bg-white border-bottom pt-3 pb-2 px-3 px-md-4 rounded-top-4">
+            <!-- Search Bar -->
+            <div class="input-group input-group-sm w-100 mb-3">
+                <span class="input-group-text bg-light border-0 px-3"><i class="bi bi-search text-muted fs-6"></i></span>
+                <input type="text" id="rosterSearch" class="form-control border-0 bg-light rounded-end-pill py-2 fw-bold text-dark" placeholder="Search by name, ID, phone, or location...">
             </div>
+            
+            <!-- Native Filter Pills -->
+            <div class="d-flex gap-2 overflow-auto custom-scrollbar pb-2" style="white-space: nowrap;">
+                <button class="btn btn-sm btn-dark rounded-pill px-3 fw-bold filter-btn active" data-filter="all">All</button>
+                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="primary">Primary</button>
+                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="high">High School</button>
+                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="uni">Uni / Voc</button>
+                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="male">Boys</button>
+                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="female">Girls</button>
+            </div>
+        </div>
 
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush rounded-bottom-4" id="rosterList">
+                {% for student in students %}
+                <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom student-item transition-hover" data-grade="{{ student.grade_level|lower }}" data-gender="{{ student.gender|lower }}">
+                    <div class="row gx-3 gy-2 align-items-center">
+
+                        <!-- Identity (Avatar, Name, ID, Grade) -->
+                        <div class="col-12 col-md-5 d-flex align-items-center mb-2 mb-md-0">
+                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=60" %}
+                            <div class="position-relative me-3 flex-shrink-0">
+                                <a href="/student/{{ student.id }}" class="text-decoration-none">
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" 
+                                         class="rounded-circle border border-3 border-white shadow-sm" 
+                                         style="width: 60px; height: 60px; object-fit: cover;" 
+                                         onerror="this.onerror=null; this.src='{{ thumb_url }}';">
+                                </a>
+                                <span class="position-absolute bottom-0 end-0 p-1 border border-white border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %}" style="margin-bottom: 2px; margin-right: 2px;" title="{{ student.status }}"></span>
+                            </div>
+                            
+                            <div class="text-start w-100" style="min-width: 0;">
+                                <a href="/student/{{ student.id }}" class="student-name fw-bold text-dark fs-5 hover-primary text-decoration-none d-block text-truncate mb-1">
+                                    {{ student.first_name }} {{ student.last_name }}
+                                </a>
+                                {% if student.khmer_name %}
+                                    <span class="student-khmer khmer-font text-muted fw-normal d-block mb-2" style="font-size: 0.9rem;">{{ student.khmer_name }}</span>
+                                {% endif %}
+                                <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                    <span class="student-id badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 rounded-pill"><i class="bi bi-person-badge-fill me-1"></i>{{ student.ngo_id }}</span>
+                                    <span class="badge bg-light text-dark border px-2 py-1 rounded-pill text-truncate" style="max-width: 120px;">{{ student.grade_level }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Meta Info (Location, Phone, School) -->
+                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                            <div class="d-flex flex-column gap-1" style="font-size: 0.8rem;">
+                                <div class="student-slum fw-bold text-dark khmer-font text-truncate"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
+                                <div class="student-phone text-muted text-truncate">
+                                    <i class="bi bi-telephone-fill me-2"></i>
+                                    {% if student.phone_number %}
+                                        <a href="tel:{{ student.phone_number }}" class="text-decoration-none text-secondary">{{ student.phone_number }}</a>
+                                    {% else %}
+                                        <span class="fst-italic">No Phone</span>
+                                    {% endif %}
+                                </div>
+                                <div class="student-school text-muted khmer-font text-truncate"><i class="bi bi-building-fill me-2"></i>{{ student.current_school if student.current_school else '-' }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2">
+                            <!-- 🛡️ SECURITY CONTROL: Edit Profile -->
+                            {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
+                            <a href="/edit_student/{{ student.id }}" class="btn btn-sm btn-light border text-dark fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="Edit Profile">
+                                <i class="bi bi-pencil-square fs-6 d-md-none d-lg-inline me-md-1"></i> <span>Edit</span>
+                            </a>
+                            {% else %}
+                            <a href="/student/{{ student.id }}" class="btn btn-sm btn-light border text-dark fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="View Profile">
+                                <i class="bi bi-eye-fill fs-6 d-md-none d-lg-inline me-md-1"></i> <span>View</span>
+                            </a>
+                            {% endif %}
+                            
+                            <!-- 🛡️ SECURITY CONTROL: Add Grades -->
+                            {% if session.get('can_manage_academics') or session.get('can_create_academics') %}
+                            <a href="/add_report/{{ student.id }}" class="btn btn-sm btn-light border text-success fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="Add Report">
+                                <i class="bi bi-journal-plus fs-6 d-md-none d-lg-inline me-md-1"></i> <span>Grades</span>
+                            </a>
+                            {% endif %}
+                            
+                            <!-- 🛡️ SECURITY CONTROL: Add Follow-Ups -->
+                            {% if session.get('can_manage_followups') or session.get('can_create_followups') %}
+                            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-light border text-primary fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="Add Follow-Up">
+                                <i class="bi bi-clipboard2-heart-fill fs-6 d-md-none d-lg-inline me-md-1"></i> <span>Notes</span>
+                            </a>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+                {% else %}
+                <div class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4">
+                    <i class="bi bi-people fs-1 opacity-50 mb-2 d-block"></i>
+                    <h5 class="fw-bold text-dark mb-1">No students found.</h5>
+                    <p class="small mb-0">Use the "Add Kid" button to start building your roster.</p>
+                </div>
+                {% endfor %}
+                
+                <div id="noResultsMessage" class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4 d-none">
+                    <i class="bi bi-search fs-1 opacity-25 mb-2 d-block"></i>
+                    <h6 class="fw-bold text-dark mb-1">No students match your search.</h6>
+                    <p class="small mb-0">Try clearing the filters or typing a different name.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- BEAUTIFUL MOBILE CARDS CSS -->
 <style>
     /* Desktop Hover Effects */
-    @media (min-width: 768px) {
-        .border-bottom-md { border-bottom: 1px solid #f1f3f5; }
-        .transition-hover { transition: background-color 0.2s ease; }
-        .transition-hover:hover { background-color: #f8f9fa !important; }
-        .hover-primary { transition: color 0.2s ease; }
-        .hover-primary:hover { color: #0d6efd !important; }
-    }
-
-    /* Premium DataTables Search Bar Styling */
-    .dataTables_wrapper .dataTables_filter input {
-        border-radius: 50rem !important; /* Pill shape */
-        padding: 0.5rem 1.25rem !important;
-        border: 1px solid #ced4da;
-        box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    }
-    .dataTables_wrapper .dataTables_filter input:focus {
-        border-color: #86b7fe;
-        outline: 0;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-
-    /* Mobile Card Transformations */
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+    .hover-primary { transition: color 0.2s ease; }
+    .hover-primary:hover { color: #0d6efd !important; }
+    
+    /* Native App Styling for Mobile Edge-to-Edge */
     @media (max-width: 767.98px) {
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_info { display: none !important; }
-        .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1.5rem; padding: 0 1rem; margin-top: 1rem; }
-        .dataTables_wrapper .dataTables_filter label { width: 100%; font-weight: 600; color: #6c757d; }
-        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; margin-top: 0.5rem; border: 2px solid #0d6efd; box-shadow: 0 4px 10px rgba(13, 110, 253, 0.1); }
-        
-        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table tr, .mobile-cards-table td { display: block; width: 100%; }
-        .mobile-cards-table thead { display: none !important; }
-        
-        /* The Card Container */
-        .mobile-cards-table tr { 
-            margin-bottom: 1.5rem; 
-            border: 1px solid rgba(0,0,0,0.08); 
-            border-radius: 16px; 
-            background-color: #ffffff; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.03); 
-            padding: 1.25rem; 
-            position: relative;
+        .native-card {
+            border-radius: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            margin-left: -1rem;
+            margin-right: -1rem;
         }
-        
-        /* The Data Rows */
-        .mobile-cards-table td { 
-            border: none !important; 
-            padding: 0.6rem 0 !important; 
-            text-align: right; 
-            border-bottom: 1px dashed #e9ecef !important; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        .mobile-cards-table td:last-child { border-bottom: none !important; }
-        
-        /* The Pseudo-Labels */
-        .mobile-cards-table td::before { 
-            content: attr(data-label); 
-            font-weight: 700; 
-            color: #adb5bd; 
-            text-transform: uppercase; 
-            font-size: 0.7rem; 
-            letter-spacing: 0.5px; 
-        }
-        
-        /* Identity Section (Top of Card) */
-        .student-identity-cell { 
-            border-bottom: 2px solid #f8f9fa !important; 
-            padding-bottom: 1rem !important; 
-            margin-bottom: 0.5rem; 
-            display: flex !important; 
-            justify-content: flex-start !important; 
-        }
-        .student-identity-cell::before { display: none; }
-        
-        /* Action Section (Bottom of Card) */
-        .action-cell { 
-            display: flex !important; 
-            justify-content: center !important; 
-            padding-top: 1.25rem !important; 
-            margin-top: 0.5rem;
-        }
-        .action-cell::before { display: none; }
-        .action-cell .btn-group { width: 100%; }
-        .action-cell .btn { 
-            border-radius: 12px !important; 
-            padding: 0.75rem; 
-            font-size: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        }
-        .card { border: none !important; background: transparent !important; box-shadow: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    $(document).ready(function() {
-        $('#rosterTable').DataTable({
-            "pageLength": 25,
-            "order": [[ 0, "asc" ]], 
-            "columnDefs": [
-                { "type": "custom-grade-pre", "targets": 2 }, // Apply custom grade sort
-                { "orderable": false, "targets": 6 } // Disabled sorting for Actions column
-            ],
-            "language": {
-                "search": "",
-                "searchPlaceholder": "🔍 Search by Name, ID, or Phone..."
-            },
-            "drawCallback": function(settings) {
-                // Ensure pagination styling remains consistent after searching/paging
-                $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-outline-secondary border-0 m-1');
-            }
+    document.addEventListener("DOMContentLoaded", function() {
+        let currentFilter = 'all';
+        
+        // 1. Handle Filter Pill Clicks
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Reset all buttons to light/inactive
+                document.querySelectorAll('.filter-btn').forEach(b => {
+                    b.classList.remove('btn-dark', 'active');
+                    b.classList.add('btn-light', 'text-muted', 'border');
+                });
+                
+                // Set the clicked button to dark/active
+                this.classList.remove('btn-light', 'text-muted', 'border');
+                this.classList.add('btn-dark', 'active');
+                
+                currentFilter = this.getAttribute('data-filter');
+                applyFilters();
+            });
         });
+
+        // 2. Handle Live Search Input
+        document.getElementById('rosterSearch')?.addEventListener('keyup', applyFilters);
+
+        // 3. Core Filter Engine
+        function applyFilters() {
+            const query = (document.getElementById('rosterSearch')?.value || '').toLowerCase().trim();
+            const items = document.querySelectorAll('.student-item');
+            const noResults = document.getElementById('noResultsMessage');
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                // Extract searchable text from the card
+                const textContent = item.innerText.toLowerCase();
+                const grade = (item.getAttribute('data-grade') || '').toLowerCase();
+                const gender = (item.getAttribute('data-gender') || '').toLowerCase();
+                
+                let matchesSearch = textContent.includes(query);
+                let matchesFilter = true;
+
+                // Smart Category Matching based on Cambodian Grade Terminology
+                if (currentFilter === 'primary') {
+                    matchesFilter = grade.includes('kindergarten') || grade.includes('kg') || grade.match(/grade\s*[1-6]\b/);
+                } else if (currentFilter === 'high') {
+                    matchesFilter = grade.match(/grade\s*([7-9]|1[0-2])\b/);
+                } else if (currentFilter === 'uni') {
+                    matchesFilter = grade.includes('university') || grade.includes('vocational') || grade.includes('year');
+                } else if (currentFilter === 'male') {
+                    matchesFilter = gender === 'male';
+                } else if (currentFilter === 'female') {
+                    matchesFilter = gender === 'female';
+                }
+
+                if (matchesSearch && matchesFilter) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Show "No Results" state if empty
+            if (visibleCount === 0 && items.length > 0) {
+                noResults.classList.remove('d-none');
+            } else {
+                noResults.classList.add('d-none');
+            }
+        }
     });
 </script>
 {% endblock %}

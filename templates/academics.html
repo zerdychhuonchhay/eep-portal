@@ -3,23 +3,23 @@
 {% block title %}Master Gradebook{% endblock %}
 
 {% block main %}
-<div class="container-fluid mt-4 mb-5 text-start px-2 px-md-4">
+<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-4" style="max-width: 1400px;">
     
     <!-- Fixed Header Layout -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <h2 class="text-center text-md-start mb-0"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
+        <h2 class="mb-0 fw-bold"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
         
-        <div class="d-flex flex-wrap justify-content-center gap-2">
+        <div class="d-flex flex-wrap justify-content-start justify-content-md-end gap-2">
             <!-- 🛡️ SECURITY CONTROL: Export Data -->
             {% if session.get('can_export_data') %}
-            <a href="/export_grades" class="btn btn-outline-success shadow-sm fw-bold">
+            <a href="/export_grades" class="btn btn-sm btn-outline-success shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover d-none d-md-inline-block">
                 <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel
             </a>
             {% endif %}
             
             <!-- 🛡️ SECURITY CONTROL: Manage Academics -->
             {% if session.get('can_manage_academics') %}
-            <button class="btn btn-primary shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+            <button class="btn btn-sm btn-primary shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover" data-bs-toggle="modal" data-bs-target="#quickAddModal">
                 <i class="bi bi-journal-plus me-1"></i> Add Report
             </button>
             {% endif %}
@@ -33,7 +33,7 @@
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header bg-primary text-white border-bottom-0 pt-4 pb-3 px-4 rounded-top-4">
                     <h5 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Select Student</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <label class="form-label fw-bold small text-muted">Who are you entering grades for?</label>
@@ -45,16 +45,16 @@
                     </select>
                 </div>
                 <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
-                    <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="routeToStudent()">Continue <i class="bi bi-arrow-right"></i></button>
+                    <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary fw-bold px-4 shadow-sm rounded-pill" onclick="routeToStudent()">Continue <i class="bi bi-arrow-right"></i></button>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
 
-    <!-- NGO LEADERBOARD / QUICK INSIGHTS -->
-    <div class="row mb-4 d-none d-md-flex">
+    <!-- NGO LEADERBOARD / QUICK INSIGHTS (PC Only) -->
+    <div class="row mb-4 d-none d-lg-flex">
         <div class="col-md-4">
             <div class="card shadow-sm border-0 bg-primary text-white h-100 rounded-4">
                 <div class="card-body p-4 d-flex align-items-center">
@@ -78,36 +78,37 @@
     </div>
 
     <!-- MAIN DATA CONTAINER -->
-    <div class="card shadow-sm border-0 bg-white rounded-4 overflow-hidden">
-        <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex flex-column flex-xl-row justify-content-between align-items-center gap-3">
-            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-grid-3x3-gap-fill text-info me-2"></i>Heatmap Matrix</h5>
+    <div class="card shadow-sm border-0 bg-white rounded-4 overflow-hidden native-card">
+        <div class="card-header bg-white border-bottom pt-3 pb-2 px-3 px-md-4 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 rounded-top-4">
+            <h5 class="fw-bold mb-0 text-dark d-none d-md-block"><i class="bi bi-grid-3x3-gap-fill text-info me-2"></i>Matrix</h5>
             
-            <!-- SMART DUAL FILTERS (Tier, Year, Month) -->
-            <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
-                <!-- 1. Academic Tier Filter -->
-                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-info border-2">
-                    <i class="bi bi-layers-fill text-info ms-3 me-2"></i>
-                    <select id="tierFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
-                        <option value="all">All Grade Levels</option>
-                        <option value="primary">Primary (K-6)</option>
-                        <option value="highschool">High School (7-12)</option>
-                        <option value="highered">Uni / Vocational</option>
-                    </select>
-                </div>
-                <!-- 2. Year Filter -->
-                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
+            <!-- SMART DUAL FILTERS (Edge-to-Edge scrolling on mobile) -->
+            <div class="d-flex flex-nowrap align-items-center gap-2 overflow-auto custom-scrollbar pb-2 pb-xl-0" style="white-space: nowrap;">
+                
+                <!-- 1. Year Filter -->
+                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm flex-shrink-0">
                     <i class="bi bi-calendar3 text-muted ms-3 me-2"></i>
-                    <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
-                        <option value="all">All Academic Years</option>
+                    <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4">
+                        <option value="all">All Years</option>
                         <!-- Years injected via Javascript -->
                     </select>
                 </div>
-                <!-- 3. Month Filter -->
-                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm">
+                <!-- 2. Month Filter -->
+                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm flex-shrink-0">
                     <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
-                    <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none">
+                    <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4">
                         <option value="all">All Months</option>
                         <!-- Months injected via Javascript -->
+                    </select>
+                </div>
+                <!-- 3. Academic Tier Filter -->
+                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-info border-2 flex-shrink-0">
+                    <i class="bi bi-layers-fill text-info ms-3 me-2"></i>
+                    <select id="tierFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4">
+                        <option value="all">All Grades</option>
+                        <option value="primary">Primary (K-6)</option>
+                        <option value="highschool">High School (7-12)</option>
+                        <option value="highered">Uni / Vocational</option>
                     </select>
                 </div>
             </div>
@@ -127,8 +128,90 @@
                 {% endif %}
             {% endfor %}
 
-            <!-- TRUE EXCEL SPREADSHEET WRAPPER (Ultra-Compact Density) -->
-            <div class="p-0 w-100 custom-horizontal-scroll excel-container">
+            <!-- ======================================================== -->
+            <!-- 1. MOBILE NATIVE LIST (Visible only on small screens)    -->
+            <!-- ======================================================== -->
+            <div class="list-group list-group-flush d-lg-none rounded-bottom-4" id="mobileGradebookList">
+                {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
+                {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
+                
+                {% for record in academic_records %}
+                    {% set tier = 'other' %}
+                    {% if record.grade_level in primary_grades %}
+                        {% set tier = 'primary' %}
+                    {% elif record.grade_level in high_grades %}
+                        {% set tier = 'highschool' %}
+                    {% elif record.grade_level and ('University' in record.grade_level or 'Vocational' in record.grade_level) %}
+                        {% set tier = 'highered' %}
+                    {% endif %}
+
+                    <div class="list-group-item bg-white py-3 px-3 border-bottom mobile-grade-card transition-hover"
+                         data-year="{{ record.academic_year }}" 
+                         data-month="{{ record.month }}"
+                         data-tier="{{ tier }}">
+                         
+                         <!-- Card Header: Identity & Overall Score -->
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="pe-2" style="min-width: 0;">
+                                <a href="/student/{{ record.student_id }}" class="fw-bold text-dark fs-6 text-decoration-none d-block text-truncate">
+                                    {{ record.first_name }} {{ record.last_name }}
+                                </a>
+                                <div class="text-muted fw-bold d-flex align-items-center gap-2 mt-1" style="font-size: 0.7rem;">
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill">{{ record.grade_level if record.grade_level else 'No Grade' }}</span>
+                                    <span><i class="bi bi-calendar-event me-1"></i>{{ record.month }}</span>
+                                </div>
+                            </div>
+                            <div class="text-end flex-shrink-0">
+                                {% if record.overall_average %}
+                                    <div class="fw-bold fs-5 lh-1 {% if record.overall_average >= 85 %}text-success{% elif record.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
+                                        {{ record.overall_average }}%
+                                    </div>
+                                    {% if record.overall_grade %}
+                                        <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm mt-1" style="font-size: 0.6rem;">{{ record.overall_grade }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted fw-bold">-</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Subjects Mini-Grid -->
+                        {% if record.subjects %}
+                        <div class="d-flex flex-wrap gap-1 mt-3">
+                            {% for sub in record.subjects %}
+                                {% set sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
+                                {% if sub.score and sub.score != '-' %}
+                                <div class="d-flex align-items-center border rounded px-2 py-1 {{ sub.box_class }}" style="background-color: #fff;">
+                                    <span class="text-muted small fw-bold me-2 text-uppercase" style="font-size: 0.55rem; letter-spacing: 0.5px;">{{ sname|truncate(8, True, '..') }}</span>
+                                    <span class="fw-bold {{ sub.text_class }} {% if sub.text_class == 'text-warning' %}text-darken{% endif %}" style="font-size: 0.8rem;">{{ sub.score }}</span>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Actions -->
+                        <div class="mt-3 text-end">
+                            <span class="float-start text-muted fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-trophy-fill text-warning me-1"></i>Rank: {{ record.class_rank if record.class_rank else '-' }}</span>
+                            {% if session.get('can_manage_academics') %}
+                                <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-light border text-primary fw-bold rounded-pill px-3 shadow-sm transition-hover">Edit Data</a>
+                            {% else %}
+                                <span class="small text-muted"><i class="bi bi-lock-fill"></i> Locked</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                
+                <div id="noMobileRecords" class="text-center p-5 bg-light d-none rounded-bottom-4">
+                    <i class="bi bi-journal-x fs-1 text-muted opacity-50 mb-2 d-block"></i>
+                    <h6 class="fw-bold text-dark">No records match your filters.</h6>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- 2. EXCEL SPREADSHEET (Visible only on PC/Large screens)  -->
+            <!-- ======================================================== -->
+            <div class="p-0 w-100 custom-horizontal-scroll excel-container d-none d-lg-block rounded-bottom-4">
                 <table id="academicTable" class="table app-style-table align-middle mb-0 table-hover table-bordered m-0" style="width:100%;">
                     
                     <thead class="table-light sticky-header">
@@ -149,10 +232,6 @@
                     </thead>
                     
                     <tbody>
-                        {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
-                        {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
-                        
-                        <!-- 🚨 PURIFIED CALENDAR WEIGHTS (Strictly Months) 🚨 -->
                         {% set month_weights = {
                             'September': '01', 'October': '02', 'November': '03', 'December': '04',
                             'January': '05', 'February': '06', 'March': '07', 'April': '08', 
@@ -188,7 +267,7 @@
                             data-month="{{ record.month }}"
                             data-tier="{{ tier }}">
                             
-                            <!-- Student Info (Sticky on all devices) -->
+                            <!-- Student Info (Sticky on PC) -->
                             <td class="sticky-col bg-white px-3 py-1">
                                 <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark text-truncate d-block" style="max-width: 180px; font-size: 0.85rem;">
                                     {{ record.first_name }} {{ record.last_name }}
@@ -243,7 +322,6 @@
                                     {% endfor %}
                                 {% endif %}
                                 
-                                <!-- UX FIX: The entire TD cell becomes the heatmap color, eliminating bulky divs -->
                                 <td data-sort="{{ score_val.score if score_val.score != '-' else -1 }}" class="text-center align-middle p-1 subject-cell {{ score_val.box_class }}" style="transition: background-color 0.2s;">
                                     {% if score_val.score != '-' %}
                                         <div class="d-flex flex-column align-items-center justify-content-center">
@@ -253,7 +331,6 @@
                                                     <span class="badge {{ score_val.badge_class }} shadow-sm" style="font-size: 0.55rem; padding: 0.15rem 0.25rem;">{{ score_val.grade_letter }}</span>
                                                 {% endif %}
                                             </div>
-                                            <!-- Smart Max Score: Only show if it's not standard 100 -->
                                             {% if score_val.max and score_val.max|string not in ['100', '100.0'] %}
                                                 <span class="text-muted fw-bold" style="font-size: 0.5rem; line-height: 1; opacity: 0.6;">/{{ score_val.max|string|replace('.0', '') }}</span>
                                             {% endif %}
@@ -269,7 +346,7 @@
                                 {{ record.class_rank if record.class_rank else '-' }}
                             </td>
                             
-                            <!-- Action Column (Edit Report - SECURED) -->
+                            <!-- Action Column -->
                             <td class="text-center align-middle">
                                 {% if session.get('can_manage_academics') %}
                                     <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-light border fw-bold text-primary px-2 py-0 rounded" style="font-size: 0.75rem;">
@@ -288,7 +365,6 @@
     </div>
 </div>
 
-<!-- SPREADSHEET CSS (Forces Excel-style UI and Frozen Panes) -->
 <style>
     /* The main wrapper that allows scrolling */
     .excel-container {
@@ -307,7 +383,7 @@
     /* Force the table to never wrap text */
     .app-style-table {
         white-space: nowrap;
-        border-collapse: separate; /* Required for sticky headers to work perfectly */
+        border-collapse: separate; 
         border-spacing: 0;
     }
     
@@ -317,7 +393,6 @@
     }
 
     /* 🚨 THE FREEZE PANE MAGIC 🚨 */
-    /* 1. Stick the Header to the top */
     .sticky-header th {
         position: sticky;
         top: 0;
@@ -327,7 +402,6 @@
         box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
     }
     
-    /* 2. Stick the Student Name to the left */
     .sticky-col {
         position: sticky;
         left: 0;
@@ -337,7 +411,6 @@
         box-shadow: 2px 0 5px rgba(0,0,0,0.02);
     }
     
-    /* 3. The top-left corner must have the highest z-index so it stays above everything */
     .sticky-header th.sticky-col {
         z-index: 15;
     }
@@ -346,14 +419,26 @@
     .dataTables_wrapper .row { margin-left: 0; margin-right: 0; }
     .dataTables_wrapper .dataTables_filter { margin-bottom: 1rem; padding: 0 1rem; margin-top: 1rem;}
     
-    /* Ensure yellow text warnings are legible */
-    .text-warning.text-darken {
-        color: #b48600 !important;
-    }
+    .text-warning.text-darken { color: #b48600 !important; }
     
-    /* Table hover states overriding our custom heatmap colors slightly */
     .table-hover>tbody>tr:hover>* {
         box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.02);
+    }
+    
+    .transition-hover { transition: transform 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-1px); }
+
+    /* Native App Styling for Mobile Edge-to-Edge */
+    @media (max-width: 767.98px) {
+        .native-card {
+            border-radius: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            margin-left: -1rem;
+            margin-right: -1rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     }
 </style>
 {% endblock %}
@@ -373,7 +458,7 @@
         const yearSet = new Set();
         const yearMonthMap = {}; 
         
-        // 1. Extract all exact years and months from the HTML rows
+        // 1. Extract all exact years and months from the HTML rows (from the PC table)
         $('.gradebook-row').each(function() {
             const year = $(this).attr('data-year') ? $(this).attr('data-year').trim() : "";
             let monthAttr = $(this).attr('data-month');
@@ -447,13 +532,13 @@
         }
         populateMonths(yearFilter.val());
 
-        // 5. Initialize DataTables
+        // 5. Initialize DataTables for the PC View
         academicTable = $('#academicTable').DataTable({
             "pageLength": 50,
             "order": [[1, "desc"]], // Default sort by the "Term & Grade" column (chronologically)
             "language": {
                 "search": "",
-                "searchPlaceholder": "🔍 Search Leaderboard...",
+                "searchPlaceholder": "🔍 Search Matrix...",
                 "emptyTable": "No academic records found for the selected filters."
             },
             "scrollX": false, 
@@ -461,7 +546,7 @@
             "info": false
         });
 
-        // 6. Build the Custom Search Extension (BULLETPROOF FILTERING)
+        // 6. Build the Custom Search Extension (BULLETPROOF FILTERING for PC Table)
         $.fn.dataTable.ext.search.push(
             function(settings, data, dataIndex, rowData, counter) {
                 if (settings.nTable.id !== 'academicTable') return true;
@@ -496,10 +581,14 @@
         filterGradebook();
     });
 
-    // 🚨 BULLETPROOF DOM PARSER FOR HIDING EMPTY COLUMNS
+    // 🚨 DUAL FILTER LOGIC (Filters both PC Table and Mobile Cards)
     function filterGradebook() {
+        var selectedYear = $('#yearFilter').val() || 'all';
+        var selectedMonth = $('#monthFilter').val() || 'all';
+        var selectedTier = $('#tierFilter').val() || 'all'; 
+
+        // 1. Filter the PC DataTables
         if (academicTable) {
-            // First, apply the row filters (Year/Month/Tier)
             academicTable.draw();
             
             let numCols = academicTable.columns().count();
@@ -513,13 +602,11 @@
                 // Get all the <td> DOM nodes for this specific column that are CURRENTLY visible
                 let nodes = academicTable.column(i, {search: 'applied'}).nodes();
                 
-                // Loop through the actual HTML elements
                 $(nodes).each(function() {
                     // Check our foolproof data-sort attribute! 
-                    // If it is NOT "-1", it means it's a real number or a letter grade!
                     if ($(this).attr('data-sort') !== "-1") {
                         columnHasData = true;
-                        return false; // Break out of the loop early, we found data!
+                        return false; 
                     }
                 });
                 
@@ -530,11 +617,34 @@
                 }
             }
             
-            // Collapse the empty columns, Expand the active ones
             academicTable.columns(columnsToShow).visible(true, false);
             academicTable.columns(columnsToHide).visible(false, false);
-            
             academicTable.columns.adjust();
+        }
+
+        // 2. Filter the Mobile Native Cards
+        let mobileVisibleCount = 0;
+        $('.mobile-grade-card').each(function() {
+            var rowYear = ($(this).attr('data-year') || "").trim();
+            var rowMonth = ($(this).attr('data-month') || "").trim();
+            var rowTier = ($(this).attr('data-tier') || "").trim();
+
+            var yearMatch = (selectedYear === 'all' || rowYear === selectedYear);
+            var monthMatch = (selectedMonth === 'all' || rowMonth === selectedMonth);
+            var tierMatch = (selectedTier === 'all' || rowTier === selectedTier);
+
+            if (yearMatch && monthMatch && tierMatch) {
+                $(this).removeClass('d-none');
+                mobileVisibleCount++;
+            } else {
+                $(this).addClass('d-none');
+            }
+        });
+
+        if (mobileVisibleCount === 0) {
+            $('#noMobileRecords').removeClass('d-none');
+        } else {
+            $('#noMobileRecords').addClass('d-none');
         }
     }
 </script>
