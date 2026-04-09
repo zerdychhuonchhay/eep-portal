@@ -3,7 +3,7 @@
 {% block title %}{{ title if title else 'Student Roster' }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
     
     <!-- Header Section & Actions -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
@@ -12,40 +12,48 @@
             <p class="text-muted small mb-0 d-none d-md-block">Manage your students, update profiles, and log quick actions.</p>
         </div>
         
-        <div class="d-flex flex-wrap justify-content-start justify-content-md-end gap-2">
-            <!-- Context-Aware Navigation -->
-            <a href="/roster" class="btn btn-sm {% if request.path == '/' or request.path == '/roster' %}btn-primary{% else %}btn-white text-muted{% endif %} shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover">
-                <i class="bi bi-person-check-fill me-1"></i> Active
-            </a>
-            <a href="/archive" class="btn btn-sm {% if request.path == '/archive' %}btn-secondary{% else %}btn-white text-muted{% endif %} shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover">
-                <i class="bi bi-archive-fill me-1"></i> Archive
-            </a>
+        <!-- Native App Action Bar (Prevents awkward wrapping) -->
+        <div class="d-flex align-items-center justify-content-between gap-2 w-100 w-md-auto">
             
-            <!-- 🛡️ SECURITY CONTROL: Add New Student -->
-            {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
-            <a href="/add_student" class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover">
-                <i class="bi bi-person-plus-fill me-1"></i> Add Kid
-            </a>
-            {% endif %}
+            <!-- iOS Style Segmented Control for Views -->
+            <div class="bg-white border rounded-pill p-1 shadow-sm d-flex flex-fill flex-md-grow-0" style="max-width: 220px;">
+                <a href="/roster" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if request.path == '/' or request.path == '/roster' %}btn-primary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem;">
+                    Active
+                </a>
+                <a href="/archive" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if request.path == '/archive' %}btn-secondary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem;">
+                    Archive
+                </a>
+            </div>
             
-            <!-- 🛡️ SECURITY CONTROL: Export Data -->
-            {% if session.get('can_export_data') %}
-            <a href="/export_students" class="btn btn-sm btn-success shadow-sm fw-bold d-none d-lg-inline-block rounded-pill px-3 py-2 transition-hover">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
-            </a>
-            {% endif %}
+            <div class="d-flex gap-2 ms-auto">
+                <!-- 🛡️ SECURITY CONTROL: Add New Student -->
+                {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
+                <a href="/add_student" class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover d-flex align-items-center">
+                    <i class="bi bi-person-plus-fill d-sm-none fs-5"></i>
+                    <i class="bi bi-person-plus-fill me-1 d-none d-sm-inline"></i> 
+                    <span class="d-none d-sm-inline">Add Kid</span>
+                </a>
+                {% endif %}
+                
+                <!-- 🛡️ SECURITY CONTROL: Export Data -->
+                {% if session.get('can_export_data') %}
+                <a href="/export_students" class="btn btn-sm btn-success shadow-sm fw-bold d-none d-lg-flex align-items-center rounded-pill px-3 py-2 transition-hover">
+                    <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <!-- Active Roster List (Native App Style) -->
-    <div class="card shadow-sm border-0 native-card rounded-4">
+    <div class="card shadow-sm border-0 native-card rounded-4 border-top border-primary border-4">
         
         <!-- Live Search & Filter Header -->
-        <div class="card-header bg-white border-bottom pt-3 pb-2 px-3 px-md-4 rounded-top-4">
-            <!-- Search Bar -->
-            <div class="input-group input-group-sm w-100 mb-3">
-                <span class="input-group-text bg-light border-0 px-3"><i class="bi bi-search text-muted fs-6"></i></span>
-                <input type="text" id="rosterSearch" class="form-control border-0 bg-light rounded-end-pill py-2 fw-bold text-dark" placeholder="Search by name, ID, phone, or location...">
+        <div class="card-header bg-white border-bottom pt-4 pb-2 px-3 px-md-4 rounded-top-4">
+            <!-- Search Bar (Native Pill Style) -->
+            <div class="input-group input-group-sm w-100 mb-3 shadow-sm rounded-pill overflow-hidden">
+                <span class="input-group-text bg-light border-0 px-3"><i class="bi bi-search text-primary fs-6"></i></span>
+                <input type="text" id="rosterSearch" class="form-control border-0 bg-light py-2 fw-bold text-dark shadow-none" placeholder="Search by name, ID, phone, or location...">
             </div>
             
             <!-- Native Filter Pills -->
@@ -93,7 +101,7 @@
                         </div>
 
                         <!-- Meta Info (Location, Phone, School) -->
-                        <div class="col-12 col-md-4 mb-3 mb-md-0">
+                        <div class="col-12 col-md-4 mb-2 mb-md-0">
                             <div class="d-flex flex-column gap-1" style="font-size: 0.8rem;">
                                 <div class="student-slum fw-bold text-dark khmer-font text-truncate"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
                                 <div class="student-phone text-muted text-truncate">
@@ -109,7 +117,7 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2">
+                        <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-2 mt-md-0 pt-3 pt-md-0 border-top border-md-0 border-light border-opacity-50">
                             <!-- 🛡️ SECURITY CONTROL: Edit Profile -->
                             {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
                             <a href="/edit_student/{{ student.id }}" class="btn btn-sm btn-light border text-dark fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="Edit Profile">
@@ -174,6 +182,10 @@
         }
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .btn-transparent {
+            background-color: transparent !important;
+        }
     }
 </style>
 {% endblock %}

@@ -3,47 +3,51 @@
 {% block title %}Executive Impact Dashboard{% endblock %}
 
 {% block main %}
-<div class="container-fluid px-lg-4 mt-4 mb-5 text-start">
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 text-start px-0 px-md-3" style="max-width: 1400px;">
 
-    <!-- Header & Action Bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
-        <div>
-            <h2 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.5px;">
-                <i class="bi bi-graph-up-arrow text-primary me-2"></i>Executive Dashboard
-            </h2>
-            <p class="text-muted small mb-0 d-none d-md-block">Live, auto-calculated impact metrics and priority alerts.</p>
-        </div>
-
-        <div class="d-flex flex-wrap gap-3 align-items-center justify-content-center">
-            
-            <!-- Segmented Timeframe Filter (Apple Style) -->
-            <div class="bg-white p-1 rounded-pill shadow-sm border d-flex align-items-center">
-                <span class="text-muted small fw-bold px-3 d-none d-md-inline border-end"><i class="bi bi-calendar-range me-1"></i> Timeframe:</span>
-                <a href="/dashboard?timeframe=1" class="btn btn-sm rounded-pill px-3 {% if timeframe|string == '1' %}btn-primary fw-bold shadow-sm{% else %}text-muted fw-bold border-0{% endif %}">1 Mo</a>
-                <a href="/dashboard?timeframe=3" class="btn btn-sm rounded-pill px-3 {% if timeframe|string == '3' %}btn-primary fw-bold shadow-sm{% else %}text-muted fw-bold border-0{% endif %}">3 Mo</a>
-                <a href="/dashboard?timeframe=6" class="btn btn-sm rounded-pill px-3 {% if timeframe|string == '6' %}btn-primary fw-bold shadow-sm{% else %}text-muted fw-bold border-0{% endif %}">6 Mo</a>
-                <a href="/dashboard?timeframe=12" class="btn btn-sm rounded-pill px-3 {% if timeframe|string == '12' %}btn-primary fw-bold shadow-sm{% else %}text-muted fw-bold border-0{% endif %}">1 Yr</a>
+    <!-- NATIVE APP HEADER -->
+    <div class="mb-4 px-3 px-md-0">
+        <a href="/" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
+            <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Back to Hub
+        </a>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+            <div>
+                <h2 class="fw-bold text-dark mb-1" style="letter-spacing: -0.5px;">
+                    <i class="bi bi-graph-up-arrow text-primary me-2"></i>Executive Dashboard
+                </h2>
+                <p class="text-muted small fw-bold mb-0 d-none d-md-block">Live, auto-calculated impact metrics and priority alerts.</p>
             </div>
-            
+
+            <!-- iOS Style Segmented Control for Timeframe -->
+            <div class="bg-white border rounded-pill p-1 shadow-sm d-flex flex-fill flex-md-grow-0 overflow-auto custom-scrollbar" style="max-width: 100%; white-space: nowrap;">
+                <div class="d-none d-md-flex align-items-center px-3 border-end">
+                    <i class="bi bi-calendar-range text-muted me-2"></i>
+                    <span class="text-muted small fw-bold">Timeframe</span>
+                </div>
+                <a href="/dashboard?timeframe=1" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if timeframe|string == '1' %}btn-primary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem; min-width: 60px;">1 Mo</a>
+                <a href="/dashboard?timeframe=3" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if timeframe|string == '3' %}btn-primary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem; min-width: 60px;">3 Mo</a>
+                <a href="/dashboard?timeframe=6" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if timeframe|string == '6' %}btn-primary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem; min-width: 60px;">6 Mo</a>
+                <a href="/dashboard?timeframe=12" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if timeframe|string == '12' %}btn-primary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem; min-width: 60px;">1 Yr</a>
+            </div>
         </div>
     </div>
 
     <!-- PREMIUM 4-CARD KPI GRID -->
-    <div class="row g-3 mb-4">
+    <div class="row g-4 mb-5 px-2 px-md-0">
         <!-- Card 1: Enrollment -->
         <div class="col-6 col-xl-3">
-            <div class="card h-100 shadow-sm border-0 rounded-4 border-top border-primary border-4 transition-hover">
+            <div class="card h-100 shadow-sm border rounded-4 border-secondary border-opacity-10 transition-hover native-card bg-white">
                 <div class="card-body p-3 p-md-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-uppercase text-primary fw-bold mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Active Enrollment</h6>
-                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-muted fw-bold mb-0 text-truncate" style="font-size: 0.75rem; letter-spacing: 0.5px;">Active Enrollment</h6>
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 35px; height: 35px;">
                             <i class="bi bi-people-fill fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="display-6 fw-bold text-dark mb-0">{{ total_active }}</h2>
+                    <h2 class="display-6 fw-bold text-dark mb-0 lh-1">{{ total_active }}</h2>
                     
                     <!-- Visual Progress Bar for Demographics -->
-                    <div class="progress mt-3 mb-2 bg-light border" style="height: 8px;">
+                    <div class="progress mt-3 mb-2 bg-light border overflow-hidden" style="height: 8px; border-radius: 4px;">
                         {% set total = total_active if total_active > 0 else 1 %}
                         <div class="progress-bar bg-info" role="progressbar" style="width: {{ (boys / total) * 100 }}%" title="Boys: {{ boys }}"></div>
                         <div class="progress-bar bg-danger" role="progressbar" style="width: {{ (girls / total) * 100 }}%" title="Girls: {{ girls }}"></div>
@@ -59,19 +63,20 @@
 
         <!-- Card 2: Services -->
         <div class="col-6 col-xl-3">
-            <div class="card h-100 shadow-sm border-0 rounded-4 border-top border-success border-4 transition-hover">
+            <div class="card h-100 shadow-sm border rounded-4 border-secondary border-opacity-10 transition-hover native-card bg-white">
                 <div class="card-body p-3 p-md-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-uppercase text-success fw-bold mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Meals Delivered</h6>
-                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-muted fw-bold mb-0 text-truncate" style="font-size: 0.75rem; letter-spacing: 0.5px;">Meals Delivered</h6>
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 35px; height: 35px;">
                             <i class="bi bi-basket2-fill fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="display-6 fw-bold text-dark mb-1">{{ meals }}</h2>
-                    <div class="mt-3 p-2 bg-light rounded border border-success border-opacity-10">
-                        <p class="small text-muted mb-0 fw-bold" style="font-size: 0.7rem;">
-                            <i class="bi bi-cpu text-success me-1"></i> Auto-calculated from field attendance
-                        </p>
+                    <h2 class="display-6 fw-bold text-dark mb-1 lh-1">{{ meals }}</h2>
+                    <div class="mt-auto pt-3">
+                        <div class="p-2 bg-light rounded border border-secondary border-opacity-10 d-flex align-items-center">
+                            <i class="bi bi-cpu text-success me-2 fs-6"></i>
+                            <span class="small text-muted mb-0 fw-bold lh-sm" style="font-size: 0.65rem;">Auto-calculated from field logs</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -79,19 +84,20 @@
 
         <!-- Card 3: Impact -->
         <div class="col-6 col-xl-3">
-            <div class="card h-100 shadow-sm border-0 rounded-4 border-top border-info border-4 transition-hover">
+            <div class="card h-100 shadow-sm border rounded-4 border-secondary border-opacity-10 transition-hover native-card bg-white">
                 <div class="card-body p-3 p-md-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-uppercase text-info fw-bold mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Family Meetings</h6>
-                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-muted fw-bold mb-0 text-truncate" style="font-size: 0.75rem; letter-spacing: 0.5px;">Family Meetings</h6>
+                        <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 35px; height: 35px;">
                             <i class="bi bi-house-heart-fill fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="display-6 fw-bold text-dark mb-1">{{ meetings }}</h2>
-                    <div class="mt-3 p-2 bg-light rounded border border-info border-opacity-10">
-                        <p class="small text-muted mb-0 fw-bold" style="font-size: 0.7rem;">
-                            <i class="bi bi-cpu text-info me-1"></i> Sourced from Social Work logs
-                        </p>
+                    <h2 class="display-6 fw-bold text-dark mb-1 lh-1">{{ meetings }}</h2>
+                    <div class="mt-auto pt-3">
+                        <div class="p-2 bg-light rounded border border-secondary border-opacity-10 d-flex align-items-center">
+                            <i class="bi bi-file-earmark-text text-info me-2 fs-6"></i>
+                            <span class="small text-muted mb-0 fw-bold lh-sm" style="font-size: 0.65rem;">Sourced from Social Work records</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -99,17 +105,17 @@
 
         <!-- Card 4: Alumni -->
         <div class="col-6 col-xl-3">
-            <div class="card h-100 shadow-sm border-0 rounded-4 border-top border-warning border-4 transition-hover">
+            <div class="card h-100 shadow-sm border rounded-4 border-secondary border-opacity-10 transition-hover native-card bg-white">
                 <div class="card-body p-3 p-md-4">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h6 class="text-uppercase text-warning text-darken fw-bold mb-0" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Graduates</h6>
-                        <div class="bg-warning bg-opacity-10 text-warning text-darken rounded-3 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-muted fw-bold mb-0 text-truncate" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Graduates</h6>
+                        <div class="bg-warning bg-opacity-10 text-warning text-darken rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 35px; height: 35px;">
                             <i class="bi bi-mortarboard-fill fs-5"></i>
                         </div>
                     </div>
-                    <h2 class="display-6 fw-bold text-dark mb-1">{{ graduates }}</h2>
-                    <div class="mt-3 p-2 bg-light rounded border border-warning border-opacity-25">
-                        <div class="d-flex justify-content-between text-muted fw-bold" style="font-size: 0.7rem;">
+                    <h2 class="display-6 fw-bold text-dark mb-1 lh-1">{{ graduates }}</h2>
+                    <div class="mt-auto pt-3">
+                        <div class="p-2 bg-light rounded border border-secondary border-opacity-10 d-flex justify-content-between text-muted fw-bold" style="font-size: 0.65rem;">
                             <span><i class="bi bi-building text-secondary me-1"></i> Uni: {{ uni_kids }}</span>
                             <span><i class="bi bi-tools text-secondary me-1"></i> Voc: {{ vocal_kids }}</span>
                         </div>
@@ -120,45 +126,47 @@
     </div>
 
     <!-- Main Operational Row -->
-    <div class="row g-4">
+    <div class="row g-4 px-0 px-md-0 mb-4">
         
         <!-- LEFT COLUMN: Priority Alerts -->
         <div class="col-lg-7 col-xl-8">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold text-danger mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Priority Action Alerts</h5>
-                    <span class="badge bg-light text-muted border">Auto-Generated</span>
+            <div class="card shadow-sm border rounded-4 h-100 native-card border-secondary border-opacity-10 bg-white">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-3 px-md-4 d-flex justify-content-between align-items-center rounded-top-4">
+                    <h5 class="fw-bold text-danger mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Action Alerts</h5>
+                    <span class="badge bg-light text-muted border rounded-pill shadow-sm">Auto-Generated</span>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive p-3">
+                    <div class="table-responsive p-0 p-md-3 pt-md-0">
                         <table class="table table-hover align-middle mb-0 mobile-cards-table">
-                            <thead class="table-light">
-                                <tr class="small text-muted text-uppercase">
-                                    <th>Student</th>
-                                    <th>Alert Type</th>
-                                    <th>Details</th>
-                                    <th class="text-end pe-3">Action</th>
+                            <thead class="table-light border-bottom">
+                                <tr class="small text-muted text-uppercase fw-bold" style="letter-spacing: 0.5px;">
+                                    <th class="ps-4 border-0">Student</th>
+                                    <th class="border-0">Alert Type</th>
+                                    <th class="border-0">Details</th>
+                                    <th class="text-end pe-4 border-0">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <!-- Academic Alerts Loop -->
                                 {% for alert in academic_alerts %}
                                 <tr>
-                                    <td data-label="Student">
+                                    <td data-label="Student" class="ps-md-4">
                                         <a href="/student/{{ alert.id }}" class="text-decoration-none fw-bold text-dark hover-primary d-flex align-items-center">
-                                            <i class="bi bi-person-fill text-secondary bg-light rounded-circle p-1 me-2"></i>
-                                            {{ alert.first_name }} {{ alert.last_name }}
+                                            <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-person-fill text-secondary"></i>
+                                            </div>
+                                            <span class="text-truncate">{{ alert.first_name }} {{ alert.last_name }}</span>
                                         </a>
                                     </td>
                                     <td data-label="Alert Type">
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-1">Low Grades</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-1"><i class="bi bi-graph-down me-1"></i> Low Grades</span>
                                     </td>
                                     <td data-label="Details" class="text-danger small fw-bold">
                                         Avg: {{ alert.overall_average }}% <br>
                                         <span class="text-muted fw-normal" style="font-size: 0.7rem;">{{ alert.month }} {{ alert.academic_year }}</span>
                                     </td>
-                                    <td data-label="Action" class="text-md-end pe-3">
-                                        <a href="/student/{{ alert.id }}" class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3 shadow-sm w-100 w-md-auto mt-2 mt-md-0">Review</a>
+                                    <td data-label="Action" class="text-md-end pe-md-4">
+                                        <a href="/student/{{ alert.id }}" class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3 shadow-sm transition-hover">Review</a>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -166,24 +174,26 @@
                                 <!-- Protection Alerts Loop -->
                                 {% for alert in protection_alerts %}
                                 <tr>
-                                    <td data-label="Student">
+                                    <td data-label="Student" class="ps-md-4">
                                         <a href="/student/{{ alert.id }}" class="text-decoration-none fw-bold text-dark hover-primary d-flex align-items-center">
-                                            <i class="bi bi-person-fill text-secondary bg-light rounded-circle p-1 me-2"></i>
-                                            {{ alert.first_name }} {{ alert.last_name }}
+                                            <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-person-fill text-secondary"></i>
+                                            </div>
+                                            <span class="text-truncate">{{ alert.first_name }} {{ alert.last_name }}</span>
                                         </a>
                                     </td>
                                     <td data-label="Alert Type">
-                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill px-3 py-1">Protection Risk</span>
+                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill px-3 py-1"><i class="bi bi-shield-lock-fill me-1"></i> Protection Risk</span>
                                     </td>
                                     <td data-label="Details" class="small fw-bold text-dark">
                                         {{ alert.child_protection_concerns }}
                                     </td>
-                                    <td data-label="Action" class="text-md-end pe-3">
+                                    <td data-label="Action" class="text-md-end pe-md-4">
                                         <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end mt-2 mt-md-0">
-                                            <a href="/student/{{ alert.id }}" class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3 shadow-sm">Review</a>
-                                            <!-- The Resolve Button -->
+                                            <a href="/student/{{ alert.id }}/timeline" class="btn btn-sm btn-outline-dark fw-bold rounded-pill px-3 shadow-sm transition-hover text-nowrap">Review</a>
+                                            
                                             <form action="/resolve_alert/{{ alert.followup_id }}" method="POST" class="m-0">
-                                                <button type="submit" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm w-100 w-md-auto" onclick="return confirm('Mark this alert as resolved?');">Resolve</button>
+                                                <button type="submit" class="btn btn-sm btn-success fw-bold rounded-pill px-3 shadow-sm w-100 transition-hover text-nowrap" onclick="return confirm('Mark this alert as resolved?');">Resolve</button>
                                             </form>
                                         </div>
                                     </td>
@@ -194,7 +204,9 @@
                                 {% if not academic_alerts and not protection_alerts %}
                                 <tr>
                                     <td colspan="4" class="text-center py-5 text-muted border-bottom-0">
-                                        <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-3 opacity-50"></i>
+                                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                            <i class="bi bi-check-lg fs-1"></i>
+                                        </div>
                                         <h5 class="fw-bold text-dark mb-1">All Clear!</h5>
                                         <p class="small mb-0">No active priority alerts at this time.</p>
                                     </td>
@@ -209,15 +221,15 @@
 
         <!-- RIGHT COLUMN: Sponsor Letters -->
         <div class="col-lg-5 col-xl-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-header bg-info text-white fw-bold d-flex justify-content-between align-items-center pt-3 pb-2 px-4 rounded-top-4">
-                    <span><i class="bi bi-envelope-exclamation-fill me-1"></i> Missing Letters</span>
-                    <span class="badge bg-light text-info shadow-sm">{{ current_quarter }} {{ current_year }}</span>
+            <div class="card shadow-sm border rounded-4 h-100 native-card border-secondary border-opacity-10 bg-white">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center pt-4 pb-2 px-3 px-md-4 rounded-top-4 border-bottom-0">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-envelope-exclamation-fill text-info me-2"></i> Missing Letters</h5>
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3 shadow-sm">{{ current_quarter }} {{ current_year }}</span>
                 </div>
                 
                 <!-- Quick Filter Dropdown -->
-                <div class="bg-light p-3 border-bottom">
-                    <select id="letterFilter" class="form-select form-select-sm shadow-sm text-dark fw-bold border-0" onchange="filterLetters()">
+                <div class="bg-white p-3 border-bottom px-3 px-md-4">
+                    <select id="letterFilter" class="form-select form-select-sm shadow-sm text-dark fw-bold border border-secondary border-opacity-25 rounded-pill px-3" onchange="filterLetters()">
                         <option value="all">Show All Pending</option>
                         <option value="Ready to Send">🔵 Ready to Send</option>
                         <option value="Waiting to Scan">🟢 Waiting to Scan</option>
@@ -229,35 +241,34 @@
                 <div class="card-body p-0" style="max-height: 450px; overflow-y: auto;">
                     <ul class="list-group list-group-flush" id="letterList">
                         {% for student in missing_letters %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center p-3 letter-item transition-hover" data-status="{{ student.status_badge }}">
-                            <div>
-                                <!-- UI DATA FIX: Made the name instantly clickable! -->
-                                <a href="/student/{{ student.id }}" class="fw-bold text-dark text-decoration-none hover-primary fs-6 d-block mb-1">
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-3 px-md-4 letter-item transition-hover bg-white border-bottom" data-status="{{ student.status_badge }}">
+                            <div class="pe-2">
+                                <a href="/student/{{ student.id }}" class="fw-bold text-dark text-decoration-none hover-primary fs-6 d-block mb-1 text-truncate">
                                     {{ student.first_name }} {{ student.last_name }}
                                 </a>
-                                <!-- Dynamic Status Badge -->
-                                <span class="badge bg-{{ student.status_color }} bg-opacity-10 text-{{ student.status_color }} border border-{{ student.status_color }}" style="font-size: 0.65rem;">
+                                <span class="badge bg-{{ student.status_color }} bg-opacity-10 text-{{ student.status_color }} border border-{{ student.status_color }} rounded-pill" style="font-size: 0.65rem;">
                                     <i class="bi bi-info-circle-fill me-1"></i> {{ student.status_badge }}
                                 </span>
                             </div>
                             
-                            <!-- SMART UPDATE BUTTON -->
-                            {% if student.followup_id %}
-                                <a href="/edit_followup/{{ student.followup_id }}" class="btn btn-sm btn-white border text-info fw-bold shadow-sm rounded-pill px-3" title="Edit Letter Update">
-                                    Update
-                                </a>
-                            {% else %}
-                                <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-info text-white fw-bold shadow-sm rounded-pill px-3" title="Start New Letter">
-                                    Start
-                                </a>
-                            {% endif %}
-                        </li>
+                            <div class="flex-shrink-0">
+                                {% if student.followup_id %}
+                                    <a href="/edit_followup/{{ student.followup_id }}" class="btn btn-sm btn-light border text-info fw-bold shadow-sm rounded-pill px-3 transition-hover" title="Edit Letter Update">
+                                        Update
+                                    </a>
+                                {% else %}
+                                    <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-info text-white fw-bold shadow-sm rounded-pill px-3 transition-hover" title="Start New Letter">
+                                        Start
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
                         {% else %}
-                        <li class="list-group-item text-center text-muted py-5 border-bottom-0 bg-light">
+                        <div class="list-group-item text-center text-muted py-5 border-bottom-0 bg-light">
                             <i class="bi bi-envelope-check text-success fs-1 mb-3 d-block opacity-50"></i>
                             <h6 class="fw-bold text-dark mb-1">All Caught Up!</h6>
                             <p class="small mb-0">Every active student has a completed letter.</p>
-                        </li>
+                        </div>
                         {% endfor %}
                     </ul>
                 </div>
@@ -271,43 +282,48 @@
 
     <!-- Admin Audit Log Row (Restricted Security View) -->
     {% if session.get("role") in ["Admin", "System PM", "Director"] %}
-    <div class="row mt-4">
+    <div class="row mt-4 px-0 px-md-0">
         <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-4 border-start border-primary border-4">
-                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center pt-4 pb-2 px-4 border-bottom-0">
-                    <span><i class="bi bi-shield-check text-primary me-2"></i> System Audit Log</span>
-                    <span class="badge bg-primary rounded-pill shadow-sm">Live Feed</span>
+            <div class="card shadow-sm border rounded-4 native-card border-secondary border-opacity-10 bg-white">
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center pt-4 pb-2 px-3 px-md-4 border-bottom-0 rounded-top-4">
+                    <h5 class="fs-5 text-dark mb-0"><i class="bi bi-shield-check text-primary me-2"></i> System Audit Log</h5>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill shadow-sm px-3">Live Feed</span>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive p-3">
+                    <div class="table-responsive p-0 p-md-3 pt-md-0">
                         <table class="table table-hover table-sm align-middle mb-0 mobile-cards-table">
-                            <thead class="table-light">
-                                <tr class="small text-muted text-uppercase">
-                                    <th>Staff Member</th>
-                                    <th>Action Taken</th>
-                                    <th>Device Info</th>
-                                    <th class="text-end pe-3">Timestamp</th>
+                            <thead class="table-light border-bottom">
+                                <tr class="small text-muted text-uppercase fw-bold" style="letter-spacing: 0.5px;">
+                                    <th class="ps-4 border-0">Staff Member</th>
+                                    <th class="border-0">Action Taken</th>
+                                    <th class="border-0">Device Info</th>
+                                    <th class="text-end pe-4 border-0">Timestamp</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for log in recent_activity %}
                                 <tr>
-                                    <td data-label="Staff Member" class="fw-bold text-dark">
-                                        <i class="bi bi-person-circle text-secondary me-2"></i>{{ log.username }}
+                                    <td data-label="Staff Member" class="fw-bold text-dark ps-md-4 border-bottom">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2 border" style="width: 28px; height: 28px;">
+                                                <span class="text-secondary small">{{ log.username[0]|upper }}</span>
+                                            </div>
+                                            {{ log.username }}
+                                        </div>
                                     </td>
-                                    <td data-label="Action" class="text-muted small fw-bold">
+                                    <td data-label="Action" class="text-muted small fw-bold border-bottom">
                                         <i class="bi bi-arrow-return-right me-1"></i> {{ log.action }}
                                     </td>
-                                    <td data-label="Device">
-                                        <span class="badge bg-light text-info border"><i class="bi bi-laptop me-1"></i>{{ log.device_info if log.device_info else 'Unknown' }}</span>
+                                    <td data-label="Device" class="border-bottom">
+                                        <span class="badge bg-light text-info border rounded-pill px-2"><i class="bi bi-laptop me-1"></i>{{ log.device_info if log.device_info else 'Unknown' }}</span>
                                     </td>
-                                    <td data-label="Timestamp" class="text-md-end pe-3 text-muted small fw-bold">
+                                    <td data-label="Timestamp" class="text-md-end pe-md-4 text-muted small fw-bold border-bottom">
                                         {{ log.timestamp }}
                                     </td>
                                 </tr>
                                 {% else %}
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted py-4">No recent system activity recorded.</td>
+                                    <td colspan="4" class="text-center text-muted py-4 border-bottom-0">No recent system activity recorded.</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -327,8 +343,8 @@
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
     .transition-hover:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.08) !important;
     }
     .hover-primary {
         transition: color 0.2s ease;
@@ -339,16 +355,37 @@
     .text-warning.text-darken {
         color: #b48600 !important;
     }
+    
+    .btn-transparent {
+        background-color: transparent !important;
+    }
+
+    /* Hide scrollbar for native pills but allow scrolling */
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .custom-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 
     /* ---------------------------------------------------
        MOBILE CARDS CSS (Fixes squishing on phones)
        --------------------------------------------------- */
     @media (max-width: 767.98px) {
+        .native-card {
+            border-radius: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            margin-left: -1rem;
+            margin-right: -1rem;
+        }
+
         .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table th, .mobile-cards-table td, .mobile-cards-table tr { display: block; width: 100%; }
         .mobile-cards-table thead { display: none !important; }
         .mobile-cards-table tr { margin-bottom: 1rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; background-color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.03); padding: 0.75rem; position: relative; }
         .mobile-cards-table td { position: relative; padding: 0.75rem 0.5rem 0.75rem 35% !important; border: none !important; border-bottom: 1px dashed #e9ecef !important; text-align: right; }
-        .mobile-cards-table td:last-child { border-bottom: none !important; display: flex; justify-content: center; padding-left: 0.5rem !important; margin-top: 0.5rem; }
+        .mobile-cards-table td:last-child { border-bottom: none !important; display: flex; justify-content: flex-end; padding-left: 0.5rem !important; margin-top: 0.5rem; }
         .mobile-cards-table td::before { content: attr(data-label); position: absolute; left: 0.5rem; top: 0.9rem; width: 30%; text-align: left; font-weight: bold; font-size: 0.75rem; color: #adb5bd; text-transform: uppercase; }
         .mobile-cards-table td:last-child::before { display: none; }
     }
