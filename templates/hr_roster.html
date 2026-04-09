@@ -3,120 +3,158 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block main %}
-<div class="container mt-4 mb-5 text-start">
+<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
     
-    <!-- Top Action Bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
+    <!-- Header Section -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
         <div>
             <h2 class="mb-0 fw-bold"><i class="bi bi-buildings-fill text-primary me-2"></i>{{ title }}</h2>
             <p class="text-muted small mb-0">Government Affairs: Track active staff, hire dates, and compliance.</p>
         </div>
         
-        <div class="d-flex flex-wrap justify-content-center gap-2">
-            <a href="/export_staff" class="btn btn-outline-success shadow-sm fw-bold">
+        <div class="d-flex flex-wrap justify-content-start justify-content-md-end gap-2 w-100 w-md-auto">
+            <a href="/export_staff" class="btn btn-sm btn-outline-success shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover flex-grow-1 flex-md-grow-0">
                 <i class="bi bi-file-earmark-excel-fill me-1"></i> Export for Ministry
             </a>
-            {% if session.get("role") == "Admin" %}
-            <a href="/manage_staff" class="btn btn-primary shadow-sm fw-bold">
-                <i class="bi bi-shield-lock-fill me-1"></i> Edit Staff Access
+            
+            <!-- 🛡️ SECURITY CONTROL: Only Admins can manage IT access -->
+            {% if session.get('role') == 'Admin' %}
+            <a href="/manage_staff" class="btn btn-sm btn-primary text-white shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover flex-grow-1 flex-md-grow-0">
+                <i class="bi bi-shield-lock-fill me-1"></i> Edit App Access
             </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- The Data Container -->
-    <div class="card shadow-sm border-0 border-top border-primary border-4">
-        <div class="card-body p-3">
-            
-            <table id="hrTable" class="table table-hover align-middle mb-0 mobile-cards-table" style="width: 100%;">
-                <thead class="table-light text-muted small text-uppercase">
-                    <tr>
-                        <th>Employee / Username</th>
-                        <th>System Role</th>
-                        <th>Program Scope</th>
-                        <th>Hire Date</th>
-                        <th>Contract Renewal</th>
-                        <th class="text-end pe-3">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for st in staff_members %}
-                        <tr>
-                            <!-- Employee Name/Username -->
-                            <td data-label="Employee" class="fw-bold">
-                                <i class="bi bi-person-circle text-secondary me-2 fs-5"></i>{{ st.username }}
-                                {% if st.id == session.user_id %}
-                                    <span class="badge bg-success ms-2">You</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- Role -->
-                            <td data-label="Role">
-                                {% if st.role == 'Admin' %}
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="bi bi-key-fill me-1"></i> System Admin</span>
-                                {% elif st.role == 'Director' %}
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="bi bi-eye-fill me-1"></i> Director</span>
-                                {% else %}
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ st.role }}</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- Scope -->
-                            <td data-label="Scope">
-                                {% if st.program_scope == 'Global' %}
-                                    <span class="fw-bold text-primary small"><i class="bi bi-globe-americas me-1"></i> Global</span>
-                                {% else %}
-                                    <span class="fw-bold text-success small"><i class="bi bi-book-fill me-1"></i> {{ st.program_scope }}</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- PLACEHOLDERS for Phase 8 (Govt Compliance) -->
-                            <td data-label="Hire Date" class="text-muted small">
-                                <em>Pending...</em>
-                            </td>
-                            <td data-label="Renewal Date" class="text-muted small">
-                                <em>Pending...</em>
-                            </td>
-                            
-                            <td data-label="Status" class="text-md-end pe-3">
-                                <span class="badge bg-success shadow-sm">Active</span>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Active HR List (Native App Style) -->
+    <div class="card shadow-sm border-0 native-card rounded-4 border-top border-primary border-4">
+        
+        <!-- Live Search Header -->
+        <div class="card-header bg-white border-bottom pt-3 pb-3 px-3 px-md-4 d-flex justify-content-between align-items-center">
+            <div class="input-group input-group-sm w-100" style="max-width: 400px;">
+                <span class="input-group-text bg-light border-0 px-3"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" id="directorySearch" class="form-control border-0 bg-light rounded-end-pill py-2" placeholder="Search HR records by name...">
+            </div>
+        </div>
 
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush rounded-bottom-4" id="directoryList">
+                {% for st in staff_members %}
+                <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom directory-item transition-hover">
+                    <div class="d-flex flex-column flex-md-row justify-content-between gap-3">
+                        
+                        <!-- Employee Info -->
+                        <div class="d-flex align-items-center">
+                            <!-- Circular Avatar Box -->
+                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+                                <i class="bi bi-person-fill fs-4 text-secondary opacity-50"></i>
+                            </div>
+                            
+                            <div class="lh-sm">
+                                <h6 class="fw-bold text-dark mb-1 d-flex align-items-center flex-wrap gap-2">
+                                    <span class="staff-name fs-5">{{ st.username }}</span>
+                                    {% if st.id == session.user_id %}
+                                        <span class="badge bg-success rounded-pill px-2 py-1" style="font-size: 0.65rem;">You</span>
+                                    {% endif %}
+                                </h6>
+                                
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <!-- Role Badge -->
+                                    {% if st.role == 'Admin' %}
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="bi bi-key-fill me-1"></i> System Admin</span>
+                                    {% elif st.role == 'Director' %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary"><i class="bi bi-eye-fill me-1"></i> Director</span>
+                                    {% elif st.role == 'Program Manager' %}
+                                        <span class="badge bg-warning bg-opacity-10 text-dark border border-warning"><i class="bi bi-kanban-fill me-1"></i> Program Manager</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{{ st.role }}</span>
+                                    {% endif %}
+                                    
+                                    <!-- Scope Badge -->
+                                    {% if st.program_id == 0 %}
+                                        <span class="badge bg-light text-primary border border-secondary border-opacity-25"><i class="bi bi-globe-americas me-1"></i> Global Scope</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-success border border-secondary border-opacity-25"><i class="bi bi-building-fill me-1"></i> Program ID: {{ st.program_id }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HR Tracking Data (Phase 8 Placeholders) -->
+                        <div class="d-flex flex-column justify-content-center bg-light rounded-4 p-2 px-3 border border-secondary border-opacity-10" style="min-width: 200px;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small text-muted fw-bold"><i class="bi bi-calendar-plus me-1"></i> Hire Date:</span>
+                                <span class="small text-dark fst-italic">Pending...</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small text-muted fw-bold"><i class="bi bi-file-earmark-text me-1"></i> Renewal:</span>
+                                <span class="small text-dark fst-italic">Pending...</span>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                {% else %}
+                <div class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4">
+                    <i class="bi bi-people fs-1 opacity-50 mb-2 d-block"></i>
+                    No staff members found in the database.
+                </div>
+                {% endfor %}
+                
+                <!-- No Search Results Fallback -->
+                <div id="noResultsMessage" class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4 d-none">
+                    <i class="bi bi-search fs-1 opacity-25 mb-2 d-block"></i>
+                    <h6 class="fw-bold text-dark mb-1">No staff match your search.</h6>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Reusing your excellent mobile card CSS! -->
 <style>
+    /* Desktop Hover Effects */
+    .transition-hover { transition: transform 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); }
+    
+    /* Native App Styling for Mobile Edge-to-Edge */
     @media (max-width: 767.98px) {
-        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_info { display: none !important; }
-        .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1rem; }
-        .dataTables_wrapper .dataTables_filter input { width: 100%; margin-left: 0; border-radius: 8px; padding: 0.5rem; }
-        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table th, .mobile-cards-table td, .mobile-cards-table tr { display: block; width: 100%; }
-        .mobile-cards-table thead { display: none !important; }
-        .mobile-cards-table tr { margin-bottom: 1rem; border: 1px solid #dee2e6; border-radius: 12px; background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05); padding: 0.5rem; }
-        .mobile-cards-table td { position: relative; padding: 0.75rem 0.5rem 0.75rem 40% !important; border: none !important; border-bottom: 1px solid #f8f9fa !important; text-align: right; }
-        .mobile-cards-table td:last-child { border-bottom: none !important; }
-        .mobile-cards-table td::before { content: attr(data-label); position: absolute; left: 0.5rem; top: 0.75rem; width: 35%; text-align: left; font-weight: bold; font-size: 0.8rem; color: #6c757d; text-transform: uppercase; }
+        .native-card {
+            border-radius: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            margin-left: -1rem;
+            margin-right: -1rem;
+        }
     }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    $(document).ready(function() {
-        $('#hrTable').DataTable({
-            "pageLength": 25,
-            "order": [[ 1, "asc" ]],
-            "language": {
-                "search": "",
-                "searchPlaceholder": "🔍 Search Staff..."
+    // ---------------------------------------------------------
+    // LIVE NATIVE SEARCH (No Page Reload)
+    // ---------------------------------------------------------
+    document.getElementById('directorySearch')?.addEventListener('keyup', function() {
+        let filter = this.value.toLowerCase();
+        let items = document.querySelectorAll('.directory-item');
+        let visibleCount = 0;
+        
+        items.forEach(item => {
+            let name = item.querySelector('.staff-name').textContent.toLowerCase();
+            if (name.includes(filter)) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
             }
         });
+        
+        const noResults = document.getElementById('noResultsMessage');
+        if (visibleCount === 0 && items.length > 0) {
+            noResults.classList.remove('d-none');
+        } else {
+            noResults.classList.add('d-none');
+        }
     });
 </script>
 {% endblock %}

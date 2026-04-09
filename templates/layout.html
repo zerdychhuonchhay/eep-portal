@@ -69,24 +69,14 @@
         .btn-white:hover { background-color: #f8f9fa; color: #212529; }
 
         /* ---------------------------------------------------
-           SIDEBAR STYLING & INDEPENDENT SCROLL FIX
+           UNIVERSAL OFFCANVAS SIDEBAR MENU
            --------------------------------------------------- */
-        .sidebar {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto; 
-            background-color: #212529 !important; 
-            color: white !important; 
-            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-        }
-        
-        .sidebar::-webkit-scrollbar { width: 5px; }
-        .sidebar::-webkit-scrollbar-track { background: transparent; }
-        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
-        .sidebar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+        .offcanvas-body::-webkit-scrollbar { width: 5px; }
+        .offcanvas-body::-webkit-scrollbar-track { background: transparent; }
+        .offcanvas-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        .offcanvas-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
 
-        .sidebar .nav-link {
+        .nav-pills .nav-link {
             color: rgba(255,255,255,0.8);
             font-weight: 500;
             padding: 0.8rem 1rem;
@@ -94,27 +84,17 @@
             margin-bottom: 0.25rem;
             transition: all 0.2s;
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+        .nav-pills .nav-link:hover, .nav-pills .nav-link.active {
             color: #fff;
             background-color: rgba(255,255,255,0.1);
         }
-        .sidebar .nav-link i {
+        .nav-pills .nav-link i {
             width: 24px;
             text-align: center;
         }
         .main-content {
             flex: 1;
             min-width: 0; 
-        }
-
-        /* Mobile Sidebar Overrides */
-        @media (max-width: 991.98px) {
-            .sidebar { 
-                height: 100%; 
-                min-height: auto; 
-                position: fixed; 
-            }
-            .offcanvas-body { padding: 0; }
         }
 
         /* ---------------------------------------------------
@@ -160,11 +140,6 @@
         .bottom-nav-item span {
             font-size: 0.65rem;
             font-weight: 700;
-        }
-        
-        /* Mobile Navbar adjustments */
-        .mobile-top-nav {
-            padding-top: env(safe-area-inset-top);
         }
 
         /* ---------------------------------------------------
@@ -242,82 +217,101 @@
         }
     </script>
 </head>
-<body class="d-flex flex-column flex-lg-row bg-light">
+<body class="bg-light">
 
-    <!-- 🛡️ VIEW AS MASQUERADE BANNER -->
+    <!-- 🛡️ VIEW AS MASQUERADE BANNER (Fixed for Mobile Overlap) -->
     {% if session.get('real_role') %}
-    <div class="bg-warning text-dark text-center fw-bold py-2 shadow-sm position-fixed top-0 w-100 z-3" style="border-bottom: 2px solid #b48600; z-index: 1050;">
+    <div class="bg-warning text-dark text-center fw-bold py-2 shadow-sm w-100 position-relative z-3" style="border-bottom: 2px solid #b48600;">
         <i class="bi bi-incognito me-2 fs-5 align-middle"></i> 
-        You are viewing the system as a <span class="badge bg-dark text-white mx-1">{{ session.get('role') }}</span>
-        <a href="/view_as_revert" class="btn btn-sm btn-dark ms-3 rounded-pill fw-bold shadow-sm">Restore Admin Access</a>
+        <span class="d-none d-sm-inline">You are viewing the system as a</span>
+        <span class="badge bg-dark text-white mx-1">{{ session.get('role') }}</span>
+        <a href="/view_as_revert" class="btn btn-sm btn-dark ms-2 rounded-pill fw-bold shadow-sm">Restore Access</a>
     </div>
-    <style>
-        /* Push down the body so the fixed banner doesn't cover the navbar */
-        .mobile-top-nav { margin-top: 45px; }
-        .sidebar { top: 45px !important; height: calc(100vh - 45px) !important; }
-    </style>
     {% endif %}
 
     <!-- ========================================== -->
-    <!-- LEFT SIDEBAR NAVIGATION (PC Sidebar / Mobile Menu) -->
+    <!-- UNIVERSAL OFFCANVAS MENU (PC & Mobile)     -->
     <!-- ========================================== -->
     {% if session.get('user_id') %}
-    <div class="sidebar bg-dark offcanvas-lg offcanvas-start p-3 d-flex flex-column" tabindex="-1" id="sidebarMenu" style="width: 280px;">
-        <div class="d-flex align-items-center justify-content-between mb-4 mt-2">
+    <div class="bg-dark offcanvas offcanvas-start p-3 d-flex flex-column shadow-lg" tabindex="-1" id="sidebarMenu" style="width: 300px; z-index: 1055;">
+        <div class="d-flex align-items-center justify-content-between mb-4 mt-2 px-1">
             <a href="/" class="d-flex align-items-center text-white text-decoration-none">
                 <i class="bi bi-shield-shaded fs-3 text-primary me-2"></i>
                 <span class="fs-4 fw-bold text-white">ELM Portal</span>
             </a>
-            <!-- Mobile Close Button -->
-            <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
 
-        <ul class="nav nav-pills flex-column mb-auto">
-            {% if session.get('program_id') > 0 %}
-                <li class="nav-item mb-2">
-                    <span class="text-uppercase text-white-50 small fw-bold px-2">{{ session.get('program_name', 'Workspace') }}</span>
-                </li>
-                <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="bi bi-house-door me-2"></i> Field Hub</a></li>
-                <li><a href="/roster" class="nav-link {% if request.path == '/roster' or request.path == '/archive' %}active{% endif %}"><i class="bi bi-people me-2"></i> Student Roster</a></li>
-                
-                <!-- 🛡️ SECURITY CONTROL: Only show Gradebook if they have permission -->
-                {% if session.get('can_manage_academics') %}
-                <li><a href="/academics" class="nav-link {% if request.path == '/academics' %}active{% endif %}"><i class="bi bi-journal-check me-2"></i> Master Gradebook</a></li>
+        <!-- 🚀 PROGRAM / WORKSPACE SWITCHER -->
+        <div class="dropdown mb-4 px-1">
+            <button class="btn btn-outline-light w-100 text-start fw-bold dropdown-toggle d-flex justify-content-between align-items-center py-2" type="button" data-bs-toggle="dropdown">
+                <span class="text-truncate pe-2">
+                {% if session.get('program_id') > 0 %}
+                    <i class="bi {{ session.get('program_icon', 'bi-book-fill') }} text-success me-2"></i> {{ session.get('program_name', 'Workspace') }}
+                {% elif session.get('program_id') == 0 %}
+                    <i class="bi bi-globe-americas text-primary me-2"></i> Global Central
+                {% else %}
+                    <i class="bi bi-building me-2"></i> Select Workspace
                 {% endif %}
-                
-                <li><a href="/manage_households" class="nav-link {% if request.path == '/manage_households' %}active{% endif %}"><i class="bi bi-house-heart me-2"></i> Households</a></li>
-                <li><a href="/calendar" class="nav-link {% if request.path == '/calendar' %}active{% endif %}"><i class="bi bi-calendar-event me-2"></i> Field Calendar</a></li>
-                <li><a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a></li>
-            {% elif session.get('program_id') == 0 %}
-                <li class="nav-item mb-2">
-                    <span class="text-uppercase text-white-50 small fw-bold px-2">Central Admin</span>
-                </li>
-                <li><a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}"><i class="bi bi-globe me-2"></i> Global Dashboard</a></li>
-                <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="bi bi-person-badge me-2"></i> HR Directory</a></li>
-                <li><a href="/calendar" class="nav-link {% if request.path == '/calendar' %}active{% endif %}"><i class="bi bi-calendar-event me-2"></i> Global Calendar</a></li>
-            {% endif %}
-        </ul>
+                </span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-dark shadow border-0 w-100 mt-2">
+                <li><h6 class="dropdown-header">Switch Workspace</h6></li>
+                <li><a class="dropdown-item fw-bold py-2" href="/switch_program/1"><i class="bi bi-book-fill text-success me-2"></i> EEP Module</a></li>
+                {% if session.get('role') == 'Admin' %}
+                <li><a class="dropdown-item fw-bold py-2" href="/switch_program/0"><i class="bi bi-globe-americas text-primary me-2"></i> Global Central</a></li>
+                {% endif %}
+            </ul>
+        </div>
 
-        <hr class="border-white opacity-25">
+        <div class="offcanvas-body p-0 d-flex flex-column flex-grow-1">
+            <ul class="nav nav-pills flex-column mb-auto px-1">
+                {% if session.get('program_id') > 0 %}
+                    <li class="nav-item mb-2">
+                        <span class="text-uppercase text-white-50 small fw-bold px-2">{{ session.get('program_name', 'Workspace') }} Apps</span>
+                    </li>
+                    <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="bi bi-house-door me-2"></i> Field Hub</a></li>
+                    <li><a href="/roster" class="nav-link {% if request.path == '/roster' or request.path == '/archive' %}active{% endif %}"><i class="bi bi-people me-2"></i> Student Roster</a></li>
+                    
+                    <!-- 🛡️ SECURITY CONTROL: Only show Gradebook if they have permission -->
+                    {% if session.get('can_manage_academics') %}
+                    <li><a href="/academics" class="nav-link {% if request.path == '/academics' %}active{% endif %}"><i class="bi bi-journal-check me-2"></i> Master Gradebook</a></li>
+                    {% endif %}
+                    
+                    <li><a href="/manage_households" class="nav-link {% if request.path == '/manage_households' %}active{% endif %}"><i class="bi bi-house-heart me-2"></i> Households</a></li>
+                    <li><a href="/calendar" class="nav-link {% if request.path == '/calendar' %}active{% endif %}"><i class="bi bi-calendar-event me-2"></i> Field Calendar</a></li>
+                    <li><a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a></li>
+                {% elif session.get('program_id') == 0 %}
+                    <li class="nav-item mb-2">
+                        <span class="text-uppercase text-white-50 small fw-bold px-2">Central Admin</span>
+                    </li>
+                    <li><a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}"><i class="bi bi-globe me-2"></i> Global Dashboard</a></li>
+                    <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="bi bi-person-badge me-2"></i> HR Directory</a></li>
+                    <li><a href="/calendar" class="nav-link {% if request.path == '/calendar' %}active{% endif %}"><i class="bi bi-calendar-event me-2"></i> Global Calendar</a></li>
+                {% endif %}
+            </ul>
 
-        <ul class="nav nav-pills flex-column">
-            <!-- 🛡️ SECURITY CONTROL: Admin Only Settings -->
-            {% if session.get('role') == 'Admin' %}
-                <li class="nav-item mb-2">
-                    <span class="text-uppercase text-white-50 small fw-bold px-2">System & Security</span>
-                </li>
-                <li>
-                    <a href="/manage_staff" class="nav-link {% if request.path == '/manage_staff' %}active{% endif %}">
-                        <i class="bi bi-shield-lock me-2"></i> Staff Permissions
-                        {% if pending_staff_count and pending_staff_count > 0 %}
-                            <span class="badge bg-danger rounded-pill float-end mt-1">{{ pending_staff_count }}</span>
-                        {% endif %}
-                    </a>
-                </li>
-                <li><a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}"><i class="bi bi-gear me-2"></i> Global Settings</a></li>
-            {% endif %}
-            <li><a href="/logout" class="nav-link text-danger mt-2"><i class="bi bi-box-arrow-left me-2"></i> Sign Out</a></li>
-        </ul>
+            <hr class="border-white opacity-25 mx-1">
+
+            <ul class="nav nav-pills flex-column px-1">
+                <!-- 🛡️ SECURITY CONTROL: Admin Only Settings -->
+                {% if session.get('role') == 'Admin' %}
+                    <li class="nav-item mb-2">
+                        <span class="text-uppercase text-white-50 small fw-bold px-2">System & Security</span>
+                    </li>
+                    <li>
+                        <a href="/manage_staff" class="nav-link {% if request.path == '/manage_staff' %}active{% endif %}">
+                            <i class="bi bi-shield-lock me-2"></i> Staff Permissions
+                            {% if pending_staff_count and pending_staff_count > 0 %}
+                                <span class="badge bg-danger rounded-pill float-end mt-1">{{ pending_staff_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li><a href="/settings" class="nav-link {% if request.path == '/settings' %}active{% endif %}"><i class="bi bi-gear me-2"></i> Global Settings</a></li>
+                {% endif %}
+                <li><a href="/logout" class="nav-link text-danger mt-2"><i class="bi bi-box-arrow-left me-2"></i> Sign Out</a></li>
+            </ul>
+        </div>
     </div>
     {% endif %}
 
@@ -326,35 +320,22 @@
     <!-- ========================================== -->
     <div class="main-content d-flex flex-column min-vh-100">
         
-        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-3 py-2 mobile-top-nav">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-3 py-2 sticky-top">
             <div class="container-fluid px-0">
                 
                 {% if session.get('user_id') %}
                     
-                    <a class="navbar-brand d-lg-none fw-bold me-auto ms-1" href="/">
-                        <i class="bi bi-shield-shaded text-primary"></i> ELM
-                    </a>
+                    <!-- UNIVERSAL HAMBURGER MENU (Triggers Offcanvas for ALL screens) -->
+                    <button class="btn btn-light border-0 shadow-none me-2 d-flex align-items-center justify-content-center transition-hover" style="width: 40px; height: 40px;" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                        <i class="bi bi-list fs-4 text-dark"></i>
+                    </button>
                     
-                    <div class="dropdown d-none d-md-block me-auto">
-                        <button class="btn btn-light border fw-bold dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            {% if session.get('program_id') > 0 %}
-                                <i class="bi {{ session.get('program_icon', 'bi-book-fill') }} text-success me-1"></i> {{ session.get('program_name', 'Workspace') }}
-                            {% elif session.get('program_id') == 0 %}
-                                <i class="bi bi-globe-americas text-primary me-1"></i> Global Central
-                            {% else %}
-                                <i class="bi bi-building"></i> Select Workspace
-                            {% endif %}
-                        </button>
-                        <ul class="dropdown-menu shadow border-0">
-                            <li><h6 class="dropdown-header">Switch Workspace</h6></li>
-                            <li><a class="dropdown-item fw-bold" href="/switch_program/1"><i class="bi bi-book-fill text-success me-2"></i> EEP Module</a></li>
-                            {% if session.get('role') == 'Admin' %}
-                            <li><a class="dropdown-item fw-bold" href="/switch_program/0"><i class="bi bi-globe-americas text-primary me-2"></i> Global Central</a></li>
-                            {% endif %}
-                        </ul>
-                    </div>
+                    <a class="navbar-brand fw-bold me-auto ms-1 d-flex align-items-center" href="/">
+                        <i class="bi bi-shield-shaded text-primary me-md-2"></i>
+                        <span class="d-none d-md-inline text-dark fs-5">ELM Portal</span>
+                    </a>
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2 gap-md-3">
                         
                         <!-- 🛡️ SECURITY CONTROL: Export Data -->
                         {% if session.get('can_export_data') %}
@@ -409,6 +390,7 @@
                         </div>
                         {% endif %}
 
+                        <!-- User Profile Dropdown -->
                         <div class="dropdown">
                             <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                                 <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 35px; height: 35px;">
@@ -444,7 +426,7 @@
         </nav>
 
         <!-- ======================================================== -->
-        <!-- UX STRATEGY: CAPPED MAX-WIDTH FOR ULTRA-WIDE MONITORS    -->
+        <!-- CAPPED MAX-WIDTH FOR ULTRA-WIDE MONITORS                 -->
         <!-- ======================================================== -->
 
         <!-- FLASH MESSAGES -->
@@ -480,18 +462,33 @@
     <!-- ========================================== -->
     {% if session.get('user_id') %}
     <div class="bottom-nav d-lg-none">
-        <a href="/" class="bottom-nav-item {% if request.path == '/' %}active{% endif %}">
-            <i class="bi {% if request.path == '/' %}bi-house-door-fill{% else %}bi-house-door{% endif %}"></i>
-            <span>Hub</span>
-        </a>
-        <a href="/roster" class="bottom-nav-item {% if request.path == '/roster' or request.path == '/archive' %}active{% endif %}">
-            <i class="bi {% if request.path == '/roster' or request.path == '/archive' %}bi-people-fill{% else %}bi-people{% endif %}"></i>
-            <span>Directory</span>
-        </a>
-        <a href="/calendar" class="bottom-nav-item {% if request.path == '/calendar' %}active{% endif %}">
-            <i class="bi {% if request.path == '/calendar' %}bi-calendar-event-fill{% else %}bi-calendar-event{% endif %}"></i>
-            <span>Calendar</span>
-        </a>
+        {% if session.get('program_id') > 0 %}
+            <a href="/" class="bottom-nav-item {% if request.path == '/' %}active{% endif %}">
+                <i class="bi {% if request.path == '/' %}bi-house-door-fill{% else %}bi-house-door{% endif %}"></i>
+                <span>Hub</span>
+            </a>
+            <a href="/roster" class="bottom-nav-item {% if request.path == '/roster' or request.path == '/archive' %}active{% endif %}">
+                <i class="bi {% if request.path == '/roster' or request.path == '/archive' %}bi-people-fill{% else %}bi-people{% endif %}"></i>
+                <span>Directory</span>
+            </a>
+            <a href="/calendar" class="bottom-nav-item {% if request.path == '/calendar' %}active{% endif %}">
+                <i class="bi {% if request.path == '/calendar' %}bi-calendar-event-fill{% else %}bi-calendar-event{% endif %}"></i>
+                <span>Calendar</span>
+            </a>
+        {% else %}
+            <a href="/dashboard" class="bottom-nav-item {% if request.path == '/dashboard' %}active{% endif %}">
+                <i class="bi {% if request.path == '/dashboard' %}bi-grid-fill{% else %}bi-grid{% endif %}"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/" class="bottom-nav-item {% if request.path == '/' %}active{% endif %}">
+                <i class="bi {% if request.path == '/' %}bi-person-badge-fill{% else %}bi-person-badge{% endif %}"></i>
+                <span>Directory</span>
+            </a>
+            <a href="/calendar" class="bottom-nav-item {% if request.path == '/calendar' %}active{% endif %}">
+                <i class="bi {% if request.path == '/calendar' %}bi-calendar-event-fill{% else %}bi-calendar-event{% endif %}"></i>
+                <span>Calendar</span>
+            </a>
+        {% endif %}
         <a href="#" class="bottom-nav-item" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
             <i class="bi bi-list fs-2" style="margin-top: -4px;"></i>
             <span style="margin-top: -3px;">Menu</span>
@@ -529,6 +526,11 @@
             return 9999; 
         };
     </script>
+    
+    <style>
+        .transition-hover { transition: transform 0.2s ease-in-out; }
+        .transition-hover:hover { transform: translateY(-1px); }
+    </style>
     
     {% block scripts %}{% endblock %}
 </body>
