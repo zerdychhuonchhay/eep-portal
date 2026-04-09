@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ student.first_name }} - Timeline{% endblock %}
+
+{% block main %}
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1200px;">
+
+    <!-- Breadcrumb Nav -->
+    <nav aria-label="breadcrumb" class="mb-4 px-3 px-md-0">
+        <ol class="breadcrumb mb-0 bg-transparent p-0">
+            <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Directory</a></li>
+            <li class="breadcrumb-item"><a href="/student/{{ student.id }}" class="text-decoration-none text-muted fw-bold">{{ student.first_name }} {{ student.last_name }}</a></li>
+            <li class="breadcrumb-item active fw-bold text-danger" aria-current="page">Timeline</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
+        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+        
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="bg-white p-1 rounded-pill border shadow-sm">
+                <i class="bi bi-funnel-fill text-muted ms-3 me-2"></i>
+                <select id="noteYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none pe-4 d-inline-block w-auto" onchange="filterNotes()">
+                    <option value="all">All Years</option>
+                </select>
+            </div>
+            
+            {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-4 transition-hover"><i class="bi bi-plus-lg me-1"></i> New Note</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Native Vertical Timeline -->
+    <div class="px-3 px-md-2" id="notesContainer">
+        {% if followups %}
+            <div class="timeline-container ms-2 position-relative" style="border-left: 3px solid #f8d7da;">
+                {% for note in followups %}
+                <div class="position-relative mb-4 ps-4 note-card" data-year="{{ note.followup_date[:4] }}">
+                    {% set risk_color = 'danger' if (note.risk_factors or note.child_protection_concerns) else ('warning' if (note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention') else 'success') %}
+                    
+                    <!-- Timeline Dot -->
+                    <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 18px; height: 18px; left: -10.5px; top: 20px; border: 3px solid #fff; box-shadow: 0 0 0 3px #f8d7da !important;"></div>
+                    
+                    <div class="card shadow-sm border-0 rounded-4 transition-hover mt-2 native-card">
+                        <div class="card-body p-4">
+                            <!-- Header -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary border-opacity-10 pb-3">
+                                <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar-event-fill text-muted me-2"></i>{{ note.followup_date }}</span>
+                                <span class="badge bg-{{ risk_color }} bg-opacity-10 text-{{ risk_color }} border border-{{ risk_color }} rounded-pill px-3 py-1"><i class="bi bi-geo-alt-fill me-1"></i> {{ note.location }}</span>
+                            </div>
+                            
+                            <!-- Content -->
+                            {% if note.general_notes %}
+                            <div class="khmer-font text-dark mb-4" style="font-size: 0.95rem; line-height: 1.7;">
+                                {{ note.general_notes }}
+                            </div>
+                            {% endif %}
+
+                            <!-- Tags -->
+                            {% if note.location != 'Sponsor Letter Update' %}
+                            <div class="d-flex flex-wrap gap-2 mb-4">
+                                {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
+                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
+                                {% endif %}
+                                {% if note.home_life and note.home_life != 'Not Evaluated' %}
+                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
+                                {% endif %}
+                                {% if note.child_protection_concerns %}
+                                <div class="alert alert-danger py-2 px-3 small w-100 mt-2 border-danger rounded-3 fw-bold">
+                                    <i class="bi bi-shield-exclamation-fill me-2"></i> {{ note.child_protection_concerns }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Footer -->
+                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10 bg-light mx-n4 mb-n4 p-4 rounded-bottom-4">
+                                <span class="small text-muted fw-bold"><i class="bi bi-person-badge-fill text-secondary me-2"></i>{{ note.completed_by }}</span>
+                                {% if session.get('can_update_followups') or session.get('can_manage_followups') %}
+                                <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-1 px-3 shadow-sm rounded-pill transition-hover">Edit Note</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center p-5 bg-white shadow-sm rounded-4 border-0 native-card mx-n3 mx-md-0">
+                <i class="bi bi-journal-text fs-1 text-muted opacity-25 mb-3 d-block"></i>
+                <h6 class="fw-bold text-dark">No timeline history.</h6>
+                <p class="small text-muted mb-0">Follow-up notes and home visits will appear here.</p>
+            </div>
+        {% endif %}
+        
+        <div id="noNotesMessage" class="text-center py-5 d-none bg-white rounded-4 shadow-sm mt-4 mx-n3 mx-md-0">
+            <i class="bi bi-funnel fs-2 text-muted opacity-50 mb-2 d-block"></i>
+            <p class="text-muted fw-bold mb-0">No follow-ups recorded for this selected year.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .transition-hover { transition: transform 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
+    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; } }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const noteCards = document.querySelectorAll('.note-card');
+        const noteFilter = document.getElementById('noteYearFilter');
+        const noNotesMessage = document.getElementById('noNotesMessage');
+        
+        const noteYears = new Set();
+        noteCards.forEach(card => {
+            const year = card.getAttribute('data-year');
+            if(year) noteYears.add(year);
+        });
+        
+        Array.from(noteYears).sort().reverse().forEach(year => {
+            noteFilter.add(new Option(year, year));
+        });
+
+        window.filterNotes = function() {
+            const selectedYear = noteFilter.value;
+            let visibleCount = 0;
+            
+            noteCards.forEach(card => {
+                if (selectedYear === 'all' || card.getAttribute('data-year') === selectedYear) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            if(visibleCount === 0 && noteCards.length > 0) {
+                noNotesMessage.classList.remove('d-none');
+            } else {
+                noNotesMessage.classList.add('d-none');
+            }
+        }
+    });
+</script>
+{% endblock %}

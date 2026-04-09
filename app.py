@@ -134,7 +134,7 @@ def register():
             flash("That username already exists.", "danger")
             return redirect("/register")
     else:
-        return render_template("register.html")
+        return render_template("auth/register.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -245,7 +245,7 @@ def login():
         log_action("Logged into the system")
         return redirect("/")
 
-    return render_template("login.html")
+    return render_template("auth/login.html")
 
 
 @app.route("/change_password", methods=["GET", "POST"])
@@ -277,7 +277,7 @@ def change_password():
         flash("Success! Your password has been securely updated.", "success")
         return redirect("/")
     else:
-        return render_template("change_password.html")
+        return render_template("auth/change_password.html")
 
 
 @app.route("/manage_staff", methods=["GET", "POST"])
@@ -337,7 +337,7 @@ def manage_staff():
             ORDER BY s.role ASC, s.username ASC
         """)
         programs = db.execute("SELECT * FROM programs ORDER BY id ASC")
-        return render_template("manage_staff.html", staff_members=staff_members, programs=programs)
+        return render_template("admin/manage_staff.html", staff_members=staff_members, programs=programs)
 
 
 @app.route("/logout")
@@ -458,7 +458,7 @@ def index():
     
     if program_id == 0:
         staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
-        return render_template("hr_roster.html", staff_members=staff_members, title="Global HR Directory")
+        return render_template("directory/hr_roster.html", staff_members=staff_members, title="Global HR Directory")
         
     elif program_id > 0:
         staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
@@ -473,7 +473,7 @@ def index():
         
         all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' AND program_id = ? ORDER BY first_name", program_id)
         
-        return render_template("index.html", username=username, recent_students=recent_students, students=all_active_students)
+        return render_template("dashboard/index.html", username=username, recent_students=recent_students, students=all_active_students)
 
 
 @app.route("/dashboard")
@@ -485,7 +485,7 @@ def dashboard():
     # HAT 1: GOVT AFFAIRS & CENTRAL ADMIN
     if program_id == 0:
         today_date = datetime.now().strftime('%Y-%m-%d')
-        return render_template("dashboard_global.html", date_now=today_date)
+        return render_template("dashboard/dashboard_global.html", date_now=today_date)
         
     # HAT 2: PROGRAM MANAGEMENT
     elif program_id > 0:
@@ -617,7 +617,7 @@ def dashboard():
 
         date_now = datetime.now().strftime('%Y-%m-%d')
 
-        return render_template("executive_dashboard.html",
+        return render_template("dashboard/executive_dashboard.html",
                                total_active=total_active, boys=boys, girls=girls,
                                uni_kids=uni_kids, vocal_kids=vocal_kids,
                                meals=meals, meetings=parent_meetings,
@@ -638,7 +638,7 @@ def roster():
     """Show the full active roster"""
     pid = session.get("program_id", 0)
     students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
-    return render_template("roster.html", students=students, title="Active Roster")
+    return render_template("directory/roster.html", students=students, title="Active Roster")
 
 @app.route("/archive")
 @login_required
@@ -646,13 +646,13 @@ def archive():
     """Show dropped out / graduated students"""
     pid = session.get("program_id", 0)
     students = db.execute("SELECT * FROM students WHERE (status = 'Dropped Out' OR status = 'Graduated') AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
-    return render_template("roster.html", students=students, title="Archived Students")
+    return render_template("directory/roster.html", students=students, title="Archived Students")
 
 @app.route("/guide")
 @login_required
 def guide():
     """Show the Beta Testing Instructions"""
-    return render_template("guide.html")
+    return render_template("dashboard/guide.html")
 
 @app.route("/add_student", methods=["GET", "POST"])
 @login_required
@@ -682,7 +682,7 @@ def add_student():
         father_name = request.form.get("father_name")
 
         if not ngo_id or not first_name or not last_name:
-            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required.")
+            return render_template("_layouts/apology.html", message="NGO ID, First Name, and Last Name are required.")
 
         if not household_id:
             household_id = None 
@@ -710,7 +710,7 @@ def add_student():
             return redirect("/")
 
         except ValueError:
-            return render_template("apology.html", message="A student with that NGO ID already exists.")
+            return render_template("_layouts/apology.html", message="A student with that NGO ID already exists.")
 
     else:
         today_date = datetime.now().strftime('%Y-%m-%d')
@@ -719,7 +719,7 @@ def add_student():
             FROM households h
             ORDER BY h.guardian_name ASC
         """)
-        return render_template("add_student.html", today_date=today_date, households=households)
+        return render_template("student/add_student.html", today_date=today_date, households=households)
 
 @app.route("/edit_student/<int:id>", methods=["GET", "POST"])
 @login_required
@@ -752,7 +752,7 @@ def edit_student(id):
             household_id = None 
 
         if not ngo_id or not first_name or not last_name:
-            return render_template("apology.html", message="NGO ID, First Name, and Last Name are required.")
+            return render_template("_layouts/apology.html", message="NGO ID, First Name, and Last Name are required.")
 
         try:
             db.execute("""
@@ -772,12 +772,12 @@ def edit_student(id):
             return redirect(f"/student/{id}")
 
         except ValueError:
-            return render_template("apology.html", message="Update failed. NGO ID might conflict with another student.")
+            return render_template("_layouts/apology.html", message="Update failed. NGO ID might conflict with another student.")
 
     else:
         student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
         if len(student_data) != 1:
-            return render_template("apology.html", message="Student not found")
+            return render_template("_layouts/apology.html", message="Student not found")
 
         student = student_data[0]
         households = db.execute("""
@@ -788,7 +788,7 @@ def edit_student(id):
             ORDER BY h.guardian_name ASC
         """)
         
-        return render_template("edit_student.html", student=student, households=households)
+        return render_template("student/edit_student.html", student=student, households=households)
 
 @app.route("/update_avatar/<int:id>", methods=["POST"])
 @login_required
@@ -861,7 +861,7 @@ def manage_households():
             GROUP BY h.id
             ORDER BY h.guardian_name ASC
         """)
-        return render_template("manage_households.html", households=households)
+        return render_template("household/manage_households.html", households=households)
 
 @app.route("/household/<int:id>", methods=["GET", "POST"])
 @login_required
@@ -905,24 +905,23 @@ def household_profile(id):
     else:
         household = db.execute("SELECT * FROM households WHERE id = ?", id)
         if not household:
-            return render_template("apology.html", message="Household not found")
+            return render_template("_layouts/apology.html", message="Household not found")
             
         kids = db.execute("SELECT * FROM students WHERE household_id = ? ORDER BY dob ASC", id)
-        return render_template("household_profile.html", household=household[0], kids=kids)
+        return render_template("household/household_profile.html", household=household[0], kids=kids)
 
 
 # ==============================================================================
-# NEIGHBORHOOD: STUDENT PROFILE (The Mega View)
+# NEIGHBORHOOD: STUDENT PROFILE (The Hub)
 # ==============================================================================
 
 @app.route("/student/<int:id>")
 @login_required
 def student_profile(id):
-    """Single source of truth for a student's full profile, grades, notes, and files."""
-    
+    """Lightweight Hub for a student's profile."""
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
-        return render_template("apology.html", message="Student not found")
+        return render_template("_layouts/apology.html", message="Student not found")
     student = student_data[0]
 
     household = None
@@ -938,6 +937,28 @@ def student_profile(id):
             WHERE household_id = ? AND id != ?
             ORDER BY dob ASC
         """, student["household_id"], id)
+
+    # Snapshot queries - Lightning fast limit 1
+    reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC LIMIT 1", id)
+    followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC, id DESC LIMIT 1", id)
+
+    return render_template("student/student_profile.html", 
+                           student=student, 
+                           household=household,
+                           siblings=siblings,
+                           reports=reports, 
+                           followups=followups)
+
+# --- 🚀 NEW NATIVE SUB-PAGES FOR THE STUDENT HUB ---
+
+@app.route("/student/<int:id>/academics")
+@login_required
+def student_academics(id):
+    """Deep Dive: Academic History & Trajectory"""
+    student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
+    if not student_data:
+        return render_template("_layouts/apology.html", message="Student not found")
+    student = student_data[0]
 
     academic_years_raw = db.execute("SELECT DISTINCT academic_year FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC", id)
     unique_years = [row['academic_year'] for row in academic_years_raw if row['academic_year']]
@@ -972,13 +993,44 @@ def student_profile(id):
 
         report["subjects"] = subjects
 
+    return render_template("student/student_academics.html", student=student, reports=reports, unique_years=unique_years, timeframe=timeframe)
+
+@app.route("/student/<int:id>/timeline")
+@login_required
+def student_timeline(id):
+    """Deep Dive: Social Work & Notes Timeline"""
+    student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
+    if not student_data:
+        return render_template("_layouts/apology.html", message="Student not found")
+    student = student_data[0]
+    
     followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC, id DESC", id)
+    return render_template("student/student_timeline.html", student=student, followups=followups)
+
+@app.route("/student/<int:id>/files")
+@login_required
+def student_files(id):
+    """Deep Dive: Digital Documents"""
+    student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
+    if not student_data:
+        return render_template("_layouts/apology.html", message="Student not found")
+    student = student_data[0]
     
     try:
         docs = db.execute("SELECT * FROM documents WHERE student_id = ? ORDER BY upload_date DESC", id)
     except Exception:
         docs = []
+    return render_template("student/student_files.html", student=student, docs=docs)
 
+@app.route("/student/<int:id>/finance")
+@login_required
+def student_finance(id):
+    """Deep Dive: Financial Ledger"""
+    student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
+    if not student_data:
+        return render_template("_layouts/apology.html", message="Student not found")
+    student = student_data[0]
+    
     try:
         expenses = db.execute("SELECT * FROM student_expenses WHERE student_id = ? ORDER BY expense_date DESC", id)
         total_spent_raw = sum(exp['amount'] for exp in expenses) if expenses else 0.00
@@ -987,18 +1039,7 @@ def student_profile(id):
         total_spent_raw = 0.00
         
     total_spent = f"{total_spent_raw:,.2f}"
-
-    return render_template("student_profile.html", 
-                           student=student, 
-                           household=household,
-                           siblings=siblings,
-                           reports=reports, 
-                           followups=followups, 
-                           docs=docs, 
-                           expenses=expenses,
-                           total_spent=total_spent,
-                           timeframe=timeframe, 
-                           unique_years=unique_years)
+    return render_template("student/student_finance.html", student=student, expenses=expenses, total_spent=total_spent)
 
 
 # ==============================================================================
@@ -1045,7 +1086,7 @@ def academics():
 
     active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
 
-    return render_template("academics.html", academic_records=academic_records_raw, active_students=active_students)
+    return render_template("academics/academics.html", academic_records=academic_records_raw, active_students=active_students)
 
 @app.route("/add_report/<int:student_id>", methods=["GET", "POST"])
 @login_required
@@ -1067,7 +1108,7 @@ def add_report(student_id):
             source_url = None
 
         if not month or not academic_year:
-            return render_template("apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
+            return render_template("_layouts/apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
 
         existing_report = db.execute("""
             SELECT id FROM monthly_reports
@@ -1075,7 +1116,7 @@ def add_report(student_id):
         """, student_id, month, academic_year, semester)
 
         if existing_report:
-            return render_template("apology.html", message=f"A {semester if semester else 'Regular'} report for {month} {academic_year} already exists! Please use your browser's BACK arrow to return to the form.")
+            return render_template("_layouts/apology.html", message=f"A {semester if semester else 'Regular'} report for {month} {academic_year} already exists! Please use your browser's BACK arrow to return to the form.")
 
         file = request.files.get('scanned_document')
         scanned_filename, _ = handle_file_upload(file, student_id, "report", app.config['UPLOAD_FOLDER'])
@@ -1156,7 +1197,7 @@ def add_report(student_id):
 
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
-    return render_template("add_report.html", student=student, subjects=subjects)
+    return render_template("academics/add_report.html", student=student, subjects=subjects)
 
 @app.route("/edit_report/<int:report_id>", methods=["GET", "POST"])
 @login_required
@@ -1164,7 +1205,7 @@ def add_report(student_id):
 def edit_report(report_id):
     report_data = db.execute("SELECT * FROM monthly_reports WHERE id = ?", report_id)
     if len(report_data) != 1:
-        return render_template("apology.html", message="Report not found")
+        return render_template("_layouts/apology.html", message="Report not found")
     report = report_data[0]
     student_id = report["student_id"]
 
@@ -1183,7 +1224,7 @@ def edit_report(report_id):
             source_url = None
 
         if not month or not academic_year:
-            return render_template("apology.html", message="Month and Academic Year are required. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("_layouts/apology.html", message="Month and Academic Year are required. Please use your browser's BACK arrow to return without losing data.")
 
         existing_report = db.execute("""
             SELECT id FROM monthly_reports
@@ -1191,7 +1232,7 @@ def edit_report(report_id):
         """, student_id, month, academic_year, semester, report_id)
 
         if existing_report:
-            return render_template("apology.html", message="Another report for this term already exists. Please use your browser's BACK arrow to return.")
+            return render_template("_layouts/apology.html", message="Another report for this term already exists. Please use your browser's BACK arrow to return.")
 
         file = request.files.get('scanned_document')
         if file and file.filename != '':
@@ -1281,7 +1322,7 @@ def edit_report(report_id):
     grades = db.execute("SELECT * FROM grades WHERE report_id = ?", report_id)
     existing_grades = {g['subject_id']: g for g in grades}
 
-    return render_template("edit_report.html", student=student, report=report, subjects=subjects, existing_grades=existing_grades)
+    return render_template("academics/edit_report.html", student=student, report=report, subjects=subjects, existing_grades=existing_grades)
 
 @app.route("/delete_report/<int:report_id>", methods=["POST"])
 @login_required
@@ -1318,10 +1359,11 @@ def delete_report(report_id):
 def add_followup(student_id):
     if request.method == "POST":
         followup_date = request.form.get("followup_date")
+        location = request.form.get("location")
         completed_by = request.form.get("completed_by")
 
         if not followup_date or not completed_by:
-            return render_template("apology.html", message="Date and Completed By are required. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("_layouts/apology.html", message="Date and Completed By are required. Please use your browser's BACK arrow to return without losing data.")
 
         risk_factors_list = request.form.getlist("risk_factors")
         risk_factors = ", ".join(risk_factors_list) if risk_factors_list else "None"
@@ -1331,25 +1373,28 @@ def add_followup(student_id):
                 student_id, followup_date, location, completed_by,
                 physical_health, physical_health_detail, social_interaction, social_interaction_detail,
                 home_life, home_life_detail, evidence_drugs_violence,
-                learning_difficulties, behavior_in_class, behavior_in_class_detail,
-                peer_issues, peer_issues_detail, teacher_involvement, teacher_involvement_detail,
-                transportation, transportation_detail, tutoring_participation, tutoring_participation_detail,
+                learning_difficulties, behavior_in_class,
+                peer_issues, teacher_involvement,
+                transportation, tutoring_participation,
                 risk_factors, risk_details, child_protection_concerns, trafficking_risk, general_notes,
-                letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, student_id, followup_date, request.form.get("location"), completed_by,
-                   request.form.get("physical_health"), request.form.get("physical_health_detail"),
-                   request.form.get("social_interaction"), request.form.get("social_interaction_detail"),
-                   request.form.get("home_life"), request.form.get("home_life_detail"), request.form.get("evidence_drugs_violence"),
-                   request.form.get("learning_difficulties"), request.form.get("behavior_in_class"), request.form.get("behavior_in_class_detail"),
-                   request.form.get("peer_issues"), request.form.get("peer_issues_detail"), request.form.get("teacher_involvement"), request.form.get("teacher_involvement_detail"),
-                   request.form.get("transportation"), request.form.get("transportation_detail"), request.form.get("tutoring_participation"), request.form.get("tutoring_participation_detail"),
-                   risk_factors, request.form.get("risk_details"), request.form.get("child_protection_concerns"), request.form.get("trafficking_risk"), request.form.get("general_notes"),
-                   request.form.get("letter_quarter"), request.form.get("letter_year"), request.form.get("letter_given"), request.form.get("letter_translated"), request.form.get("letter_scanned"), request.form.get("letter_sent"), request.form.get("letter_notes"))
+                letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes,
+                parent_working_notes, support_level, church_attendance, child_jobs, risk_level, student_story, staff_notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, student_id, followup_date, location, completed_by,
+             request.form.get("physical_health"), request.form.get("physical_health_detail"),
+             request.form.get("social_interaction"), request.form.get("social_interaction_detail"),
+             request.form.get("home_life"), request.form.get("home_life_detail"), request.form.get("evidence_drugs_violence"),
+             request.form.get("learning_difficulties"), request.form.get("behavior_in_class"),
+             request.form.get("peer_issues"), request.form.get("teacher_involvement"),
+             request.form.get("transportation"), request.form.get("tutoring_participation"),
+             risk_factors, request.form.get("risk_details"), request.form.get("child_protection_concerns"), request.form.get("trafficking_risk"), request.form.get("general_notes"),
+             request.form.get("letter_quarter"), request.form.get("letter_year"), request.form.get("letter_given"), request.form.get("letter_translated"), request.form.get("letter_scanned"), request.form.get("letter_sent"), request.form.get("letter_notes"),
+             request.form.get("parent_working_notes"), request.form.get("support_level"), request.form.get("church_attendance"), request.form.get("child_jobs"), request.form.get("risk_level"), request.form.get("student_story"), request.form.get("staff_notes")
+        )
 
         log_action(f"Added Social Work Follow-Up for Student ID: {student_id}")
         flash("Follow-up successfully recorded!", "success")
-        return redirect(f"/student/{student_id}")
+        return redirect(f"/student/{student_id}/timeline")
 
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     current_year = datetime.now().year
@@ -1357,7 +1402,7 @@ def add_followup(student_id):
     staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
     current_user = staff_query[0]["username"] if staff_query else ""
 
-    return render_template("add_followup.html", student=student, current_year=current_year, today_date=today_date, current_user=current_user)
+    return render_template("social_work/add_followup.html", student=student, current_year=current_year, today_date=today_date, current_user=current_user)
 
 @app.route("/edit_followup/<int:followup_id>", methods=["GET", "POST"])
 @login_required
@@ -1365,16 +1410,17 @@ def add_followup(student_id):
 def edit_followup(followup_id):
     followup_data = db.execute("SELECT * FROM followups WHERE id = ?", followup_id)
     if len(followup_data) != 1:
-        return render_template("apology.html", message="Follow-up not found")
+        return render_template("_layouts/apology.html", message="Follow-up not found")
     followup = followup_data[0]
     student_id = followup["student_id"]
 
     if request.method == "POST":
         followup_date = request.form.get("followup_date")
+        location = request.form.get("location")
         completed_by = request.form.get("completed_by")
 
         if not followup_date or not completed_by:
-            return render_template("apology.html", message="Date and Completed By are required. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("_layouts/apology.html", message="Date and Completed By are required. Please use your browser's BACK arrow to return without losing data.")
 
         risk_factors_list = request.form.getlist("risk_factors")
         risk_factors = ", ".join(risk_factors_list) if risk_factors_list else "None"
@@ -1384,27 +1430,30 @@ def edit_followup(followup_id):
                 followup_date = ?, location = ?, completed_by = ?,
                 physical_health = ?, physical_health_detail = ?, social_interaction = ?, social_interaction_detail = ?,
                 home_life = ?, home_life_detail = ?, evidence_drugs_violence = ?,
-                learning_difficulties = ?, behavior_in_class = ?, behavior_in_class_detail = ?,
-                peer_issues = ?, peer_issues_detail = ?, teacher_involvement = ?, teacher_involvement_detail = ?,
-                transportation = ?, transportation_detail = ?, tutoring_participation = ?, tutoring_participation_detail = ?,
+                learning_difficulties = ?, behavior_in_class = ?,
+                peer_issues = ?, teacher_involvement = ?,
+                transportation = ?, tutoring_participation = ?,
                 risk_factors = ?, risk_details = ?, child_protection_concerns = ?, trafficking_risk = ?, general_notes = ?,
-                letter_quarter = ?, letter_year = ?, letter_given = ?, letter_translated = ?, letter_scanned = ?, letter_sent = ?, letter_notes = ?
+                letter_quarter = ?, letter_year = ?, letter_given = ?, letter_translated = ?, letter_scanned = ?, letter_sent = ?, letter_notes = ?,
+                parent_working_notes = ?, support_level = ?, church_attendance = ?, child_jobs = ?, risk_level = ?, student_story = ?, staff_notes = ?
             WHERE id = ?
-        """, followup_date, request.form.get("location"), completed_by,
-                   request.form.get("physical_health"), request.form.get("physical_health_detail"), request.form.get("social_interaction"), request.form.get("social_interaction_detail"),
-                   request.form.get("home_life"), request.form.get("home_life_detail"), request.form.get("evidence_drugs_violence"),
-                   request.form.get("learning_difficulties"), request.form.get("behavior_in_class"), request.form.get("behavior_in_class_detail"),
-                   request.form.get("peer_issues"), request.form.get("peer_issues_detail"), request.form.get("teacher_involvement"), request.form.get("teacher_involvement_detail"),
-                   request.form.get("transportation"), request.form.get("transportation_detail"), request.form.get("tutoring_participation"), request.form.get("tutoring_participation_detail"),
-                   risk_factors, request.form.get("risk_details"), request.form.get("child_protection_concerns"), request.form.get("trafficking_risk"), request.form.get("general_notes"),
-                   request.form.get("letter_quarter"), request.form.get("letter_year"), request.form.get("letter_given"), request.form.get("letter_translated"), request.form.get("letter_scanned"), request.form.get("letter_sent"), request.form.get("letter_notes"), followup_id)
+        """, followup_date, location, completed_by,
+             request.form.get("physical_health"), request.form.get("physical_health_detail"), request.form.get("social_interaction"), request.form.get("social_interaction_detail"),
+             request.form.get("home_life"), request.form.get("home_life_detail"), request.form.get("evidence_drugs_violence"),
+             request.form.get("learning_difficulties"), request.form.get("behavior_in_class"),
+             request.form.get("peer_issues"), request.form.get("teacher_involvement"),
+             request.form.get("transportation"), request.form.get("tutoring_participation"),
+             risk_factors, request.form.get("risk_details"), request.form.get("child_protection_concerns"), request.form.get("trafficking_risk"), request.form.get("general_notes"),
+             request.form.get("letter_quarter"), request.form.get("letter_year"), request.form.get("letter_given"), request.form.get("letter_translated"), request.form.get("letter_scanned"), request.form.get("letter_sent"), request.form.get("letter_notes"),
+             request.form.get("parent_working_notes"), request.form.get("support_level"), request.form.get("church_attendance"), request.form.get("child_jobs"), request.form.get("risk_level"), request.form.get("student_story"), request.form.get("staff_notes"),
+             followup_id)
 
         log_action(f"Edited Social Work Follow-Up for Student ID: {student_id}")
         flash("Follow-up successfully updated!", "success")
-        return redirect(f"/student/{student_id}")
+        return redirect(f"/student/{student_id}/timeline")
 
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
-    return render_template("edit_followup.html", student=student, followup=followup)
+    return render_template("social_work/edit_followup.html", student=student, followup=followup)
 
 @app.route("/bulk_followup", methods=["GET", "POST"])
 @login_required
@@ -1450,7 +1499,7 @@ def bulk_followup():
     staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
     current_user = staff_query[0]["username"] if staff_query else ""
 
-    return render_template("bulk_followup.html", students=students, today_date=today_date, current_user=current_user)
+    return render_template("social_work/bulk_followup.html", students=students, today_date=today_date, current_user=current_user)
 
 @app.route("/resolve_alert/<int:followup_id>", methods=["POST"])
 @login_required
@@ -1476,7 +1525,7 @@ def upload_document(student_id):
 
     if not file or file.filename == '':
         flash("No selected file", "danger")
-        return redirect(f"/student/{student_id}")
+        return redirect(f"/student/{student_id}/files")
 
     saved_name, original_name = handle_file_upload(file, student_id, "doc", app.config['UPLOAD_FOLDER'])
     if saved_name:
@@ -1487,7 +1536,7 @@ def upload_document(student_id):
     else:
         flash("Invalid file type.", "danger")
 
-    return redirect(f"/student/{student_id}")
+    return redirect(f"/student/{student_id}/files")
 
 @app.route("/delete_document/<int:doc_id>", methods=["POST", "GET"])
 @login_required
@@ -1506,7 +1555,7 @@ def delete_document(doc_id):
     db.execute("DELETE FROM documents WHERE id = ?", doc_id)
     log_action(f"DELETED Document for Student ID: {student_id}")
     flash("Document deleted successfully.", "success")
-    return redirect(url_for('student_profile', id=student_id))
+    return redirect(f"/student/{student_id}/files")
 
 @app.route("/log_expense/<int:student_id>", methods=["POST"])
 @login_required
@@ -1525,7 +1574,7 @@ def log_expense(student_id):
     else:
         flash("Missing required fields.", "danger")
         
-    return redirect(f"/student/{student_id}")
+    return redirect(f"/student/{student_id}/finance")
 
 
 # ==============================================================================
@@ -1560,7 +1609,7 @@ def log_services():
     pid = session.get("program_id", 0)
     students = db.execute("SELECT id, first_name, last_name, khmer_name, grade_level, meal_plan FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name ASC", pid, pid)
     today_date = datetime.now().strftime('%Y-%m-%d')
-    return render_template("log_services.html", students=students, today_date=today_date)
+    return render_template("operations/log_services.html", students=students, today_date=today_date)
 
 @app.route("/log_activity", methods=["POST"])
 @login_required
@@ -1606,7 +1655,7 @@ def field_calendar():
         WHERE t.status = 'Pending' AND t.staff_id = ? AND (t.program_id = ? OR ? = 0)
         ORDER BY t.due_date ASC LIMIT 15
     """, session["user_id"], pid, pid)
-    return render_template("calendar.html", students=students, pending_tasks=pending_tasks)
+    return render_template("operations/calendar.html", students=students, pending_tasks=pending_tasks)
 
 @app.route("/api/tasks")
 @login_required
@@ -1896,7 +1945,7 @@ def settings():
     with open(translation_file, 'r', encoding='utf-8') as f:
         translations = json.load(f)
 
-    return render_template("settings.html", subjects=subjects, programs=programs, sys_settings=sys_settings, translations=translations, role_permissions=role_permissions)
+    return render_template("admin/settings.html", subjects=subjects, programs=programs, sys_settings=sys_settings, translations=translations, role_permissions=role_permissions)
 
 
 @app.route('/export_students')
