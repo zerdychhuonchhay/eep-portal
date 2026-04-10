@@ -1,191 +1,167 @@
-{# 
-   CS50 FINAL PROJECT CITATION:
-   The layout structure, the split-pane UI, the JavaScript hover-to-zoom image viewer, 
-   and the dynamic subject filtering logic in this template were developed and refined 
-   with the assistance of Google Gemini. The core data architecture, database schema, 
-   and integration logic remain my own original work. 
-#}
 {% extends "layout.html" %}
 
-{% block title %}
-    Edit Report - {{ student.first_name }}
-{% endblock %}
+{% block title %}Edit Report - {{ student.first_name }} {{ student.last_name }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid px-lg-4 pt-3 pb-5">
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1200px;">
     
-    <!-- HEADER SECTION -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0 bg-transparent p-0">
-                <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Roster</a></li>
-                <li class="breadcrumb-item"><a href="/student/{{ student.id }}" class="text-decoration-none text-muted fw-bold">{{ student.first_name }}</a></li>
-                <li class="breadcrumb-item active fw-bold text-warning" aria-current="page">Edit Report</li>
-            </ol>
-        </nav>
-        <a href="/student/{{ student.id }}" class="btn btn-light border shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover">
-            <i class="bi bi-x-lg me-1"></i> Cancel
+    <div class="mb-4 px-3 px-md-0">
+        <a href="/student/{{ student.id }}/academics" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
+            <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Back to Academics
         </a>
+        <div class="d-flex justify-content-between align-items-end">
+            <div>
+                <h3 class="fw-bold text-dark mb-1"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Academic Report</h3>
+                <p class="text-muted small fw-bold mb-0">Updating grades for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
+            </div>
+        </div>
     </div>
 
-    <!-- PAGE TITLE -->
-    <div class="mb-4 text-center text-md-start">
-        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-pencil-square text-warning me-2"></i>Edit Academic Report</h2>
-        <p class="text-muted small fw-bold">Updating records for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
-    </div>
-
-    <!-- THE FORM -->
-    <form action="/edit_report/{{ report.id }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+    <!-- Auto-saving form -->
+    <form id="editReportForm" action="/edit_report/{{ report.id }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         
-        <!-- Pass the referrer so the app knows where to send the user back to (Profile vs Master Gradebook) -->
-        <input type="hidden" name="source_url" value="{{ request.referrer }}">
+        <!-- Pass original source URL if we came from the dashboard or academics page -->
+        <input type="hidden" name="source_url" value="{{ request.referrer if request.referrer else '' }}">
 
-        <div class="row g-4">
+        <div class="row g-0 g-md-4">
             
-            <!-- ========================================== -->
-            <!-- LEFT COLUMN: SMART SCAN PREVIEW (PC Focus) -->
-            <!-- ========================================== -->
+            <!-- LEFT COLUMN (PC Preview) -->
             <div class="col-lg-5">
-                <div class="card shadow-sm border-0 rounded-4 mb-4 sticky-lg-top" style="top: 20px; z-index: 5;">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card sticky-lg-top bg-white" style="top: 80px; z-index: 5;">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-camera-fill me-2 text-info"></i>1. Reference Scan</h5>
                     </div>
                     <div class="card-body p-4 pt-2">
-                        <label class="form-label fw-bold small text-muted text-uppercase">Update Report Card Scan</label>
+                        <label class="form-label fw-bold small text-muted text-uppercase">Replace Report Card (Optional)</label>
                         <div class="input-group shadow-sm rounded-3 overflow-hidden mb-3">
-                            <input type="file" name="scanned_document" id="scan_upload" class="form-control bg-white" accept="image/*,application/pdf" capture="environment">
-                            <span class="input-group-text bg-light text-muted"><i class="bi bi-upload"></i></span>
+                            <input type="file" name="scanned_document" id="scan_upload" class="form-control bg-light border-0" accept="image/*,application/pdf" capture="environment">
+                            <span class="input-group-text bg-white text-primary border-0 fw-bold"><i class="bi bi-upload"></i></span>
                         </div>
                         
-                        <!-- Hover-to-Zoom / PDF Canvas -->
-                        <div class="preview-pane rounded-4 border border-2 border-secondary border-opacity-25" id="preview_container">
-                            {% if report.scanned_document %}
-                                {% if report.scanned_document.lower().endswith('.pdf') %}
-                                    <iframe id="scan_preview_pdf" src="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" style="width: 100%; height: 100%; border: none;"></iframe>
-                                    <img id="scan_preview" src="" class="zoom-image" style="display:none;" alt="Report Card Scan">
-                                {% else %}
-                                    <iframe id="scan_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
-                                    <img id="scan_preview" src="{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}" class="zoom-image" alt="Report Card Scan">
-                                {% endif %}
-                                <div id="placeholder_text" style="display: none;"></div>
-                            {% else %}
-                                <div id="placeholder_text" class="text-muted text-center p-5">
-                                    <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
-                                    <span class="fw-bold small text-uppercase">No document uploaded</span>
-                                </div>
-                                <iframe id="scan_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
-                                <img id="scan_preview" src="" class="zoom-image" style="display:none;" alt="Report Card Scan">
-                            {% endif %}
+                        <div class="preview-pane rounded-4 border border-2 border-secondary border-opacity-10 bg-light" id="preview_container">
+                            <div id="placeholder_text" class="text-muted text-center p-5">
+                                <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
+                                <span class="fw-bold small text-uppercase">No document uploaded</span>
+                            </div>
+                            <iframe id="scan_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none; border-radius: 1rem;"></iframe>
+                            <img id="scan_preview" src="" class="zoom-image" style="display:none;" alt="Report Card Scan">
                         </div>
-                        <small class="text-muted mt-3 d-block text-center fw-bold"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Hover over images to zoom. PDFs are fully scrollable.</small>
+                        <small class="text-muted mt-3 d-block text-center fw-bold"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Hover over images to zoom. PDFs are scrollable.</small>
                     </div>
                 </div>
             </div>
 
-            <!-- ========================================== -->
-            <!-- RIGHT COLUMN: DATA ENTRY CARDS             -->
-            <!-- ========================================== -->
+            <!-- RIGHT COLUMN (Form Data) -->
             <div class="col-lg-7">
                 
-                <!-- CARD 1: Term & Enrollment -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-primary border-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>2. Academic Term</h5>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="card-body p-4 pt-2">
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Academic Year *</label>
-                                <input type="text" class="form-control bg-light fw-bold text-dark" id="academic_year" name="academic_year" value="{{ report.academic_year }}" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Month *</label>
-                                <select name="month" class="form-select bg-light fw-bold text-dark" required>
-                                    <option value="{{ report.month }}" selected>{{ report.month if report.month else 'Not Applicable' }}</option>
-                                    <option disabled>──────────</option>
-                                    <option value="">Not Applicable</option>
-                                    <option value="August">August</option>
-                                    <option value="September">September</option>
-                                    <option value="October">October</option>
-                                    <option value="November">November</option>
-                                    <option value="December">December</option>
-                                    <option value="January">January</option>
-                                    <option value="February">February</option>
-                                    <option value="March">March</option>
-                                    <option value="April">April</option>
-                                    <option value="May">May</option>
-                                    <option value="June">June</option>
-                                    <option value="July">July</option>
+                                <select name="academic_year" class="form-select bg-light fw-bold text-dark" required>
+                                    <option value="2025-2026" {% if report.academic_year == '2025-2026' %}selected{% endif %}>2025-2026</option>
+                                    <option value="2024-2025" {% if report.academic_year == '2024-2025' %}selected{% endif %}>2024-2025</option>
+                                    <option value="2023-2024" {% if report.academic_year == '2023-2024' %}selected{% endif %}>2023-2024</option>
+                                    <option value="2022-2023" {% if report.academic_year == '2022-2023' %}selected{% endif %}>2022-2023</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-primary text-uppercase">Semester</label>
-                                <select class="form-select border-primary fw-bold" name="semester">
-                                    <option value="" {% if not report.semester %}selected{% endif %}>Not a Semester Exam</option>
-                                    <option value="Semester 1" {% if report.semester == 'Semester 1' %}selected{% endif %}>Semester 1 (Mid-Term)</option>
-                                    <option value="Semester 2" {% if report.semester == 'Semester 2' %}selected{% endif %}>Semester 2 (Final)</option>
-                                    <option value="Final Exam" {% if report.semester == 'Final Exam' %}selected{% endif %}>Annual Final Exam</option>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Month *</label>
+                                <select name="month" class="form-select bg-light fw-bold text-dark" required>
+                                    <option value="August" {% if report.month == 'August' %}selected{% endif %}>August</option>
+                                    <option value="September" {% if report.month == 'September' %}selected{% endif %}>September</option>
+                                    <option value="October" {% if report.month == 'October' %}selected{% endif %}>October</option>
+                                    <option value="November" {% if report.month == 'November' %}selected{% endif %}>November</option>
+                                    <option value="December" {% if report.month == 'December' %}selected{% endif %}>December</option>
+                                    <option value="January" {% if report.month == 'January' %}selected{% endif %}>January</option>
+                                    <option value="February" {% if report.month == 'February' %}selected{% endif %}>February</option>
+                                    <option value="March" {% if report.month == 'March' %}selected{% endif %}>March</option>
+                                    <option value="April" {% if report.month == 'April' %}selected{% endif %}>April</option>
+                                    <option value="May" {% if report.month == 'May' %}selected{% endif %}>May</option>
+                                    <option value="June" {% if report.month == 'June' %}selected{% endif %}>June</option>
+                                    <option value="July" {% if report.month == 'July' %}selected{% endif %}>July</option>
                                 </select>
                             </div>
                             
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Historical Grade *</label>
-                                <select class="form-select bg-light fw-bold text-primary" id="grade_level" name="grade_level" required onchange="filterSubjects()">
-                                    <option value="" disabled>Select Grade...</option>
-                                    <optgroup label="Early Education">
-                                        <option value="Kindergarten" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
-                                    </optgroup>
-                                    <optgroup label="Primary & Secondary (K-12)">
-                                        <option value="Grade 1" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 1' %}selected{% endif %}>Grade 1</option>
-                                        <option value="Grade 2" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 2' %}selected{% endif %}>Grade 2</option>
-                                        <option value="Grade 3" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 3' %}selected{% endif %}>Grade 3</option>
-                                        <option value="Grade 4" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 4' %}selected{% endif %}>Grade 4</option>
-                                        <option value="Grade 5" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 5' %}selected{% endif %}>Grade 5</option>
-                                        <option value="Grade 6" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 6' %}selected{% endif %}>Grade 6</option>
-                                        <option value="Grade 7" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 7' %}selected{% endif %}>Grade 7</option>
-                                        <option value="Grade 8" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 8' %}selected{% endif %}>Grade 8</option>
-                                        <option value="Grade 9" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 9' %}selected{% endif %}>Grade 9</option>
-                                        <option value="Grade 10" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 10' %}selected{% endif %}>Grade 10</option>
-                                        <option value="Grade 11" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 11' %}selected{% endif %}>Grade 11</option>
-                                        <option value="Grade 12" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Grade 12' %}selected{% endif %}>Grade 12</option>
-                                    </optgroup>
-                                    <optgroup label="Higher Education">
-                                        <option value="University Year 1" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 1' %}selected{% endif %}>University Year 1</option>
-                                        <option value="University Year 2" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 2' %}selected{% endif %}>University Year 2</option>
-                                        <option value="University Year 3" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 3' %}selected{% endif %}>University Year 3</option>
-                                        <option value="University Year 4" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 4' %}selected{% endif %}>University Year 4</option>
-                                        <option value="University Year 5" {% if (report.grade_level if report.grade_level else student.grade_level) == 'University Year 5' %}selected{% endif %}>University Year 5</option>
-                                        <option value="Vocational Training" {% if (report.grade_level if report.grade_level else student.grade_level) == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
-                                    </optgroup>
+                                <label class="form-label fw-bold small text-muted text-uppercase">Exam / Term Type</label>
+                                <select name="semester" class="form-select bg-light fw-bold text-dark">
+                                    <option value="" {% if not report.semester %}selected{% endif %}>Standard Monthly Report</option>
+                                    <option value="Semester 1" {% if report.semester == 'Semester 1' %}selected{% endif %}>Semester 1 Exam</option>
+                                    <option value="Semester 2" {% if report.semester == 'Semester 2' %}selected{% endif %}>Semester 2 Exam</option>
+                                    <option value="Final" {% if report.semester == 'Final' %}selected{% endif %}>Final Exam</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Historical School</label>
-                                <input type="text" name="school_name" class="form-control bg-light khmer-font" value="{{ report.school_name if report.school_name else student.current_school }}" placeholder="Enter school name...">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Grade Level *</label>
+                                <select class="form-select bg-light fw-bold text-primary" id="grade_level" name="grade_level" required onchange="filterSubjects()">
+                                    <option value="" disabled>Select Grade...</option>
+                                    <optgroup label="Early Education">
+                                        <option value="Kindergarten" {% if report.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
+                                    </optgroup>
+                                    <optgroup label="Primary & Secondary (K-12)">
+                                        <option value="Grade 1" {% if report.grade_level == 'Grade 1' %}selected{% endif %}>Grade 1</option>
+                                        <option value="Grade 2" {% if report.grade_level == 'Grade 2' %}selected{% endif %}>Grade 2</option>
+                                        <option value="Grade 3" {% if report.grade_level == 'Grade 3' %}selected{% endif %}>Grade 3</option>
+                                        <option value="Grade 4" {% if report.grade_level == 'Grade 4' %}selected{% endif %}>Grade 4</option>
+                                        <option value="Grade 5" {% if report.grade_level == 'Grade 5' %}selected{% endif %}>Grade 5</option>
+                                        <option value="Grade 6" {% if report.grade_level == 'Grade 6' %}selected{% endif %}>Grade 6</option>
+                                        <option value="Grade 7" {% if report.grade_level == 'Grade 7' %}selected{% endif %}>Grade 7</option>
+                                        <option value="Grade 8" {% if report.grade_level == 'Grade 8' %}selected{% endif %}>Grade 8</option>
+                                        <option value="Grade 9" {% if report.grade_level == 'Grade 9' %}selected{% endif %}>Grade 9</option>
+                                        <option value="Grade 10" {% if report.grade_level == 'Grade 10' %}selected{% endif %}>Grade 10</option>
+                                        <option value="Grade 11" {% if report.grade_level == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+                                        <option value="Grade 12" {% if report.grade_level == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+                                    </optgroup>
+                                    <optgroup label="Higher Education">
+                                        <option value="University Year 1" {% if report.grade_level == 'University Year 1' %}selected{% endif %}>University Year 1</option>
+                                        <option value="University Year 2" {% if report.grade_level == 'University Year 2' %}selected{% endif %}>University Year 2</option>
+                                        <option value="University Year 3" {% if report.grade_level == 'University Year 3' %}selected{% endif %}>University Year 3</option>
+                                        <option value="University Year 4" {% if report.grade_level == 'University Year 4' %}selected{% endif %}>University Year 4</option>
+                                        <option value="University Year 5" {% if report.grade_level == 'University Year 5' %}selected{% endif %}>University Year 5</option>
+                                        <option value="Vocational Training" {% if report.grade_level == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted text-uppercase">School Name</label>
+                                <input type="text" name="school_name" class="form-control bg-light khmer-font" value="{{ report.school_name if report.school_name else '' }}" placeholder="Enter school name...">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARD 2: Performance Metrics -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-success border-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-bar-chart-fill me-2 text-success"></i>3. Performance Overview</h5>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="card-body p-4 pt-2">
                         <div class="row g-3">
-                            <div class="col-sm-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Overall Average</label>
+                            <div class="col-12 mb-1">
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">Auto-Calculation</span>
+                                <span class="small text-muted ms-2">Leave these blank to automatically calculate from subjects below.</span>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Total Score</label>
+                                <div class="input-group shadow-sm">
+                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-plus-slash-minus"></i></span>
+                                    <input type="number" step="0.01" name="manual_total_score" class="form-control border-start-0 ps-0 fw-bold bg-light" value="{{ report.total_score if report.total_score != None else '' }}" placeholder="e.g. 450">
+                                </div>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Overall Avg %</label>
                                 <div class="input-group input-group-merge shadow-sm">
                                     <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calculator"></i></span>
-                                    <input type="number" step="0.01" name="overall_average" class="form-control border-start-0 ps-0 fw-bold fs-5 text-dark" value="{{ report.overall_average if report.overall_average else '' }}" placeholder="e.g. 85.5">
-                                    <span class="input-group-text bg-light text-muted fw-bold">%</span>
+                                    <input type="number" step="0.01" name="manual_average" class="form-control border-start-0 ps-0 fw-bold bg-light text-dark" value="{{ report.overall_average if report.overall_average != None else '' }}" placeholder="e.g. 85.5">
                                 </div>
-                                <div class="form-text small opacity-75">Leave blank if only using letter grades.</div>
                             </div>
-                            <div class="col-sm-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Letter Grade / Status</label>
-                                <input type="text" name="overall_grade" class="form-control form-control-lg bg-light fw-bold" value="{{ report.overall_grade if report.overall_grade else '' }}" placeholder="e.g. A, B+, Pass">
+                            <div class="col-sm-4">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Letter Grade</label>
+                                <input type="text" name="manual_grade" class="form-control bg-light fw-bold shadow-sm" value="{{ report.overall_grade if report.overall_grade else '' }}" placeholder="e.g. A, B+, Pass">
                             </div>
                             
                             <div class="col-sm-6 mt-4">
@@ -199,7 +175,7 @@
                                 <label class="form-label fw-bold small text-muted text-uppercase">Attendance</label>
                                 <div class="input-group shadow-sm">
                                     <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-check"></i></span>
-                                    <input type="number" name="attendance_days" class="form-control border-start-0 ps-0 fw-bold" value="{{ report.attendance_days if report.attendance_days else '' }}" placeholder="e.g. 22">
+                                    <input type="number" name="attendance_days" class="form-control border-start-0 ps-0 fw-bold" value="{{ report.attendance_days if report.attendance_days != None else '' }}" placeholder="e.g. 22">
                                     <span class="input-group-text bg-light text-muted small">days</span>
                                 </div>
                             </div>
@@ -207,92 +183,72 @@
                     </div>
                 </div>
 
-                <!-- CARD 3: Subject Scores & Smart Overrides -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-warning border-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center rounded-top-4">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>4. Detailed Subjects</h5>
                     </div>
-                    <div class="card-body p-4 bg-light bg-opacity-50">
-                        
-                        <!-- Row 3: Smart Override Inputs -->
-                        <div class="row bg-white rounded pt-3 pb-1 mb-4 mx-0 border shadow-sm">
-                            <div class="col-12 mb-2">
-                                <span class="fw-bold text-secondary">⚙️ Smart Overrides / <span class="khmer-font">ការកែតម្រូវដោយដៃ</span></span> <span class="small text-muted">(Leave blank to auto-calculate)</span>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label small fw-bold text-muted">Manual Total Score</label>
-                                <input type="number" step="0.01" class="form-control form-control-sm bg-light" name="manual_total_score" value="{{ report.total_score if report.total_score else '' }}">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label small fw-bold text-muted">Manual Overall Average</label>
-                                <input type="number" step="0.01" class="form-control form-control-sm bg-light" name="manual_average" value="{{ report.overall_average if report.overall_average else '' }}">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label small fw-bold text-muted">Manual Overall Grade</label>
-                                <input type="text" class="form-control form-control-sm bg-light" name="manual_grade" value="{{ report.overall_grade if report.overall_grade else '' }}">
-                            </div>
+                    <div class="card-body p-4 pt-2 bg-light bg-opacity-50">
+
+                        <div class="alert alert-secondary py-2 mb-3 border-0 bg-secondary bg-opacity-10 text-secondary-emphasis">
+                            <i class="fw-bold bi bi-magic text-secondary me-2"></i> <span class="small fw-bold">The subject list is automatically filtered based on the student's <strong>Grade Level</strong>.</span>
                         </div>
 
-                        <div class="alert alert-secondary py-2 mb-3">
-                            <i class="fw-bold bi bi-magic"></i> <span class="small">The subject list is automatically filtered based on the student's <strong>Historical Grade</strong>. Note: Any subjects with existing grades will always be shown.</span>
-                        </div>
+                        <!-- Responsive List-Group replaces rigid table -->
+                        <div class="list-group bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm" id="subjectsList">
+                            {% for subject in subjects %}
+                                {% set ex_grade = existing_grades[subject.id] if subject.id in existing_grades else None %}
+                                <div class="list-group-item p-3 subject-row border-light" data-category="{{ subject.category }}">
+                                    <div class="row gx-3 gy-2 align-items-center">
+                                        <!-- Subject Name -->
+                                        <div class="col-12 col-sm-6">
+                                            <span class="badge bg-light text-secondary border mb-1 d-inline-block d-sm-none" style="font-size: 0.6rem;">{{ subject.category }}</span>
+                                            <strong class="khmer-font text-dark d-block fs-5 lh-sm">{{ subject.name }}</strong>
+                                            <span class="badge bg-light text-secondary border mt-1 d-none d-sm-inline-block" style="font-size: 0.6rem;">{{ subject.category }}</span>
+                                        </div>
+                                        <!-- Score Input -->
+                                        <div class="col-6 col-sm-3">
+                                            <label class="small text-muted fw-bold d-block d-sm-none mb-1">Score</label>
+                                            <input type="text" class="form-control text-center fw-bold bg-light border-0 fs-6" name="score_{{ subject.id }}" value="{{ ex_grade.score if ex_grade else '' }}" placeholder="Score">
+                                        </div>
+                                        <!-- Max Input -->
+                                        <div class="col-6 col-sm-3">
+                                            <label class="small text-muted fw-bold d-block d-sm-none mb-1">Max</label>
+                                            <input type="number" class="form-control text-center text-muted bg-light border-0" name="max_score_{{ subject.id }}" value="{{ ex_grade.max_score if ex_grade and ex_grade.max_score else '100' }}" placeholder="Max">
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
 
-                        <!-- Pre-populated Subject Table -->
-                        <div class="table-responsive bg-white border rounded shadow-sm">
-                            <table class="table table-bordered table-hover align-middle mb-0" id="subjectsTable">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 45%;" class="small text-muted text-uppercase">Subject / <span class="khmer-font">មុខវិជ្ជា</span></th>
-                                        <th style="width: 25%;" class="small text-muted text-uppercase text-center">Score</th>
-                                        <th style="width: 30%;" class="small text-muted text-uppercase text-center">Max Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for subject in subjects %}
-                                        <!-- Add has-grade attribute so filter logic knows not to hide it if data exists -->
-                                        <tr class="subject-row" data-category="{{ subject.category }}" data-has-grade="{% if subject.id in existing_grades %}true{% else %}false{% endif %}">
-                                            <td class="ps-3">
-                                                <span class="badge bg-light text-secondary border me-1 float-end" style="font-size: 0.6rem;">{{ subject.category }}</span>
-                                                <strong class="khmer-font text-dark">{{ subject.name }}</strong>
-                                            </td>
-                                            <td>
-                                                <input type="text" class="form-control text-center fw-bold" name="score_{{ subject.id }}" value="{{ existing_grades[subject.id].score if subject.id in existing_grades else '' }}" placeholder="Value">
-                                            </td>
-                                            <td>
-                                                <input type="number" class="form-control text-center text-muted bg-light" name="max_score_{{ subject.id }}" value="{{ existing_grades[subject.id].max_score if subject.id in existing_grades else '100' }}">
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-
-                                    <!-- THE WILDCARD ROW -->
-                                    <tr class="table-warning border-warning">
-                                        <td class="ps-3">
-                                            <div class="small fw-bold text-warning-emphasis mb-1">
-                                                <i class="bi bi-stars"></i> Custom Subject / <span class="khmer-font">មុខវិជ្ជាផ្សេងៗ</span>
-                                            </div>
-                                            <!-- existing_grades[0] is our clever trick: subject_id=0 represents the wildcard -->
-                                            <input type="text" class="form-control form-control-sm border-warning" name="custom_subject_name" placeholder="e.g. Art Project" value="{{ existing_grades[0].custom_subject_name if 0 in existing_grades else '' }}">
-                                        </td>
-                                        <td class="align-bottom">
-                                            <input type="text" class="form-control text-center fw-bold text-dark" name="custom_score" placeholder="Score" value="{{ existing_grades[0].score if 0 in existing_grades else '' }}">
-                                        </td>
-                                        <td class="align-bottom">
-                                            <input type="number" class="form-control text-center text-muted bg-light" name="custom_max_score" placeholder="100" value="{{ existing_grades[0].max_score if 0 in existing_grades else '100' }}">
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <!-- Wildcard Custom Subject Row -->
+                            {% set cust_grade = existing_grades[0] if 0 in existing_grades else None %}
+                            <div class="list-group-item p-3 bg-warning bg-opacity-10 border-top border-warning border-opacity-25">
+                                <div class="row gx-3 gy-2 align-items-center">
+                                    <div class="col-12 col-sm-6">
+                                        <div class="small fw-bold text-warning-emphasis mb-1">
+                                            <i class="bi bi-stars"></i> Custom Subject / <span class="khmer-font">មុខវិជ្ជាផ្សេងៗ</span>
+                                        </div>
+                                        <input type="text" class="form-control border-warning border-opacity-25" name="custom_subject_name" value="{{ cust_grade.custom_subject_name if cust_grade else '' }}" placeholder="e.g. Art Project">
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <label class="small text-muted fw-bold d-block d-sm-none mb-1">Score</label>
+                                        <input type="text" class="form-control text-center fw-bold text-dark border-warning border-opacity-25" name="custom_score" value="{{ cust_grade.score if cust_grade else '' }}" placeholder="Score">
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <label class="small text-muted fw-bold d-block d-sm-none mb-1">Max</label>
+                                        <input type="number" class="form-control text-center text-muted bg-light border-warning border-opacity-25" name="custom_max_score" value="{{ cust_grade.max_score if cust_grade and cust_grade.max_score else '100' }}" placeholder="100">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- CARD 4: Comments -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-secondary border-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                <div class="card shadow-sm border rounded-4 mb-5 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-chat-left-text me-2 text-secondary"></i>5. Additional Notes</h5>
                     </div>
-                    <div class="card-body p-4">
+                    <div class="card-body p-4 pt-2">
                         <div>
                             <label class="form-label fw-bold small text-muted text-uppercase">Teacher's Comment</label>
                             <textarea name="teacher_comment" class="form-control bg-light khmer-font" rows="4" placeholder="Enter translated teacher notes here...">{{ report.teacher_comment if report.teacher_comment else '' }}</textarea>
@@ -300,20 +256,42 @@
                     </div>
                 </div>
 
-                <!-- STICKY ACTION FOOTER (Docked to the bottom of the right column) -->
-                <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 shadow-sm border mt-4 mb-3">
-                    <button type="button" onclick="history.back()" class="btn btn-light border fw-bold px-4 rounded-pill d-none d-md-inline-block text-dark">Cancel</button>
-                    <button type="submit" class="btn btn-warning fw-bold px-5 py-2 rounded-pill shadow-sm ms-auto w-100 w-md-auto fs-5 transition-hover text-dark">
-                        <i class="bi bi-save me-2"></i>Update Report Card
+                <!-- Desktop-only bottom action bar (Static, non-sticky) -->
+                <div class="d-none d-md-flex justify-content-between align-items-center bg-white p-4 rounded-4 shadow-sm border mt-4 mb-3">
+                    <a href="/student/{{ student.id }}/academics" class="btn btn-light border fw-bold px-4 py-2 rounded-pill text-dark transition-hover">Cancel</a>
+                    <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm transition-hover fs-6">
+                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Update Report Card
                     </button>
                 </div>
 
             </div>
         </div>
     </form>
+
+    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <button type="submit" form="editReportForm" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;">
+        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Update</span>
+    </button>
+
+    <!-- MOBILE PICTURE-IN-PICTURE (PIP) SCAN VIEWER FAB -->
+    <button type="button" class="btn btn-info text-white border border-2 border-white rounded-circle shadow-lg position-fixed transition-hover d-none flex-column align-items-center justify-content-center" id="fabViewScan" data-bs-toggle="offcanvas" data-bs-target="#mobileScanOffcanvas" style="bottom: 155px; right: 20px; width: 55px; height: 55px; z-index: 1040;">
+        <i class="bi bi-image fs-4"></i>
+    </button>
+
+    <!-- MOBILE PIP SCAN VIEWER OFFCANVAS -->
+    <div class="offcanvas offcanvas-top shadow-lg border-bottom border-info border-4" tabindex="-1" id="mobileScanOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 45vh; z-index: 1030;">
+        <div class="offcanvas-header bg-white border-bottom py-2 px-3">
+            <h6 class="offcanvas-title fw-bold text-dark small"><i class="bi bi-camera-fill me-2 text-info"></i>Reference Scan</h6>
+            <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 bg-light d-flex justify-content-center align-items-center position-relative overflow-auto">
+            <iframe id="offcanvas_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+            <img id="offcanvas_preview_img" src="" style="display:none; width: 100%; object-fit: contain;" alt="Report Card Scan">
+        </div>
+    </div>
+
 </div>
 
-<!-- Custom UI Polish & Zoom CSS -->
 <style>
     .transition-hover {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
@@ -368,6 +346,13 @@
 
     /* Mobile specific adjustments */
     @media (max-width: 767.98px) {
+        .native-card {
+            border-radius: 0 !important;
+            border-left: 0 !important;
+            border-right: 0 !important;
+            margin-left: -1rem;
+            margin-right: -1rem;
+        }
         .preview-pane {
             min-height: 300px;
             height: 300px; /* Shorter on mobile so they can scroll past it quickly */
@@ -378,6 +363,98 @@
 
 {% block scripts %}
 <script>
+    // --- SMART UX: Pre-load Existing Document ---
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if report.scanned_document %}
+            const existingDocUrl = "{{ url_for('static', filename='uploads/documents/' + report.scanned_document) }}";
+            const docExt = "{{ report.scanned_document.split('.')[-1]|lower }}";
+            
+            const previewImg = document.getElementById('scan_preview');
+            const previewPdf = document.getElementById('scan_preview_pdf');
+            const placeholder = document.getElementById('placeholder_text');
+            
+            const offcanvasImg = document.getElementById('offcanvas_preview_img');
+            const offcanvasPdf = document.getElementById('offcanvas_preview_pdf');
+
+            if (docExt === 'pdf') {
+                previewPdf.src = existingDocUrl;
+                previewPdf.style.display = 'block';
+                if(offcanvasPdf) {
+                    offcanvasPdf.src = existingDocUrl;
+                    offcanvasPdf.style.display = 'block';
+                }
+                if(placeholder) placeholder.style.display = 'none';
+            } else if (['jpg', 'jpeg', 'png', 'webp', 'heic'].includes(docExt)) {
+                previewImg.src = existingDocUrl;
+                previewImg.style.display = 'block';
+                if(offcanvasImg) {
+                    offcanvasImg.src = existingDocUrl;
+                    offcanvasImg.style.display = 'block';
+                }
+                if(placeholder) placeholder.style.display = 'none';
+            }
+
+            // Show the Mobile PiP FAB Button default
+            const fab = document.getElementById('fabViewScan');
+            if (fab) {
+                fab.classList.remove('d-none');
+                fab.classList.add('d-flex', 'd-md-none');
+            }
+        {% endif %}
+    });
+
+    // --- SMART UX: Auto-Save Draft Engine ---
+    // Note: Used a unique key for edits so it doesn't conflict with new reports
+    const draftKey = 'eep_draft_edit_report_{{ report.id }}';
+    const reportForm = document.getElementById('editReportForm');
+    
+    function loadDraft() {
+        const saved = localStorage.getItem(draftKey);
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                let restoredCount = 0;
+                
+                Object.keys(data).forEach(key => {
+                    const input = reportForm.elements[key];
+                    // Skip files and standard selects
+                    if (input && input.type !== 'file' && input.name !== 'academic_year' && input.name !== 'month' && input.name !== 'grade_level') {
+                        // Only override if draft data exists
+                        if (data[key] !== '') {
+                            input.value = data[key];
+                            restoredCount++;
+                        }
+                    }
+                });
+                
+                if (restoredCount > 0) {
+                    const toast = document.createElement('div');
+                    toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `<div class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-lg border border-secondary" style="font-size: 0.85rem;"><i class="bi bi-cloud-check text-success me-2"></i>Draft Restored</div>`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3000);
+                }
+            } catch(e) { console.error("Draft restore failed", e); }
+        }
+    }
+
+    // Save Draft on any input change
+    reportForm.addEventListener('input', function(e) {
+        if(e.target.type === 'file') return;
+        const formData = new FormData(reportForm);
+        const data = Object.fromEntries(formData.entries());
+        delete data.scanned_document; 
+        localStorage.setItem(draftKey, JSON.stringify(data));
+    });
+
+    // Clear Draft on Successful Submit
+    reportForm.addEventListener('submit', function() {
+        if (reportForm.checkValidity()) {
+            localStorage.removeItem(draftKey);
+        }
+    });
+
     // --- SMART UX: Image & PDF Preview Engine ---
     document.getElementById('scan_upload').addEventListener('change', function(event) {
         const [file] = event.target.files;
@@ -386,18 +463,45 @@
             const previewPdf = document.getElementById('scan_preview_pdf');
             const placeholder = document.getElementById('placeholder_text');
             
+            const offcanvasImg = document.getElementById('offcanvas_preview_img');
+            const offcanvasPdf = document.getElementById('offcanvas_preview_pdf');
+            
             const objectUrl = URL.createObjectURL(file);
 
             if (file.type === 'application/pdf') {
                 previewPdf.src = objectUrl;
                 previewPdf.style.display = 'block';
                 previewImg.style.display = 'none';
+                if(offcanvasPdf) {
+                    offcanvasPdf.src = objectUrl;
+                    offcanvasPdf.style.display = 'block';
+                    if(offcanvasImg) offcanvasImg.style.display = 'none';
+                }
                 if(placeholder) placeholder.style.display = 'none';
             } else if (file.type.startsWith('image/')) {
                 previewImg.src = objectUrl;
                 previewImg.style.display = 'block';
                 previewPdf.style.display = 'none';
+                if(offcanvasImg) {
+                    offcanvasImg.src = objectUrl;
+                    offcanvasImg.style.display = 'block';
+                    if(offcanvasPdf) offcanvasPdf.style.display = 'none';
+                }
                 if(placeholder) placeholder.style.display = 'none';
+            }
+            
+            // Show the Mobile PiP FAB Button
+            const fab = document.getElementById('fabViewScan');
+            if (fab) {
+                fab.classList.remove('d-none');
+                fab.classList.add('d-flex', 'd-md-none'); 
+                
+                // Automatically open it the first time they upload on mobile
+                if (window.innerWidth < 768 && !fab.hasAttribute('data-opened')) {
+                    const bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('mobileScanOffcanvas'));
+                    bsOffcanvas.show();
+                    fab.setAttribute('data-opened', 'true');
+                }
             }
         }
     });
@@ -406,7 +510,6 @@
     const scanPreview = document.getElementById('scan_preview');
 
     previewContainer.addEventListener('mousemove', function(e) {
-        // Only apply zoom logic to images, not PDFs
         if (scanPreview.style.display !== 'none' && scanPreview.src) {
             // Get the bounding rectangle of the container
             const rect = previewContainer.getBoundingClientRect();
@@ -434,15 +537,10 @@
 
         rows.forEach(row => {
             const category = row.getAttribute('data-category');
-            const hasGrade = row.getAttribute('data-has-grade') === 'true';
             let showRow = false;
 
-            // Always show rows that already have data saved in them, so we don't hide existing grades!
-            if (hasGrade) {
-                showRow = true;
-            }
             // General subjects ALWAYS show
-            else if (category === 'General') {
+            if (category === 'General') {
                 showRow = true;
             } 
             // If they are in Kg to Grade 6, show Primary/Lower
@@ -467,7 +565,11 @@
     }
 
     // Run the filter immediately when the page loads
-    window.addEventListener('DOMContentLoaded', filterSubjects);
+    window.addEventListener('DOMContentLoaded', function() {
+        filterSubjects();
+        // Restore drafts slightly after initialization
+        setTimeout(loadDraft, 300);
+    });
 
     // Bootstrap Form Validation (Standard block to prevent empty submissions)
     (function () {

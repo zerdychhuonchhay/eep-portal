@@ -1511,6 +1511,24 @@ def resolve_alert(followup_id):
     flash("Alert marked as resolved!", "success")
     return redirect("/dashboard")
 
+@app.route("/delete_followup/<int:followup_id>", methods=["POST"])
+@login_required
+@admin_required
+def delete_followup(followup_id):
+    """Permanently deletes a social work follow-up note (Admins Only)"""
+    followup = db.execute("SELECT student_id FROM followups WHERE id = ?", followup_id)
+    if not followup:
+        flash("Follow-up note not found.", "danger")
+        return redirect(request.referrer or "/")
+
+    student_id = followup[0]["student_id"]
+    
+    db.execute("DELETE FROM followups WHERE id = ?", followup_id)
+    
+    log_action(f"DELETED Social Work Follow-Up #{followup_id} for Student ID: {student_id}")
+    flash("Follow-up note permanently deleted.", "success")
+    return redirect(f"/student/{student_id}/timeline")
+
 
 # ==============================================================================
 # NEIGHBORHOOD: FILES & FUNDS

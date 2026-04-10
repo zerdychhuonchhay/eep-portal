@@ -3,108 +3,207 @@
 {% block title %}{{ student.first_name }} - Timeline{% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1200px;">
+<div class="container-fluid mt-3 mt-md-4 mb-5 px-3 px-xl-5">
 
-    <!-- Breadcrumb Nav -->
-    <nav aria-label="breadcrumb" class="mb-4 px-3 px-md-0">
-        <ol class="breadcrumb mb-0 bg-transparent p-0">
-            <li class="breadcrumb-item"><a href="/roster" class="text-decoration-none text-muted fw-bold">Directory</a></li>
-            <li class="breadcrumb-item"><a href="/student/{{ student.id }}" class="text-decoration-none text-muted fw-bold">{{ student.first_name }} {{ student.last_name }}</a></li>
-            <li class="breadcrumb-item active fw-bold text-danger" aria-current="page">Timeline</li>
-        </ol>
-    </nav>
-
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
-        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <a href="/student/{{ student.id }}" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Profile
+        </a>
         
-        <div class="d-flex flex-wrap align-items-center gap-2">
-            <div class="bg-white p-1 rounded-pill border shadow-sm">
-                <i class="bi bi-funnel-fill text-muted ms-3 me-2"></i>
-                <select id="noteYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-secondary shadow-none pe-4 d-inline-block w-auto" onchange="filterNotes()">
+        <div class="d-flex flex-wrap align-items-center justify-content-start justify-content-md-end gap-2 w-auto">
+            <!-- Native Filter Pill -->
+            <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center">
+                <i class="bi bi-funnel-fill text-muted ms-2 me-1 small"></i>
+                <select id="noteYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
                     <option value="all">All Years</option>
                 </select>
             </div>
             
             {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
-            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-4 transition-hover"><i class="bi bi-plus-lg me-1"></i> New Note</a>
+            <!-- Desktop Add Button -->
+            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3 transition-hover d-none d-md-flex align-items-center">
+                <i class="bi bi-plus-lg me-1"></i> New Note
+            </a>
             {% endif %}
         </div>
     </div>
 
-    <!-- Native Vertical Timeline -->
-    <div class="px-3 px-md-2" id="notesContainer">
-        {% if followups %}
-            <div class="timeline-container ms-2 position-relative" style="border-left: 3px solid #f8d7da;">
-                {% for note in followups %}
-                <div class="position-relative mb-4 ps-4 note-card" data-year="{{ note.followup_date[:4] }}">
-                    {% set risk_color = 'danger' if (note.risk_factors or note.child_protection_concerns) else ('warning' if (note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention') else 'success') %}
-                    
-                    <!-- Timeline Dot -->
-                    <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 18px; height: 18px; left: -10.5px; top: 20px; border: 3px solid #fff; box-shadow: 0 0 0 3px #f8d7da !important;"></div>
-                    
-                    <div class="card shadow-sm border-0 rounded-4 transition-hover mt-2 native-card">
-                        <div class="card-body p-4">
-                            <!-- Header -->
-                            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary border-opacity-10 pb-3">
-                                <span class="fw-bold text-dark fs-6"><i class="bi bi-calendar-event-fill text-muted me-2"></i>{{ note.followup_date }}</span>
-                                <span class="badge bg-{{ risk_color }} bg-opacity-10 text-{{ risk_color }} border border-{{ risk_color }} rounded-pill px-3 py-1"><i class="bi bi-geo-alt-fill me-1"></i> {{ note.location }}</span>
-                            </div>
+    <!-- TWO-COLUMN ADAPTIVE LAYOUT -->
+    <div class="row g-4 px-0 px-md-0">
+        
+        <!-- ========================================== -->
+        <!-- LEFT COLUMN: The Timeline Feed             -->
+        <!-- ========================================== -->
+        <div class="col-12 col-lg-8 col-xl-9 order-2 order-lg-1">
+            <div class="d-flex align-items-center mb-4">
+                <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+            </div>
+
+            <!-- Native Vertical Timeline -->
+            <div class="px-2 px-md-0" id="notesContainer">
+                {% if followups %}
+                    <div class="timeline-container ms-2 position-relative" style="border-left: 3px solid #f8d7da;">
+                        {% for note in followups %}
+                        <div class="position-relative mb-4 ps-4 note-card" data-year="{{ note.followup_date[:4] }}">
+                            {% set risk_color = 'danger' if (note.risk_factors or note.child_protection_concerns) else ('warning' if (note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention') else 'success') %}
                             
-                            <!-- Content -->
-                            {% if note.general_notes %}
-                            <div class="khmer-font text-dark mb-4" style="font-size: 0.95rem; line-height: 1.7;">
-                                {{ note.general_notes }}
-                            </div>
-                            {% endif %}
+                            <!-- Timeline Dot (Native App Style) -->
+                            <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 20px; height: 20px; left: -11.5px; top: 24px; border: 4px solid #fff;"></div>
+                            
+                            <!-- NATIVE CARD -->
+                            <div class="card shadow-sm border-0 rounded-4 transition-hover mt-2 native-card bg-white">
+                                <div class="card-body p-0">
+                                    
+                                    <!-- Header -->
+                                    <div class="d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-secondary border-opacity-10">
+                                        <span class="fw-bold text-dark fs-6 d-flex align-items-center">
+                                            <i class="bi bi-calendar-event-fill text-muted opacity-50 me-2 d-none d-sm-inline"></i>{{ note.followup_date }}
+                                        </span>
+                                        <span class="badge bg-{{ risk_color }} bg-opacity-10 text-{{ risk_color }} border border-{{ risk_color }} border-opacity-25 rounded-pill px-3 py-1 shadow-sm"><i class="bi bi-geo-alt-fill me-1"></i> {{ note.location }}</span>
+                                    </div>
+                                    
+                                    <!-- Content Area -->
+                                    <div class="p-3 p-md-4">
+                                        {% if note.general_notes %}
+                                        <div class="khmer-font text-dark mb-3 text-wrap text-break" style="font-size: 0.95rem; line-height: 1.7; word-break: break-word;">
+                                            {{ note.general_notes }}
+                                        </div>
+                                        {% endif %}
 
-                            <!-- Tags -->
-                            {% if note.location != 'Sponsor Letter Update' %}
-                            <div class="d-flex flex-wrap gap-2 mb-4">
-                                {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
-                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
-                                {% endif %}
-                                {% if note.home_life and note.home_life != 'Not Evaluated' %}
-                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
-                                {% endif %}
-                                {% if note.child_protection_concerns %}
-                                <div class="alert alert-danger py-2 px-3 small w-100 mt-2 border-danger rounded-3 fw-bold">
-                                    <i class="bi bi-shield-exclamation-fill me-2"></i> {{ note.child_protection_concerns }}
+                                        {% if note.location == 'Sponsor Letter Update' %}
+                                        <!-- Sponsor Letter Specific UI -->
+                                        <div class="bg-success bg-opacity-10 rounded-4 p-3 border border-success border-opacity-25">
+                                            <h6 class="fw-bold text-success-emphasis mb-3" style="font-size: 0.85rem;"><i class="bi bi-envelope-paper-heart me-1"></i> Letter Progress {% if note.letter_quarter %}{{ note.letter_quarter }} {{ note.letter_year }}{% endif %}</h6>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <span class="badge {% if note.letter_given == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Given</span>
+                                                <span class="badge {% if note.letter_translated == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-translate me-1"></i> Translated</span>
+                                                <span class="badge {% if note.letter_scanned == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-printer-fill me-1"></i> Scanned</span>
+                                                <span class="badge {% if note.letter_sent == 'Yes' %}bg-success text-white shadow-sm{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-send-check-fill me-1"></i> Sent</span>
+                                            </div>
+                                            {% if note.letter_notes %}
+                                            <div class="mt-3 pt-2 border-top border-success border-opacity-25">
+                                                <span class="d-block small fw-bold text-success-emphasis mb-1">Letter Notes:</span>
+                                                <span class="khmer-font small text-dark d-block">{{ note.letter_notes }}</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% else %}
+                                        <!-- Native Tags -->
+                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                            {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
+                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
+                                            {% endif %}
+                                            {% if note.home_life and note.home_life != 'Not Evaluated' %}
+                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
+                                            {% endif %}
+                                            {% if note.child_protection_concerns %}
+                                            <div class="alert alert-danger py-2 px-3 small w-100 mt-2 border-danger border-opacity-25 rounded-3 fw-bold d-flex align-items-start shadow-sm">
+                                                <i class="bi bi-shield-exclamation-fill me-2 fs-5 mt-n1"></i> 
+                                                <div>{{ note.child_protection_concerns }}</div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Action Footer -->
+                                    <div class="card-footer bg-light bg-opacity-50 border-top border-secondary border-opacity-10 py-3 px-3 px-md-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                                        <div class="w-100 w-sm-auto d-flex align-items-center">
+                                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-2 flex-shrink-0" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-person-badge-fill text-secondary small"></i>
+                                            </div>
+                                            <span class="small text-muted fw-bold">{{ note.completed_by }}</span>
+                                        </div>
+                                        
+                                        <div class="d-flex gap-2 w-100 w-sm-auto justify-content-sm-end">
+                                            {% if session.get('can_update_followups') or session.get('can_manage_followups') %}
+                                            <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-2 py-sm-1 px-4 shadow-sm rounded-pill transition-hover flex-fill flex-sm-grow-0 text-center">Edit Note</a>
+                                            {% endif %}
+
+                                            <!-- 🛡️ SECURITY CONTROL: Admins Only Delete Note -->
+                                            {% if session.get('role') == 'Admin' %}
+                                            <form action="/delete_followup/{{ note.id }}" method="post" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to permanently delete this follow-up note?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; padding: 0;" title="Delete Note"><i class="bi bi-trash-fill"></i></button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                                {% endif %}
-                            </div>
-                            {% endif %}
-
-                            <!-- Footer -->
-                            <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary border-opacity-10 bg-light mx-n4 mb-n4 p-4 rounded-bottom-4">
-                                <span class="small text-muted fw-bold"><i class="bi bi-person-badge-fill text-secondary me-2"></i>{{ note.completed_by }}</span>
-                                {% if session.get('can_update_followups') or session.get('can_manage_followups') %}
-                                <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-1 px-3 shadow-sm rounded-pill transition-hover">Edit Note</a>
-                                {% endif %}
                             </div>
                         </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center p-5 bg-white shadow-sm rounded-4 border-0 native-card mx-n3 mx-md-0 mt-4">
+                        <i class="bi bi-journal-text fs-1 text-muted opacity-25 mb-3 d-block"></i>
+                        <h6 class="fw-bold text-dark">No timeline history.</h6>
+                        <p class="small text-muted mb-0">Follow-up notes and home visits will appear here.</p>
+                    </div>
+                {% endif %}
+                
+                <div id="noNotesMessage" class="text-center py-5 d-none bg-white rounded-4 shadow-sm border-0 native-card mt-4 mx-n3 mx-md-0">
+                    <i class="bi bi-funnel fs-2 text-muted opacity-25 mb-3 d-block"></i>
+                    <h6 class="fw-bold text-dark mb-1">No notes match.</h6>
+                    <p class="text-muted small mb-0">No follow-ups recorded for this selected year.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- RIGHT COLUMN: Sticky Insights Sidebar      -->
+        <!-- ========================================== -->
+        <div class="col-12 col-lg-4 col-xl-3 order-1 order-lg-2 mb-4 mb-lg-0">
+            <div class="sticky-lg-top" style="top: 80px; z-index: 5;">
+                
+                <!-- Quick Timeline Overview (iOS Settings Style) -->
+                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-lg-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Timeline Summary</h6>
+                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
+                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-journal-text me-2"></i>Total Notes</span>
+                            <span class="fw-bold text-dark fs-6">{{ followups|length }}</span>
+                        </div>
+                        {% if followups %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
+                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-calendar-event me-2"></i>Last Contact</span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3">{{ followups[0].followup_date }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-start py-3 bg-white border-bottom-0">
+                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-geo-alt-fill me-2"></i>Location</span>
+                            <span class="fw-bold text-dark text-end ms-3 text-wrap text-break" style="font-size: 0.9rem; word-break: break-word;">{{ followups[0].location }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                {% endfor %}
+
             </div>
-        {% else %}
-            <div class="text-center p-5 bg-white shadow-sm rounded-4 border-0 native-card mx-n3 mx-md-0">
-                <i class="bi bi-journal-text fs-1 text-muted opacity-25 mb-3 d-block"></i>
-                <h6 class="fw-bold text-dark">No timeline history.</h6>
-                <p class="small text-muted mb-0">Follow-up notes and home visits will appear here.</p>
-            </div>
-        {% endif %}
-        
-        <div id="noNotesMessage" class="text-center py-5 d-none bg-white rounded-4 shadow-sm mt-4 mx-n3 mx-md-0">
-            <i class="bi bi-funnel fs-2 text-muted opacity-50 mb-2 d-block"></i>
-            <p class="text-muted fw-bold mb-0">No follow-ups recorded for this selected year.</p>
         </div>
+
     </div>
+
+    <!-- MOBILE FLOATING ADD BUTTON (FAB) -->
+    {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+    <a href="/add_followup/{{ student.id }}" class="btn btn-danger text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-circle border border-2 border-white" style="bottom: 90px; right: 20px; width: 60px; height: 60px; z-index: 1040;">
+        <i class="bi bi-plus-lg fs-3"></i>
+    </a>
+    {% endif %}
+
 </div>
 
 <style>
-    .transition-hover { transition: transform 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.05) !important; }
-    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; } }
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+    
+    @media (max-width: 767.98px) { 
+        .native-card { 
+            border-radius: 0 !important; 
+            border-left: 0 !important; 
+            border-right: 0 !important; 
+            margin-left: -1rem; 
+            margin-right: -1rem; 
+        } 
+    }
 </style>
 {% endblock %}
 
