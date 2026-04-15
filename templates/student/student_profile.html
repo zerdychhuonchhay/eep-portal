@@ -3,347 +3,398 @@
 {% block title %}{{ student.first_name }} {{ student.last_name }} - Profile Hub{% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1200px;">
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1300px;">
 
     <!-- NATIVE iOS/ANDROID STYLE HEADER -->
     <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
         <a href="/roster" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
             <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Directory
         </a>
+        
+        <!-- PC ONLY ACTION: Header Edit -->
+        <div class="d-none d-md-block">
+            {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
+            <a href="/edit_student/{{ student.id }}" class="btn btn-white border fw-bold rounded-pill px-4 shadow-sm transition-hover">
+                <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Student
+            </a>
+            {% endif %}
+        </div>
     </div>
 
     <!-- TWO-COLUMN ADAPTIVE LAYOUT -->
     <div class="row g-4 px-0 px-md-0">
         
         <!-- ========================================== -->
-        <!-- LEFT COLUMN: IDENTITY & META (Sticky on PC)-->
+        <!-- LEFT COLUMN: IDENTITY & META (Sticky)      -->
         <!-- ========================================== -->
         <div class="col-12 col-lg-4 col-xl-4 mb-3 mb-lg-0">
             <div class="sticky-lg-top" style="top: 80px; z-index: 5;">
                 
-                <!-- Native App Profile Card (Apple Contacts Style) -->
+                <!-- Native App Profile Card -->
                 <div class="card shadow-sm border-0 rounded-4 native-card text-center mb-4 bg-white pt-4 pb-2">
                     <div class="card-body px-4">
                         <div class="position-relative d-inline-block mx-auto mb-3">
                             {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=e9ecef&color=495057&bold=true&size=150" %}
                             <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" 
                                  class="rounded-circle shadow-sm border border-4 border-white bg-light" 
-                                 style="object-fit: cover; width: 120px; height: 120px;" 
+                                 style="object-fit: cover; width: 130px; height: 130px;" 
                                  onerror="this.onerror=null; this.src='{{ thumb_url }}';">
                             
-                            <span class="position-absolute bottom-0 end-0 p-2 bg-{% if student.status == 'Active' %}success{% elif student.status == 'Dropped Out' %}danger{% else %}secondary{% endif %} border border-light border-2 rounded-circle shadow-sm" title="{{ student.status }}">
-                                <span class="visually-hidden">Status: {{ student.status }}</span>
-                            </span>
+                            <span class="position-absolute bottom-0 end-0 p-2 bg-{% if student.status == 'Active' %}success{% elif student.status == 'Dropped Out' %}danger{% else %}secondary{% endif %} border border-light border-2 rounded-circle shadow-sm" style="width: 25px; height: 25px;" title="{{ student.status }}"></span>
 
-                            <!-- 🛡️ CRUD SECURITY: UPDATE Avatar -->
+                            <!-- Edit Avatar Camera -->
                             {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
-                            <button class="btn btn-light position-absolute shadow-sm rounded-circle transition-hover text-primary d-flex justify-content-center align-items-center" style="bottom: -5px; left: -5px; width: 36px; height: 36px;" data-bs-toggle="modal" data-bs-target="#avatarModal" title="Change Photo">
+                            <button class="btn btn-white position-absolute shadow-sm rounded-circle transition-hover text-primary d-flex justify-content-center align-items-center" style="bottom: 0px; left: 0px; width: 40px; height: 40px;" data-bs-toggle="modal" data-bs-target="#avatarModal">
                                 <i class="bi bi-camera-fill"></i>
                             </button>
                             {% endif %}
                         </div>
                         
-                        <h4 class="fw-bold mb-1 text-dark">{{ student.first_name }} {{ student.last_name }}</h4>
+                        <h3 class="fw-bold mb-0 text-dark">{{ student.first_name }} {{ student.last_name }}</h3>
                         {% if student.khmer_name %}
-                            <p class="khmer-font text-muted mb-3 fs-6">{{ student.khmer_name }}</p>
+                            <p class="khmer-font text-muted mb-3 fs-5">{{ student.khmer_name }}</p>
                         {% endif %}
                         
-                        <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap mt-2">
-                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-size: 0.75rem;"><i class="bi bi-person-vcard text-muted me-1"></i> ID: {{ student.ngo_id }}</span>
+                        <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap mt-2">
+                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm" style="font-size: 0.75rem;"><i class="bi bi-person-vcard text-muted me-1"></i> {{ student.ngo_id }}</span>
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill shadow-sm" style="font-size: 0.75rem;"><i class="bi bi-mortarboard-fill me-1"></i> {{ student.grade_level }}</span>
                         </div>
 
-                        <!-- Huge Thumb-Friendly Action Buttons -->
-                        <div class="d-flex justify-content-center gap-2 mt-2">
-                            {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
-                            <a href="/edit_student/{{ student.id }}" class="btn btn-light border fw-bold rounded-pill px-4 py-2 w-100 shadow-sm transition-hover">
-                                Edit
-                            </a>
+                        <!-- Secondary Badges: Program Tenure & Gender -->
+                        <div class="d-flex justify-content-center gap-2 mb-3">
+                            {% if student.gender %}
+                            <span class="badge bg-light text-muted border px-2 py-1 rounded-pill" style="font-size: 0.65rem;">
+                                <i class="bi bi-gender-{{ 'male' if student.gender == 'Male' else 'female' }} me-1"></i> {{ student.gender }}
+                            </span>
                             {% endif %}
-
-                            {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
-                            <a href="/add_followup/{{ student.id }}" class="btn btn-primary fw-bold rounded-pill px-4 py-2 w-100 shadow-sm transition-hover">
-                                Note
-                            </a>
+                            {% if student.joined_date %}
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1 rounded-pill" style="font-size: 0.65rem;">
+                                <i class="bi bi-patch-check-fill me-1"></i> <span id="tenure-display" data-joined="{{ student.joined_date }}">Calculating...</span>
+                            </span>
                             {% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- iOS Settings-Style Details List -->
+                <!-- Info Stack (iOS Settings Style) -->
                 <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
                     <div class="list-group list-group-flush">
                         <div class="list-group-item d-flex justify-content-between py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-calendar-event me-2"></i>Age</span>
-                            <span class="fw-bold text-dark text-end ms-3" id="student-age-badge" data-dob="{{ student.dob }}">?</span>
+                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-calendar-event me-2"></i>Age / DOB</span>
+                            <span class="fw-bold text-dark text-end ms-3"><span id="student-age-display" data-dob="{{ student.dob }}">?</span> yrs ({{ student.dob }})</span>
                         </div>
                         <div class="list-group-item d-flex justify-content-between py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-gender-ambiguous me-2"></i>Gender</span>
-                            <span class="fw-bold text-dark text-end ms-3">{{ student.gender }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-building me-2"></i>Program</span>
-                            <span class="fw-bold text-dark text-end ms-3">{{ student.program_name if student.program_name else 'Global' }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-geo-alt-fill me-2"></i>School</span>
+                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-building me-2"></i>School</span>
                             <span class="fw-bold text-dark khmer-font text-end ms-3">{{ student.current_school if student.current_school else 'N/A' }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-calendar-plus me-2"></i>Joined</span>
-                            <span class="fw-bold text-dark text-end ms-3">{{ student.joined_date if student.joined_date else 'Unknown' }}</span>
                         </div>
                         <div class="list-group-item d-flex justify-content-between py-3 bg-white">
                             <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-telephone-fill me-2"></i>Phone</span>
                             {% if student.phone_number %}
-                                <a href="tel:{{ student.phone_number }}" class="fw-bold text-decoration-none transition-hover text-end ms-3" style="color: #007AFF;">{{ student.phone_number }}</a>
+                                <a href="tel:{{ student.phone_number }}" class="fw-bold text-decoration-none text-end ms-3" style="color: #007AFF;">{{ student.phone_number }}</a>
                             {% else %}
-                                <span class="text-muted fst-italic text-end ms-3">No Phone</span>
+                                <span class="text-muted fst-italic text-end ms-3 small">No Phone Listed</span>
                             {% endif %}
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between py-3 bg-white border-bottom-0">
+                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-box-arrow-in-right me-2"></i>Joined Date</span>
+                            <span class="fw-bold text-dark text-end ms-3">{{ student.joined_date if student.joined_date else 'Unknown' }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Native Household Section -->
-                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-md-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Household</h6>
+                <!-- Household Meta Section (Primary Family View) -->
+                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-lg-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Household & Family</h6>
                 <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-dark fs-6"><i class="bi bi-house-heart-fill text-danger me-2"></i>Family Details</span>
-                        {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
-                        <a href="/manage_households" class="text-decoration-none fw-bold small transition-hover" style="color: #007AFF;">Link</a>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="card-body p-0">
-                        {% if household %}
-                            <!-- Primary Guardian -->
-                            <div class="bg-primary bg-opacity-10 p-3 mx-3 mb-3 rounded-4 border border-primary border-opacity-10 d-flex align-items-start">
-                                <div class="bg-white rounded-circle d-flex justify-content-center align-items-center me-3 shadow-sm flex-shrink-0 mt-1" style="width: 45px; height: 45px;">
-                                    <i class="bi bi-person-hearts fs-4 text-primary"></i>
-                                </div>
-                                <div class="w-100 min-w-0">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 class="fw-bold mb-0 text-dark pe-2">{{ household.guardian_name }}</h6>
-                                        <span class="badge bg-primary rounded-pill flex-shrink-0" style="font-size: 0.65rem;">Guardian</span>
-                                    </div>
-                                    {% if household.phone_number %}
-                                        <a href="tel:{{ household.phone_number }}" class="d-inline-block text-decoration-none fw-bold small mb-1" style="color: #007AFF;"><i class="bi bi-telephone-fill me-1 text-muted"></i>{{ household.phone_number }}</a>
-                                    {% else %}
-                                        <span class="d-block text-muted fst-italic small mb-1"><i class="bi bi-telephone-fill me-1"></i>No Phone</span>
-                                    {% endif %}
-                                    <div class="mt-2 pt-2 border-top border-primary border-opacity-10 text-end">
-                                        <a href="/household/{{ household.id }}" class="text-decoration-none fw-bold small transition-hover" style="color: #007AFF;">View Family Profile <i class="bi bi-chevron-right small"></i></a>
-                                    </div>
-                                </div>
+                    {% if household %}
+                        <div class="card-body p-0">
+                            <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light bg-opacity-25">
+                                <span class="fw-bold text-dark"><i class="bi bi-house-heart-fill text-danger me-2"></i>Family Record</span>
+                                <a href="/household/{{ household.id }}" class="btn btn-sm btn-white border rounded-pill fw-bold text-primary px-3 shadow-xs">Manage Family</a>
                             </div>
-                            
-                            <!-- Parents -->
-                            <div class="list-group list-group-flush border-top">
-                                <div class="list-group-item d-flex justify-content-between py-2 bg-white">
-                                    <span class="text-muted fw-bold small flex-shrink-0 mt-1">Mother</span>
-                                    <span class="khmer-font fw-bold text-dark text-end ms-3">{{ student.mother_name if student.mother_name else 'Unknown' }}</span>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between py-2 border-bottom-0">
+                                    <span class="text-muted fw-bold small">Head of House</span>
+                                    <span class="fw-bold text-dark">{{ household.guardian_name }}</span>
                                 </div>
-                                <div class="list-group-item d-flex justify-content-between py-2 bg-white">
-                                    <span class="text-muted fw-bold small flex-shrink-0 mt-1">Father</span>
-                                    <span class="khmer-font fw-bold text-dark text-end ms-3">{{ student.father_name if student.father_name else 'Unknown' }}</span>
+                                <!-- Caregiver Relationship Relates to Family Context -->
+                                {% if student.caregiver_relationship %}
+                                <div class="list-group-item d-flex justify-content-between py-2 border-bottom-0 bg-info bg-opacity-10 border-top border-bottom border-info border-opacity-10">
+                                    <span class="text-muted fw-bold small">Living With</span>
+                                    <span class="fw-bold text-primary text-end">{{ student.caregiver_relationship }}</span>
                                 </div>
-                                <div class="list-group-item d-flex justify-content-between py-2 bg-white">
-                                    <span class="text-muted fw-bold small flex-shrink-0 mt-1">Relation</span>
-                                    <span class="fw-bold text-dark text-end ms-3">{{ student.caregiver_relationship if student.caregiver_relationship else 'Unspecified' }}</span>
+                                {% endif %}
+                                <div class="list-group-item d-flex justify-content-between py-2 border-bottom-0">
+                                    <span class="text-muted fw-bold small">Mother</span>
+                                    <span class="khmer-font fw-bold text-dark">{{ student.mother_name if student.mother_name else 'Unknown' }}</span>
                                 </div>
-                            </div>
-
-                            <!-- Siblings -->
-                            {% if siblings %}
-                                <div class="bg-light px-3 py-2 border-top border-bottom">
-                                    <span class="text-muted fw-bold text-uppercase small" style="font-size: 0.7rem; letter-spacing: 0.5px;">Siblings ({{ siblings|length }})</span>
+                                <div class="list-group-item d-flex justify-content-between py-2">
+                                    <span class="text-muted fw-bold small">Father</span>
+                                    <span class="khmer-font fw-bold text-dark">{{ student.father_name if student.father_name else 'Unknown' }}</span>
                                 </div>
-                                <div class="list-group list-group-flush">
+                                {% if siblings %}
+                                    <div class="bg-light px-3 py-1 border-bottom">
+                                        <span class="text-muted fw-bold text-uppercase" style="font-size: 0.6rem; letter-spacing: 0.5px;">Siblings Context</span>
+                                    </div>
                                     {% for sib in siblings %}
-                                        <a href="/student/{{ sib.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 transition-hover bg-white">
-                                            <div class="d-flex align-items-center min-w-0 pe-2">
-                                                <div class="bg-secondary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 32px; height: 32px;">
-                                                    <span class="text-secondary fw-bold small">{{ sib.first_name[0]|upper }}</span>
-                                                </div>
-                                                <span class="fw-bold text-dark">{{ sib.first_name }} {{ sib.last_name }}</span>
+                                        {% set sib_active = sib.status == 'Active' %}
+                                        {% set sib_dropout = sib.status == 'Dropped Out' %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 bg-white">
+                                            <div class="min-w-0">
+                                                {% if sib.ngo_id %}
+                                                <a href="/student/{{ sib.id }}" class="text-dark fw-bold text-decoration-none hover-primary" style="font-size: 0.85rem;">{{ sib.first_name }}</a>
+                                                {% else %}
+                                                <span class="text-muted fw-bold" style="font-size: 0.85rem;">{{ sib.first_name }}</span>
+                                                {% endif %}
                                             </div>
-                                            <span class="badge bg-light text-dark border rounded-pill flex-shrink-0">{{ sib.grade_level }}</span>
-                                        </a>
+                                            <div class="d-flex gap-1 align-items-center">
+                                                {% if sib.ngo_id %}
+                                                    {% if sib_active %}
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 0.55rem;">Active</span>
+                                                    {% elif sib_dropout %}
+                                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.55rem;">Dropout</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-light text-muted border" style="font-size: 0.55rem;">External</span>
+                                                {% endif %}
+                                                <span class="badge bg-light text-muted border rounded-pill" style="font-size: 0.6rem;">{{ sib.grade_level if sib.grade_level else 'N/A' }}</span>
+                                            </div>
+                                        </div>
                                     {% endfor %}
-                                </div>
-                            {% endif %}
-                        {% else %}
-                            <div class="text-center py-4 bg-light mx-3 mb-3 rounded-4">
-                                <p class="small mb-0 fw-bold text-muted"><i class="bi bi-info-circle-fill me-1"></i> No household linked.</p>
+                                {% endif %}
                             </div>
-                        {% endif %}
-                    </div>
+                        </div>
+                    {% else %}
+                        <div class="card-body p-4 text-center">
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                <i class="bi bi-house-x text-muted fs-4"></i>
+                            </div>
+                            <p class="small text-muted fw-bold mb-0">No household linked.</p>
+                            <a href="/edit_student/{{ student.id }}" class="text-primary text-decoration-none small fw-bold mt-2 d-inline-block">Update to Link →</a>
+                        </div>
+                    {% endif %}
                 </div>
             </div> 
         </div>
 
         <!-- ========================================== -->
-        <!-- RIGHT COLUMN: APP GRID & RECENT ACTIVITY   -->
+        <!-- RIGHT COLUMN: APPS & RECENT FEED           -->
         <!-- ========================================== -->
-        <div class="col-12 col-lg-8 col-xl-8 mx-3 mx-md-0 px-0 order-1">
+        <div class="col-12 col-lg-8 col-xl-8 mx-0 px-0 px-md-3 order-1 order-lg-2">
             
-            <!-- Native "Google Home / Apple App" Grid Menu -->
-            <div class="row g-3 g-md-4 mb-4">
-                
-                <!-- Academics App -->
-                <div class="col-6 col-md-6">
+            {% if student.comment %}
+            <!-- STAFF BIO / VITAL NOTES -->
+            <div class="card shadow-sm border-0 rounded-4 native-card bg-white mb-4 border-start border-primary border-4">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-primary text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;"><i class="bi bi-info-circle-fill me-1"></i>Staff Remarks & Background</h6>
+                    <div class="khmer-font text-dark" style="line-height: 1.6; font-size: 0.95rem;">
+                        {{ student.comment }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Program Quick Info (Nutrition/Meal Plan) -->
+            <div class="card shadow-sm border-0 rounded-4 native-card bg-white mb-4 overflow-hidden border-top border-warning border-4">
+                <div class="card-body p-3 p-md-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nutrition Status</h6>
+                            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-basket2-fill text-warning me-2"></i>{{ student.meal_plan if student.meal_plan else 'No Meal Plan' }}</h5>
+                        </div>
+                        <div class="text-end">
+                            <span class="text-muted fw-bold small text-uppercase d-block" style="font-size: 0.6rem;">Current Status</span>
+                            <span class="badge bg-{% if student.status == 'Active' %}success{% else %}danger{% endif %} rounded-pill px-3 shadow-sm">{{ student.status }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard App Grid -->
+            <div class="row g-3 g-md-4 mb-4 px-3 px-md-0">
+                <div class="col-6">
                     <a href="/student/{{ student.id }}/academics" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 native-card h-100 transition-hover bg-white p-2">
-                            <div class="card-body text-start">
+                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-success border-4">
+                            <div class="card-body p-3 p-md-4">
                                 <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
                                     <i class="bi bi-mortarboard-fill fs-3 text-success"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1 fs-5">Academics</h6>
-                                <p class="text-muted small mb-0 d-none d-sm-block">Grades, charts & rank</p>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="fw-bold text-dark mb-1">Academics</h5>
+                                    {% if reports %}<span class="badge bg-success rounded-pill">{{ reports|length }}</span>{% endif %}
+                                </div>
+                                <p class="text-muted small mb-0">Grades & Rank</p>
                             </div>
                         </div>
                     </a>
                 </div>
-
-                <!-- Timeline App -->
-                <div class="col-6 col-md-6">
+                <div class="col-6">
                     <a href="/student/{{ student.id }}/timeline" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 native-card h-100 transition-hover bg-white p-2">
-                            <div class="card-body text-start">
+                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-danger border-4">
+                            <div class="card-body p-3 p-md-4">
                                 <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
                                     <i class="bi bi-clock-history fs-3 text-danger"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1 fs-5">Timeline</h6>
-                                <p class="text-muted small mb-0 d-none d-sm-block">Home visits & alerts</p>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="fw-bold text-dark mb-1">Timeline</h5>
+                                    {% if followups %}<span class="badge bg-danger rounded-pill">{{ followups|length }}</span>{% endif %}
+                                </div>
+                                <p class="text-muted small mb-0">Visits & Case Notes</p>
                             </div>
                         </div>
                     </a>
                 </div>
-
-                <!-- Documents App -->
-                <div class="col-6 col-md-6">
+                <div class="col-6">
                     <a href="/student/{{ student.id }}/files" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 native-card h-100 transition-hover bg-white p-2">
-                            <div class="card-body text-start">
+                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-secondary border-4">
+                            <div class="card-body p-3 p-md-4">
                                 <div class="bg-secondary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
                                     <i class="bi bi-folder-fill fs-3 text-secondary"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1 fs-5">Documents</h6>
-                                <p class="text-muted small mb-0 d-none d-sm-block">Certs, IDs & contracts</p>
+                                <h5 class="fw-bold text-dark mb-1">Documents</h5>
+                                <p class="text-muted small mb-0">Certs & Digital Files</p>
                             </div>
                         </div>
                     </a>
                 </div>
-
-                <!-- Financial App -->
-                <div class="col-6 col-md-6">
+                <div class="col-6">
                     <a href="/student/{{ student.id }}/finance" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 native-card h-100 transition-hover bg-white p-2">
-                            <div class="card-body text-start">
+                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-warning border-4">
+                            <div class="card-body p-3 p-md-4">
                                 <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
                                     <i class="bi bi-currency-dollar fs-3 text-warning text-darken"></i>
                                 </div>
-                                <h6 class="fw-bold text-dark mb-1 fs-5">Finance</h6>
-                                <p class="text-muted small mb-0 d-none d-sm-block">Fees, materials & logs</p>
+                                <h5 class="fw-bold text-dark mb-1">Finance</h5>
+                                <p class="text-muted small mb-0">Support Ledger</p>
                             </div>
                         </div>
                     </a>
                 </div>
             </div>
             
-            <!-- Native iOS Style Recent Activity List -->
-            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-md-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Recent Updates</h6>
+            <!-- RECENT UPDATES FEED -->
+            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Latest Activity Review</h6>
             
             <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
                 <div class="list-group list-group-flush">
                     
-                    <!-- Latest Academic Row -->
-                    <a href="/student/{{ student.id }}/academics" class="list-group-item list-group-item-action py-3 px-4 d-flex align-items-center transition-hover bg-white border-bottom">
-                        <div class="bg-success bg-opacity-10 rounded-3 d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
-                            <i class="bi bi-journal-text fs-5 text-success"></i>
-                        </div>
-                        <div class="flex-grow-1 min-w-0">
-                            <h6 class="fw-bold text-dark mb-0">Latest Report Card</h6>
-                            {% if reports and reports|length > 0 %}
-                                <p class="text-muted small mb-0">{{ reports[0].month }} {{ reports[0].academic_year }}</p>
-                            {% else %}
-                                <p class="text-muted small mb-0 fst-italic">No records found</p>
+                    <!-- RECENT ACADEMIC ROW -->
+                    {% if reports and reports|length > 0 %}
+                        {% set latest_report = reports[0] %}
+                        {% set is_risk = latest_report.overall_average and latest_report.overall_average|float < 50 %}
+                        {% set trend = 'neutral' %}
+                        {% if reports|length > 1 %}
+                            {% set prev = reports[1] %}
+                            {% if latest_report.overall_average|float > prev.overall_average|float %}{% set trend = 'better' %}
+                            {% elif latest_report.overall_average|float < prev.overall_average|float %}{% set trend = 'worse' %}
                             {% endif %}
-                        </div>
-                        <div class="text-end ms-3 flex-shrink-0">
-                            {% if reports and reports|length > 0 %}
-                                {% set latest_report = reports[0] %}
-                                <h5 class="fw-bold mb-0 {% if latest_report.overall_average and latest_report.overall_average >= 85 %}text-success{% elif latest_report.overall_average and latest_report.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
-                                    {{ latest_report.overall_average if latest_report.overall_average else '-' }}%
-                                </h5>
-                                {% if latest_report.overall_grade %}
-                                    <span class="text-muted small fw-bold">Grade {{ latest_report.overall_grade }}</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="text-muted fw-bold">-</span>
-                            {% endif %}
-                        </div>
-                        <i class="bi bi-chevron-right text-muted opacity-50 ms-3"></i>
-                    </a>
+                        {% endif %}
 
-                    <!-- Latest Followup Row -->
-                    <a href="/student/{{ student.id }}/timeline" class="list-group-item list-group-item-action py-3 px-4 d-flex align-items-center transition-hover bg-white">
-                        <div class="bg-danger bg-opacity-10 rounded-3 d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
-                            <i class="bi bi-geo-alt-fill fs-5 text-danger"></i>
+                        <a href="/student/{{ student.id }}/academics" class="list-group-item list-group-item-action py-4 px-4 d-flex align-items-center transition-hover bg-white {% if is_risk %}border-start border-danger border-4{% endif %}">
+                            <div class="bg-success bg-opacity-10 rounded-3 d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+                                <i class="bi bi-journal-text fs-4 text-success"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <h6 class="fw-bold text-dark mb-0">Report Card: {{ latest_report.month }}</h6>
+                                    {% if is_risk %}<span class="badge bg-danger rounded-pill pulse-red" style="font-size: 0.55rem;">EVALUATION REQ</span>{% endif %}
+                                </div>
+                                <p class="text-muted small mb-0 fw-bold">Academic Year {{ latest_report.academic_year }}</p>
+                            </div>
+                            <div class="text-end ms-3 flex-shrink-0">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    {% if trend == 'better' %}<i class="bi bi-arrow-up-circle-fill text-success fs-5"></i>
+                                    {% elif trend == 'worse' %}<i class="bi bi-arrow-down-circle-fill text-danger fs-5"></i>
+                                    {% endif %}
+                                    <h4 class="fw-bold mb-0 {% if latest_report.overall_average|float >= 85 %}text-success{% elif is_risk %}text-danger{% else %}text-warning text-darken{% endif %}">
+                                        {{ latest_report.overall_average }}%
+                                    </h4>
+                                </div>
+                                <span class="text-muted small fw-bold">Rank: {{ latest_report.class_rank if latest_report.class_rank else '-' }}</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted opacity-25 ms-3"></i>
+                        </a>
+                    {% else %}
+                        <div class="list-group-item py-4 text-center bg-light bg-opacity-50">
+                            <p class="text-muted small mb-0 fw-bold fst-italic">No academic reports found.</p>
                         </div>
-                        <div class="flex-grow-1 min-w-0 pe-2">
-                            <h6 class="fw-bold text-dark mb-0">
-                                {% if followups and followups|length > 0 %}
-                                    {{ followups[0].location if followups[0].location else 'Note' }}
-                                {% else %}
-                                    Latest Contact
-                                {% endif %}
-                            </h6>
-                            {% if followups and followups|length > 0 %}
-                                <p class="text-muted small mb-0 text-truncate">{{ followups[0].general_notes if followups[0].general_notes else 'No notes provided.' }}</p>
-                            {% else %}
-                                <p class="text-muted small mb-0 fst-italic">No records found</p>
-                            {% endif %}
+                    {% endif %}
+
+                    <!-- RECENT FOLLOWUP ROW -->
+                    {% if followups and followups|length > 0 %}
+                        {% set latest_note = followups[0] %}
+                        <a href="/student/{{ student.id }}/timeline" class="list-group-item list-group-item-action py-4 px-4 d-flex align-items-center transition-hover bg-white border-top">
+                            <div class="bg-danger bg-opacity-10 rounded-3 d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+                                <i class="bi bi-geo-alt-fill fs-4 text-danger"></i>
+                            </div>
+                            <div class="flex-grow-1 min-w-0 pe-2">
+                                <h6 class="fw-bold text-dark mb-1">{{ latest_note.location }}</h6>
+                                <p class="text-muted small mb-0 text-truncate khmer-font">{{ latest_note.general_notes if latest_note.general_notes else 'No narrative details.' }}</p>
+                            </div>
+                            <div class="text-end ms-3 flex-shrink-0">
+                                <span class="badge bg-light text-dark border px-2 py-1 rounded-pill mb-1" style="font-size: 0.7rem;">{{ latest_note.followup_date }}</span>
+                                <span class="d-block small text-muted fw-bold" style="font-size: 0.6rem;">By: {{ latest_note.completed_by }}</span>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted opacity-25 ms-3"></i>
+                        </a>
+                    {% else %}
+                        <div class="list-group-item py-4 text-center bg-light bg-opacity-50 border-top">
+                            <p class="text-muted small mb-0 fw-bold fst-italic">No contact logs on file.</p>
                         </div>
-                        <div class="text-end ms-3 flex-shrink-0">
-                            {% if followups and followups|length > 0 %}
-                                <span class="badge bg-light text-dark border px-2 py-1 rounded-pill">{{ followups[0].followup_date }}</span>
-                            {% else %}
-                                <span class="text-muted fw-bold">-</span>
-                            {% endif %}
-                        </div>
-                        <i class="bi bi-chevron-right text-muted opacity-50 ms-3"></i>
-                    </a>
+                    {% endif %}
 
                 </div>
             </div>
+
+            <!-- Program Support Snapshot -->
+            {% if total_spent and total_spent > 0 %}
+            <div class="card shadow-sm border-0 rounded-4 native-card bg-dark text-white p-4 d-flex flex-row justify-content-between align-items-center overflow-hidden position-relative mb-5">
+                <div class="position-absolute top-0 end-0 bg-white opacity-10 rounded-circle" style="width: 100px; height: 100px; transform: translate(30%, -30%);"></div>
+                <div class="position-relative z-1">
+                    <h6 class="text-white-50 fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Support Invested</h6>
+                    <h2 class="fw-bold mb-0">${{ total_spent }}</h2>
+                </div>
+                <a href="/student/{{ student.id }}/finance" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold position-relative z-1">Full Ledger</a>
+            </div>
+            {% endif %}
 
         </div>
     </div>
 </div>
 
-<!-- ============================================== -->
-<!-- MODALS                                         -->
-<!-- ============================================== -->
+<!-- ========================================== -->
+<!-- SMART FLOATING ACTION BUTTONS (FAB)        -->
+<!-- ========================================== -->
 
-<!-- 🛡️ CRUD SECURITY: UPDATE Avatar Modal -->
+<!-- PRIMARY ACTION: ADD SOCIAL NOTE -->
+{% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+<a href="/add_followup/{{ student.id }}" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white fab-main" style="bottom: 90px; right: 20px; height: 60px; z-index: 1040;">
+    <i class="bi bi-clipboard2-heart-fill me-2 fs-4"></i> <span>Add Note</span>
+</a>
+{% endif %}
+
+<!-- SECONDARY ACTION: EDIT PROFILE (MOBILE CIRCULAR FAB) -->
+{% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
+<a href="/edit_student/{{ student.id }}" class="btn btn-light border border-2 border-white text-dark fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-circle fab-secondary" style="bottom: 165px; right: 25px; width: 50px; height: 50px; z-index: 1040;">
+    <i class="bi bi-pencil-fill fs-5"></i>
+</a>
+{% endif %}
+
+
+<!-- AVATAR UPDATE MODAL -->
 {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
 <div class="modal fade" id="avatarModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <form action="/update_avatar/{{ student.id }}" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-camera me-2"></i>Update Photo</h5>
-                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+        <form action="/update_avatar/{{ student.id }}" method="POST" enctype="multipart/form-data" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white border-bottom-0 pt-4 pb-3">
+                <h5 class="modal-title fw-bold mx-auto">Update Profile Photo</h5>
             </div>
             <div class="modal-body text-center p-4 bg-light">
-                <div class="mb-3 text-start">
-                    <label class="form-label d-block text-muted fw-bold small text-uppercase">Select a square image</label>
-                    <input class="form-control bg-white shadow-sm border-0 rounded-3 p-2" type="file" name="profile_picture" accept="image/png, image/jpeg, image/webp" required>
-                </div>
+                <input class="form-control bg-white shadow-sm border-0 rounded-3 p-3 mb-3" type="file" name="profile_picture" accept="image/*" required>
+                <p class="text-muted small mb-0 fw-bold text-primary"><i class="bi bi-info-circle-fill me-1"></i> Clear face photos make field work easier!</p>
             </div>
-            <div class="modal-footer bg-white border-top-0 rounded-bottom-4 px-4 py-3">
-                <button type="button" class="btn btn-light fw-bold text-dark rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary fw-bold px-4 transition-hover rounded-pill shadow-sm">Save Photo</button>
+            <div class="modal-footer bg-white border-top-0 px-4 py-3 d-flex justify-content-between">
+                <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow-sm transition-hover">Upload</button>
             </div>
         </form>
     </div>
@@ -351,25 +402,21 @@
 {% endif %}
 
 <style>
-    /* ---------------------------------------------------
-       APPLE iOS / GOOGLE MATERIAL 3 HYBRID STYLES
-       --------------------------------------------------- */
-    
-    .text-warning.text-darken { color: #d99100 !important; }
-    
     .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
     .card.transition-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+    
+    .fab-main:active, .fab-secondary:active { transform: scale(0.95); }
+    
     a.list-group-item.transition-hover:hover { background-color: #f8f9fa !important; }
+    .text-darken { color: #b48600 !important; }
+    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .hover-primary:hover { color: #007AFF !important; }
 
-    /* Mobile Edge-to-Edge Strategy */
+    .pulse-red { animation: pulse-danger 2s infinite; }
+    @keyframes pulse-danger { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
     @media (max-width: 767.98px) {
-        .native-card {
-            border-radius: 0 !important;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            margin-left: -1rem;
-            margin-right: -1rem;
-        }
+        .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; }
     }
 </style>
 {% endblock %}
@@ -377,8 +424,8 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // --- SMART AGE CALCULATION ---
-        const ageBadge = document.getElementById('student-age-badge');
+        // --- 1. Age Calculation ---
+        const ageBadge = document.getElementById('student-age-display');
         if (ageBadge) {
             const dob = ageBadge.getAttribute('data-dob');
             if (dob && dob !== 'None' && dob.trim() !== '') {
@@ -386,14 +433,38 @@
                 const today = new Date();
                 let age = today.getFullYear() - birthDate.getFullYear();
                 const m = today.getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) { age--; }
+                if (!isNaN(age)) { ageBadge.innerText = age; }
+            }
+        }
+
+        // --- 2. Program Tenure (Seniority) Calculation ---
+        const tenureBadge = document.getElementById('tenure-display');
+        if (tenureBadge) {
+            const joinedStr = tenureBadge.getAttribute('data-joined');
+            if (joinedStr && joinedStr !== 'None' && joinedStr.trim() !== '') {
+                const joinedDate = new Date(joinedStr);
+                const today = new Date();
                 
-                if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
+                let diffYears = today.getFullYear() - joinedDate.getFullYear();
+                let diffMonths = today.getMonth() - joinedDate.getMonth();
+                
+                if (diffMonths < 0) {
+                    diffYears--;
+                    diffMonths += 12;
                 }
                 
-                if (!isNaN(age)) {
-                    ageBadge.innerHTML = age;
+                let display = "";
+                if (diffYears > 0) {
+                    display = diffYears + (diffYears === 1 ? " yr" : " yrs");
+                } else if (diffMonths > 0) {
+                    display = diffMonths + (diffMonths === 1 ? " mo" : " mos");
+                } else {
+                    display = "New Enrollment";
                 }
+                
+                tenureBadge.innerText = display;
+                tenureBadge.title = "Official Joined Date: " + joinedStr;
             }
         }
     });

@@ -1,471 +1,311 @@
 {% extends "layout.html" %}
 
-{% block title %}Add Follow-Up - {{ student.first_name }} {{ student.last_name }}{% endblock %}
+{% block title %}New Report: {{ student.first_name }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1100px;">
-    
-    <!-- NATIVE APP HEADER -->
-    <div class="mb-4 px-3 px-md-0">
-        <a href="/student/{{ student.id }}/timeline" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
-            <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Back to Timeline
+<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 900px;">
+
+    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
+    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
+        <a href="/student/{{ student.id }}/timeline" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Cancel
         </a>
-        <div class="d-flex justify-content-between align-items-end">
-            <div>
-                <h3 class="fw-bold text-dark mb-1"><i class="bi bi-clipboard2-heart-fill text-danger me-2"></i>Log Social Work Note</h3>
-                <p class="text-muted small fw-bold mb-0">Assessment & Follow-up for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
-            </div>
-        </div>
     </div>
 
-    <!-- THE FORM -->
-    <form action="/add_followup/{{ student.id }}" method="POST" class="needs-validation" novalidate>
-        <div class="row g-0 g-md-4">
-            
-            <!-- ========================================== -->
-            <!-- LEFT COLUMN: Logistics, Well-being, Edu    -->
-            <!-- ========================================== -->
-            <div class="col-lg-6">
-                
-                <!-- CARD 1: Logistics (Always open) -->
-                <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-top border-primary border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle" data-bs-toggle="collapse" data-bs-target="#collapseOverview" aria-expanded="true" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>1. Meeting Overview</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-primary opacity-75 rotate-icon"></i>
-                        </div>
+    <!-- PAGE TITLE -->
+    <div class="d-flex align-items-center mb-4 px-3 px-md-0">
+        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clipboard2-heart-fill text-danger me-2"></i>New Monthly Report</h3>
+    </div>
+
+    <form action="/add_followup/{{ student.id }}" method="post" id="addFollowupForm" class="needs-validation" novalidate>
+        
+        <!-- SECTION 1: LOGISTICS -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">1. Logistics</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Date of Visit *</label>
+                        <input type="date" class="form-control bg-light border-0 fw-bold" name="followup_date" id="followup_date" required>
                     </div>
-                    <div id="collapseOverview" class="collapse show">
-                        <div class="card-body p-4 pt-2">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Date of Follow-Up *</label>
-                                    <div class="input-group shadow-sm">
-                                        <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-date"></i></span>
-                                        <input type="date" class="form-control border-start-0 bg-light fw-bold" name="followup_date" value="{{ today_date }}" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Completed By *</label>
-                                    <div class="input-group shadow-sm">
-                                        <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-person-badge"></i></span>
-                                        <input type="text" class="form-control border-start-0 bg-light fw-bold" name="completed_by" value="{{ current_user }}" required>
-                                    </div>
-                                </div>
-                                <div class="col-12 mt-3">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Location / Method *</label>
-                                    <select class="form-select form-select-lg bg-light fw-bold fs-6" name="location" id="locationSelect" required>
-                                        <option value="" disabled selected>Select Location...</option>
-                                        <option value="Home Visit">🏠 Home Visit</option>
-                                        <option value="School Visit">🏫 School Visit</option>
-                                        <option value="Office Visit">🏢 Office Visit</option>
-                                        <option value="Phone Call">📱 Phone Call</option>
-                                        <option value="Sponsor Letter Update">✉️ Sponsor Letter Update</option>
-                                        <option value="Other">📦 Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Method/Location *</label>
+                        <select name="location" id="locationSelect" class="form-select bg-light border-0 fw-bold" required>
+                            <option value="Home Visit" selected>🏠 Home Visit</option>
+                            <option value="School Visit">🏫 School Visit</option>
+                            <option value="Office Visit">🏢 Office Visit</option>
+                            <option value="Phone Call">📱 Phone Call</option>
+                            <option value="Sponsor Letter Update">✉️ Sponsor Letter Update</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Completed By *</label>
+                        <!-- AUTO-FILL: Pulls current staff name from session -->
+                        <input type="text" class="form-control bg-light border-0 fw-bold" name="completed_by" value="{{ session.get('name', session.get('username', 'Staff')) }}" required>
                     </div>
                 </div>
-
-                <!-- CARD 2: Home & Family Assessment -->
-                <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-top border-info border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#collapseFamily" aria-expanded="false" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-house-heart me-2 text-info"></i>2. Home Life & Support</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-info opacity-75 rotate-icon"></i>
-                        </div>
-                    </div>
-                    <div id="collapseFamily" class="collapse">
-                        <div class="card-body p-4 pt-2">
-                            <div class="bg-light p-3 rounded-4 border border-secondary border-opacity-10 mb-3">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Home Life Stability</label>
-                                <select class="form-select mb-2" name="home_life">
-                                    <option value="" selected>Not Evaluated</option>
-                                    <option value="Excellent">Excellent</option>
-                                    <option value="Good">Good</option>
-                                    <option value="Average">Average</option>
-                                    <option value="High Conflict/Unstable">Poor / Unstable</option>
-                                </select>
-                                <textarea class="form-control khmer-font mt-2" name="home_life_detail" rows="2" placeholder="Details on living situation, rent, slum conditions..."></textarea>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-12">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Parents Working / Occupation / Income</label>
-                                    <input type="text" class="form-control khmer-font" name="parent_working_notes" placeholder="e.g. Father: Construction, Mother: Factory">
-                                </div>
-                            </div>
-
-                            <div class="row g-3 align-items-center">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase mb-1">Evidence of Drugs/Violence?</label>
-                                    <select class="form-select border-secondary" name="evidence_drugs_violence">
-                                        <option value="No" selected>No</option>
-                                        <option value="Yes">Yes (Detail in Risk Section)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase d-block mb-1">Support of Guardian (1-5)</label>
-                                    <div class="btn-group w-100 shadow-sm" role="group">
-                                        <input type="radio" class="btn-check" name="support_level" id="sl1" value="1">
-                                        <label class="btn btn-outline-danger fw-bold px-2" for="sl1">1</label>
-                                        <input type="radio" class="btn-check" name="support_level" id="sl2" value="2">
-                                        <label class="btn btn-outline-warning fw-bold px-2" for="sl2">2</label>
-                                        <input type="radio" class="btn-check" name="support_level" id="sl3" value="3">
-                                        <label class="btn btn-outline-info fw-bold px-2" for="sl3">3</label>
-                                        <input type="radio" class="btn-check" name="support_level" id="sl4" value="4">
-                                        <label class="btn btn-outline-primary fw-bold px-2" for="sl4">4</label>
-                                        <input type="radio" class="btn-check" name="support_level" id="sl5" value="5">
-                                        <label class="btn btn-outline-success fw-bold px-2" for="sl5">5</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARD 3: Physical & Social -->
-                <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-top border-primary border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#collapseHealth" aria-expanded="false" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-hearts me-2 text-primary"></i>3. Physical & Social</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-primary opacity-75 rotate-icon"></i>
-                        </div>
-                    </div>
-                    <div id="collapseHealth" class="collapse">
-                        <div class="card-body p-4 pt-2">
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-5">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Physical Health</label>
-                                    <select class="form-select" name="physical_health">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="Excellent" class="text-success">Excellent</option>
-                                        <option value="Good" class="text-success">Good</option>
-                                        <option value="Average" class="text-warning">Average</option>
-                                        <option value="Requires Medical Attention" class="text-danger">Poor / Issues</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-7">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Health Details</label>
-                                    <input type="text" class="form-control khmer-font" name="physical_health_detail" placeholder="If issues, explain here...">
-                                </div>
-                            </div>
-
-                            <div class="row g-3">
-                                <div class="col-md-5">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Interaction w/ Others</label>
-                                    <select class="form-select" name="social_interaction">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="Excellent">Excellent</option>
-                                        <option value="Good">Good</option>
-                                        <option value="Average">Average</option>
-                                        <option value="Isolated/Withdrawn">Isolated / Withdrawn</option>
-                                        <option value="Aggressive">Aggressive</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-7">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Social Details</label>
-                                    <input type="text" class="form-control khmer-font" name="social_interaction_detail" placeholder="Notes on friends, mood...">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARD 4: Education & Responsibilities -->
-                <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-top border-warning border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#collapseEdu" aria-expanded="false" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-book me-2 text-warning"></i>4. Education & Responsibilities</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-warning opacity-75 rotate-icon"></i>
-                        </div>
-                    </div>
-                    <div id="collapseEdu" class="collapse">
-                        <div class="card-body p-4 pt-2">
-                            
-                            <div class="mb-4 bg-light p-3 rounded-3 border">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Jobs / Responsibilities of Child</label>
-                                <input type="text" class="form-control khmer-font" name="child_jobs" placeholder="e.g., Care of siblings, working in market...">
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Learning Difficulties</label>
-                                    <select class="form-select" name="learning_difficulties">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="None">None</option>
-                                        <option value="Reading/Writing">Reading/Writing</option>
-                                        <option value="Math">Math</option>
-                                        <option value="Focus/Attention">Focus/Attention</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Behavior in Class</label>
-                                    <select class="form-select" name="behavior_in_class">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="Good">Good</option>
-                                        <option value="Average">Average</option>
-                                        <option value="Poor">Poor / Disruptive</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Peer Issues</label>
-                                    <select class="form-select" name="peer_issues">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="No">No</option>
-                                        <option value="Yes - Victim">Yes - Victim</option>
-                                        <option value="Yes - Instigator">Yes - Instigator</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Teacher Involvement</label>
-                                    <select class="form-select" name="teacher_involvement">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="Supportive">Supportive</option>
-                                        <option value="Not Supportive">Not Supportive</option>
-                                        <option value="Unreachable">Unreachable</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Transportation</label>
-                                    <select class="form-select" name="transportation">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="School Bus">School Bus</option>
-                                        <option value="Bicycle">Bicycle</option>
-                                        <option value="Walking">Walking</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-muted text-uppercase">Tutoring Participation</label>
-                                    <select class="form-select" name="tutoring_participation">
-                                        <option value="" selected>Not Evaluated</option>
-                                        <option value="N/A">N/A</option>
-                                        <option value="Attends Regularly">Attends Regularly</option>
-                                        <option value="Frequently Absent">Frequently Absent</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- ========================================== -->
-            <!-- RIGHT COLUMN: Risks, Sponsor, Notes        -->
-            <!-- ========================================== -->
-            <div class="col-lg-6">
-                
-                <!-- CARD 5: Protection & Risk Assessment -->
-                <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-top border-danger border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#collapseRisk" aria-expanded="false" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-shield-exclamation me-2 text-danger"></i>5. Protection Assessment</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-danger opacity-75 rotate-icon"></i>
-                        </div>
-                    </div>
-                    <div id="collapseRisk" class="collapse">
-                        <div class="card-body p-4 pt-2">
-                            
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-danger text-uppercase d-block mb-2">Overall Risk Level (1-5)</label>
-                                <div class="btn-group w-100 shadow-sm" role="group">
-                                    <input type="radio" class="btn-check" name="risk_level" id="rl1" value="1">
-                                    <label class="btn btn-outline-success fw-bold" for="rl1">1 (Low)</label>
-                                    <input type="radio" class="btn-check" name="risk_level" id="rl2" value="2">
-                                    <label class="btn btn-outline-info fw-bold" for="rl2">2</label>
-                                    <input type="radio" class="btn-check" name="risk_level" id="rl3" value="3">
-                                    <label class="btn btn-outline-warning fw-bold" for="rl3">3</label>
-                                    <input type="radio" class="btn-check" name="risk_level" id="rl4" value="4">
-                                    <label class="btn btn-outline-danger opacity-75 fw-bold" for="rl4">4</label> 
-                                    <input type="radio" class="btn-check" name="risk_level" id="rl5" value="5">
-                                    <label class="btn btn-outline-danger fw-bold" for="rl5">5 (High)</label>
-                                </div>
-                            </div>
-
-                            <div class="mb-3 p-3 border border-danger border-opacity-25 rounded-4 bg-danger bg-opacity-10">
-                                <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Current Risk Factors (Tap all that apply)</label>
-                                
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% set risks = [
-                                        'Abandonment', 'Emotional Abuse', 'Physical Abuse', 'Sexual Abuse', 
-                                        'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 
-                                        'Forced Begging', 'Garbage Collection', 'Gang Involvement', 'Sexual Grooming', 
-                                        'Housing Insecurity', 'Mental Health Challenges', 'Neglect', 'Orphan', 
-                                        'Parent Marital Change', 'Parent in Jail', 'Physical Health Challenges', 
-                                        'Drug Use (Family)', 'Drug Use (Child)', 'Single Parent'
-                                    ] %}
-                                    {% for r in risks %}
-                                    <input type="checkbox" class="btn-check risk-pill" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}">
-                                    <label class="btn btn-outline-danger rounded-pill fw-bold" style="font-size: 0.8rem;" for="risk_{{ loop.index }}">{{ r }}</label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <textarea class="form-control khmer-font border-danger border-opacity-25" name="risk_details" rows="2" placeholder="Details - Share details for ALL risk selections chosen above..."></textarea>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small text-danger text-uppercase mb-2">Increased Risk of Trafficking/Exploitation?</label>
-                                <select class="form-select border-danger text-danger fw-bold shadow-sm" name="trafficking_risk">
-                                    <option value="No" selected>No</option>
-                                    <option value="Yes">Yes (Notify Protection Team)</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label fw-bold small text-danger text-uppercase">Child Protection Concerns?</label>
-                                <input type="text" class="form-control form-control-lg border-danger border-2 khmer-font shadow-sm" name="child_protection_concerns" placeholder="If yes, please notify Protection Team & explain here...">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARD 6: Sponsor Letters -->
-                <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-top border-success border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#collapseSponsor" aria-expanded="false" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-envelope-check me-2 text-success"></i>6. Sponsor Letter Workflow</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-success opacity-75 rotate-icon"></i>
-                        </div>
-                    </div>
-                    <div id="collapseSponsor" class="collapse">
-                        <div class="card-body p-4 pt-2 bg-light bg-opacity-50">
-                            
-                            <div class="row g-3 mb-4 bg-white p-3 rounded-4 border shadow-sm mx-0">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-primary text-uppercase">Letter Quarter</label>
-                                    <select class="form-select border-primary fw-bold" name="letter_quarter">
-                                        <option value="" selected>Not Applicable this visit...</option>
-                                        <option value="Q1">Q1 (Jan - Mar)</option>
-                                        <option value="Q2">Q2 (Apr - Jun)</option>
-                                        <option value="Q3">Q3 (Jul - Sep)</option>
-                                        <option value="Q4">Q4 (Oct - Dec)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold small text-primary text-uppercase">Letter Year</label>
-                                    <input type="number" class="form-control border-primary fw-bold" name="letter_year" value="{{ current_year }}" min="2020" max="2100">
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase mb-2">Checklist Tasks</label>
-                                
-                                <div class="list-group shadow-sm rounded-4 border bg-white">
-                                    <label class="list-group-item d-flex justify-content-between align-items-center p-3 transition-hover bg-white" style="cursor:pointer;">
-                                        <span class="fw-bold text-dark">1. Letter given to student</span>
-                                        <input class="form-check-input fs-4 m-0 shadow-none border-secondary" type="checkbox" name="letter_given" value="Yes">
-                                    </label>
-                                    <label class="list-group-item d-flex justify-content-between align-items-center p-3 transition-hover bg-white" style="cursor:pointer;">
-                                        <span class="fw-bold text-dark">2. Translated to English</span>
-                                        <input class="form-check-input fs-4 m-0 shadow-none border-secondary" type="checkbox" name="letter_translated" value="Yes">
-                                    </label>
-                                    <label class="list-group-item d-flex justify-content-between align-items-center p-3 transition-hover bg-white" style="cursor:pointer;">
-                                        <span class="fw-bold text-dark">3. Scanned and ready</span>
-                                        <input class="form-check-input fs-4 m-0 shadow-none border-secondary" type="checkbox" name="letter_scanned" value="Yes">
-                                    </label>
-                                    <label class="list-group-item d-flex justify-content-between align-items-center p-3 transition-hover bg-success bg-opacity-10 border-success border-opacity-25" style="cursor:pointer;">
-                                        <span class="fw-bold text-success-emphasis">4. Sent to Coordinator</span>
-                                        <input class="form-check-input fs-4 m-0 border-success shadow-none" type="checkbox" name="letter_sent" value="Yes">
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <label class="form-label fw-bold small text-muted text-uppercase">Additional Letter Notes</label>
-                                <textarea class="form-control khmer-font" name="letter_notes" rows="2" placeholder="e.g., Student was sick, letter delayed..."></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARD 7: Notes & Conclusion -->
-                <div class="card shadow-sm border-0 rounded-4 mb-5 mb-md-4 border-top border-secondary border-4 native-card">
-                    <div class="card-header bg-white border-bottom-0 py-3 px-4 d-flex justify-content-between align-items-center section-toggle collapsed" data-bs-toggle="collapse" data-bs-target="#collapseNotes" aria-expanded="false" style="cursor: pointer;">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-journal-text me-2 text-secondary"></i>7. Notes & Conclusion</h5>
-                        <div class="bg-light border rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;">
-                            <i class="bi bi-chevron-down text-secondary opacity-75 rotate-icon"></i>
-                        </div>
-                    </div>
-                    <div id="collapseNotes" class="collapse">
-                        <div class="card-body p-4 pt-2">
-                            
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Their Story / Why School?</label>
-                                <textarea class="form-control khmer-font bg-light" name="student_story" rows="3" placeholder="Child's motivation for education..."></textarea>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">General Information Learned</label>
-                                <textarea class="form-control khmer-font" name="general_notes" rows="4" placeholder="Please write any information you learned that is not included in this form."></textarea>
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label fw-bold small text-primary text-uppercase">Changes / Recommendations</label>
-                                <textarea class="form-control khmer-font border-primary border-opacity-25" name="staff_notes" rows="3" placeholder="Please share any changes that you believe may be helpful..."></textarea>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-
-                <!-- STICKY ACTION FOOTER (Floating Action Bar) -->
-                <div class="position-sticky bg-white p-3 rounded-4 shadow-lg border mt-4 mb-3 d-flex justify-content-between align-items-center mx-3 mx-md-0" style="bottom: 20px; z-index: 1000;">
-                    <a href="/student/{{ student.id }}/timeline" class="btn btn-light border fw-bold px-4 rounded-pill d-none d-md-block text-dark transition-hover">Cancel</a>
-                    <button type="submit" class="btn btn-danger fw-bold px-5 py-3 py-md-2 rounded-pill shadow-sm ms-auto w-100 w-md-auto fs-5 transition-hover">
-                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Save Follow-Up
-                    </button>
-                </div>
-
             </div>
         </div>
+
+        <!-- ========================================== -->
+        <!-- TASK SELECTOR (The Bridge Logic)           -->
+        <!-- ========================================== -->
+        <div class="row g-3 mb-4 px-3 px-md-0">
+            <div class="col-6">
+                <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-success border-4">
+                    <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
+                        <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="sponsorLetterToggle" name="is_sponsor_update">
+                        <label class="form-check-label fw-bold text-success" for="sponsorLetterToggle">Sponsor Letter</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-primary border-4">
+                    <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
+                        <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="statusUpdateToggle" name="is_master_update">
+                        <label class="form-check-label fw-bold text-primary" for="statusUpdateToggle">Significant Change</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TASK: SPONSOR LETTER CYCLE -->
+        <div id="sponsorLetterSection" style="display: none;">
+            <h6 class="fw-bold text-success text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Sponsor Letter Cycle</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-success bg-opacity-10 border border-success border-opacity-25">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-success-emphasis">Quarter</label>
+                            <select name="letter_quarter" class="form-select border-0 shadow-sm fw-bold">
+                                <option value="">N/A</option>
+                                <option value="Q1">Q1 (Jan-Mar)</option>
+                                <option value="Q2">Q2 (Apr-Jun)</option>
+                                <option value="Q3">Q3 (Jul-Sep)</option>
+                                <option value="Q4">Q4 (Oct-Dec)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-success-emphasis">Year</label>
+                            <input type="number" class="form-control border-0 shadow-sm fw-bold" name="letter_year" id="letter_year" placeholder="2025">
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-4 shadow-sm p-3 mb-3">
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_given" value="Yes" id="lg"><label class="ms-2 fw-bold text-dark" for="lg">1. Given to Student</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_translated" value="Yes" id="lt"><label class="ms-2 fw-bold text-dark" for="lt">2. Translated</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_scanned" value="Yes" id="lsc"><label class="ms-2 fw-bold text-dark" for="lsc">3. Scanned to PDF</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="letter_sent" value="Yes" id="lsn"><label class="ms-2 fw-bold text-dark" for="lsn">4. Sent to Sponsor</label></div>
+                    </div>
+                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="letter_notes" rows="2" placeholder="Letter notes (delays, missing drawings, etc.)..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- TASK: MASTER DATA UPDATES (Significant Changes) -->
+        <div id="permanentStatusSection" style="display: none;">
+            <h6 class="fw-bold text-primary text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Master Data Significant Changes</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
+                            <select name="home_condition" class="form-select bg-light border-0 fw-bold">
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Poor">Poor (Slum Rental)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Church / Prayer Attendance</label>
+                            <select name="church_attendance" class="form-select bg-light border-0 fw-bold">
+                                <option value="Yes">Yes (Regularly)</option>
+                                <option value="No" selected>No (Never)</option>
+                                <option value="Occasionally">Occasionally</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Work Status (Mother / Father)</label>
+                            <div class="p-2 border rounded bg-light">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="small fw-bold">Mother:</span>
+                                    <select name="mother_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none">
+                                        <option>Select...</option><option>Yes</option><option>No</option><option>Searching</option>
+                                    </select>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="small fw-bold">Father:</span>
+                                    <select name="father_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none">
+                                        <option>Select...</option><option>Yes</option><option>No</option><option>Searching</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Income Narrative / Jobs</label>
+                            <textarea class="form-control bg-light border-0 khmer-font" name="parent_working_notes" rows="2" placeholder="Detail any job losses or new income sources..."></textarea>
+                        </div>
+                    </div>
+                    <div class="mb-0 p-3 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
+                        <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Update Risk Factors (Permanent Records)</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% set risks = ['Abandonment', 'Abuse', 'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 'Housing Insecurity', 'Mental Health', 'Neglect', 'Orphan', 'Marital Crisis', 'Drug use/selling', 'Single Parent'] %}
+                            {% for r in risks %}
+                            <input type="checkbox" class="btn-check" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}">
+                            <label class="btn btn-white border rounded-pill fw-bold py-1 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ loop.index }}">{{ r }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: MONTHLY PULSE -->
+        <div id="standardFollowupSections">
+            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">2. Thorough Monthly Progress</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Physical Health</label>
+                            <select name="physical_health" class="form-select bg-light border-0 fw-bold">
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Poor">Poor / Needs Attention</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="physical_health_detail" rows="2" placeholder="If average/poor, share problem and how we can help..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Social Interaction</label>
+                            <select name="social_interaction" class="form-select bg-light border-0 fw-bold">
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Isolated">Isolated / Withdrawn</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="social_interaction_detail" rows="2" placeholder="Notes on friends, mood, or behavior..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Home Life Stability</label>
+                            <select name="home_life" class="form-select bg-light border-0 fw-bold">
+                                <option value="Stable" selected>Stable</option>
+                                <option value="Strained">Financial Strain</option>
+                                <option value="Unstable">High Conflict / Unstable</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="home_life_detail" rows="2" placeholder="Describe current living conditions..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">School Behavior / Challenges</label>
+                            <select name="behavior_in_class" class="form-select bg-light border-0 fw-bold">
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Disruptive">Poor / Disruptive</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="behavior_in_class_detail" rows="2" placeholder="Learning difficulties or disorders details..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Attendance & Days Missed</label>
+                            <input type="text" class="form-control bg-light border-0 fw-bold" name="attendance_notes" placeholder="e.g. Stop going since Aug, Missed 4 days...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-danger text-uppercase">Evidence of Drugs, Alcohol, or Violence?</label>
+                            <select name="evidence_drugs_violence" class="form-select bg-light border-0 fw-bold text-danger">
+                                <option value="No" selected>No signs or reports</option>
+                                <option value="Yes">Yes (Provide detail below)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: RISK TRACKER -->
+            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">3. Current Risk Level</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
+                <div class="card-body p-4 text-center">
+                    <label class="form-label fw-bold small text-danger text-uppercase d-block mb-3">Rate the overall situation right now</label>
+                    <div class="d-flex justify-content-between gap-2">
+                        {% set risk_ratings = [
+                            {'val': 1, 'label': 'Safe', 'color': 'success'},
+                            {'val': 2, 'label': 'Stable', 'color': 'info'},
+                            {'val': 3, 'label': 'Concern', 'color': 'warning'},
+                            {'val': 4, 'label': 'Urgent', 'color': 'danger'},
+                            {'val': 5, 'label': 'Crisis', 'color': 'danger'}
+                        ] %}
+                        {% for rr in risk_ratings %}
+                        <div class="flex-fill">
+                            <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}" required>
+                            <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}">{{ rr.val }}<br><small>{{ rr.label }}</small></label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: NARRATIVE -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">4. Narrative & Action</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Visit Narrative (Detailed Report) *</label>
+                    <textarea class="form-control bg-light border-0 khmer-font p-3" name="general_notes" id="general_notes" rows="6" placeholder="Describe the visit, child's story, and observations..." required></textarea>
+                </div>
+                
+                <!-- RED ZONE -->
+                <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
+                    <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between">
+                        <span><i class="bi bi-shield-exclamation-fill me-1"></i>Urgent Protection Concerns?</span>
+                        <span class="badge bg-danger text-white">RED ZONE</span>
+                    </label>
+                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3 mt-1" name="child_protection_concerns" rows="2" placeholder="Only if immediate danger detected (abuse, trafficking, exploitation)..."></textarea>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Trafficking Risk?</label>
+                        <select name="trafficking_risk" class="form-select bg-light border-0 fw-bold">
+                            <option value="No" selected>No</option>
+                            <option value="Yes">Yes (Notify Team)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-primary text-uppercase">Staff Recommendations</label>
+                        <input type="text" class="form-control bg-light border-0 khmer-font p-2" name="staff_notes" placeholder="Next steps or support required...">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-none d-md-flex justify-content-between gap-3 mb-5">
+            <a href="/student/{{ student.id }}/timeline" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 w-50 shadow-sm transition-hover">Cancel</a>
+            <button type="submit" class="btn btn-danger fw-bold rounded-pill py-3 w-50 shadow-sm transition-hover fs-5">Save Report</button>
+        </div>
+
     </form>
+
+    <button type="submit" form="addFollowupForm" class="btn btn-danger text-white fw-bold shadow-lg position-fixed d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;">
+        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Save Report</span>
+    </button>
+
 </div>
 
-<!-- Custom UI Polish CSS -->
 <style>
-    .transition-hover {
-        transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
-    }
-    .transition-hover:hover {
-        background-color: #f8f9fa !important;
-    }
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
     
-    /* Rotate chevron when section is open */
-    .section-toggle[aria-expanded="true"] .rotate-icon {
-        transform: rotate(180deg);
-    }
-    .rotate-icon {
-        transition: transform 0.3s ease;
-    }
+    .btn-check:checked + label.btn-outline-success { background-color: #198754 !important; color: white !important; }
+    .btn-check:checked + label.btn-outline-info { background-color: #0dcaf0 !important; color: white !important; }
+    .btn-check:checked + label.btn-outline-warning { background-color: #ffc107 !important; color: black !important; }
+    .btn-check:checked + label.btn-outline-danger { background-color: #dc3545 !important; color: white !important; }
+    .btn-check:checked + label.btn-white { background-color: #dc3545 !important; color: #fff !important; border-color: #dc3545 !important; }
     
-    /* Clean input focus states */
-    .form-control:focus, .form-select:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-        background-color: #fff !important;
-    }
+    .text-darken { color: #b48600 !important; }
+    .form-control:focus, .form-select:focus { border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); background-color: #fff !important; }
 
-    /* Native App Edge-to-Edge Cards for Mobile */
     @media (max-width: 767.98px) {
-        .native-card {
-            border-radius: 0 !important;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            margin-left: -1rem;
-            margin-right: -1rem;
-        }
+        .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; }
     }
 </style>
 {% endblock %}
@@ -473,55 +313,113 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        
-        // Smart Automation: Open Sponsor Letter Card if "Sponsor Letter Update" is selected
-        const locationSelect = document.getElementById('locationSelect');
-        const sponsorCollapseEl = document.getElementById('collapseSponsor');
-        const notesCollapseEl = document.getElementById('collapseNotes');
-        
-        if (locationSelect && sponsorCollapseEl && window.bootstrap) {
-            locationSelect.addEventListener('change', function(e) {
-                if (e.target.value === 'Sponsor Letter Update') {
-                    let bsCollapseSponsor = new bootstrap.Collapse(sponsorCollapseEl, { toggle: false });
-                    bsCollapseSponsor.show();
-                    
-                    if(notesCollapseEl) {
-                        let bsCollapseNotes = new bootstrap.Collapse(notesCollapseEl, { toggle: false });
-                        bsCollapseNotes.show();
-                    }
-                }
-            });
-        }
-        
-        // Bootstrap Form Validation
-        var forms = document.querySelectorAll('.needs-validation')
-        Array.prototype.slice.call(forms)
-            .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        
-                        // If invalid, expand any collapsed sections containing invalid fields
-                        const invalidElements = form.querySelectorAll(':invalid');
-                        invalidElements.forEach(el => {
-                            const collapsedParent = el.closest('.collapse:not(.show)');
-                            if (collapsedParent && window.bootstrap) {
-                                let bsCollapse = new bootstrap.Collapse(collapsedParent, { toggle: false });
-                                bsCollapse.show();
+        // --- 1. DRAFT AUTO-SAVE (Prevents data loss) ---
+        const draftKey = `eep_draft_add_followup_{{ student.id }}`;
+        const form = document.getElementById('addFollowupForm');
+
+        function loadDraft() {
+            const saved = localStorage.getItem(draftKey);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    Object.keys(data).forEach(key => {
+                        const el = form.elements[key];
+                        if (el) {
+                            if (el.type === 'checkbox' || el.type === 'radio') {
+                                if (Array.isArray(data[key])) {
+                                    if (data[key].includes(el.value)) el.checked = true;
+                                } else {
+                                    if (el.value === data[key]) el.checked = true;
+                                }
+                            } else {
+                                el.value = data[key];
                             }
-                        });
-                        
-                        // Scroll to the first invalid element
-                        if(invalidElements.length > 0) {
-                            setTimeout(() => {
-                                invalidElements[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }, 300);
                         }
-                    }
-                    form.classList.add('was-validated')
-                }, false)
-            })
+                    });
+                    triggerToggles(); // Re-sync the hidden sections
+                    
+                    const toast = document.createElement('div');
+                    toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3';
+                    toast.style.zIndex = '9999';
+                    toast.innerHTML = `<div class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-lg border border-secondary"><i class="bi bi-cloud-check text-success me-2"></i>Draft Restored</div>`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 3000);
+                } catch(e) { console.error("Draft restore failed", e); }
+            }
+        }
+
+        function saveDraft() {
+            const formData = new FormData(form);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                if (key === 'risk_factors') {
+                    if (!data[key]) data[key] = [];
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+            localStorage.setItem(draftKey, JSON.stringify(data));
+        }
+
+        form.addEventListener('input', saveDraft);
+        form.addEventListener('submit', () => localStorage.removeItem(draftKey));
+        
+        // Restore slightly after load
+        setTimeout(loadDraft, 100);
+
+        // --- 2. DYNAMIC UI TOGGLES ---
+        const locationSelect = document.getElementById('locationSelect');
+        const statusToggle = document.getElementById('statusUpdateToggle');
+        const statusSection = document.getElementById('permanentStatusSection');
+        const sponsorToggle = document.getElementById('sponsorLetterToggle');
+        const letterSection = document.getElementById('sponsorLetterSection');
+        const standardSections = document.getElementById('standardFollowupSections');
+
+        function triggerToggles() {
+            // FIX: If location is Sponsor Letter Update, auto-check the toggle to avoid redundant clicks
+            if (locationSelect.value === 'Sponsor Letter Update') {
+                sponsorToggle.checked = true;
+            }
+
+            // Show/Hide sections based on switches
+            statusSection.style.display = statusToggle.checked ? 'block' : 'none';
+            letterSection.style.display = sponsorToggle.checked ? 'block' : 'none';
+
+            // TASK FOCUS MODE: If specifically doing a Sponsor Letter update via dropdown, 
+            // hide the routine pulse to reduce friction.
+            if (locationSelect.value === 'Sponsor Letter Update') {
+                standardSections.style.display = 'none';
+            } else {
+                standardSections.style.display = 'block';
+            }
+        }
+
+        locationSelect.addEventListener('change', triggerToggles);
+        statusToggle.addEventListener('change', triggerToggles);
+        sponsorToggle.addEventListener('change', triggerToggles);
+
+        // Date & Year Defaults
+        const dateInput = document.getElementById('followup_date');
+        if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+        const yearInput = document.getElementById('letter_year');
+        if (yearInput) yearInput.value = new Date().getFullYear();
+
+        triggerToggles(); // Initial load sync
+
+        // Bootstrap Validation
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const firstInvalid = form.querySelector(':invalid');
+                    if(firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
     });
 </script>
 {% endblock %}

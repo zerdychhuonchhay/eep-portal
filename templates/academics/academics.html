@@ -1,77 +1,88 @@
 {% extends "layout.html" %}
 
-{% block title %}Master Gradebook{% endblock %}
+{% block title %}Master Gradebook Analysis{% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-4" style="max-width: 1400px;">
+
+{# --- SMART ANALYTICS ENGINE (v2.9) --- #}
+{# Tracks recency-based risk and performance trajectories #}
+{% set stats = namespace(avg_sum=0, avg_count=0, risk_count=0, high_count=0) %}
+{# Based on system date, 2026 is the current active year #}
+{% set current_year_threshold = '2026' %}
+
+{% for r in academic_records %}
+    {% if r.overall_average is not none and r.overall_average != "" %}
+        {% set stats.avg_sum = stats.avg_sum + r.overall_average|float %}
+        {% set stats.avg_count = stats.avg_count + 1 %}
+        
+        {# Only count "At Risk" if it's the CURRENT academic year (2026) #}
+        {% if r.overall_average|float < 50 and current_year_threshold in r.academic_year %}
+            {% set stats.risk_count = stats.risk_count + 1 %}
+        {% elif r.overall_average|float >= 85 %}
+            {% set stats.high_count = stats.high_count + 1 %}
+        {% endif %}
+    {% endif %}
+{% endfor %}
+
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 text-start px-0 px-md-4" style="max-width: 1500px;">
     
-    <!-- Fixed Header Layout -->
+    <!-- HEADER SECTION -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
-        <h2 class="mb-0 fw-bold"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Master Gradebook</h2>
+        <div>
+            <h2 class="mb-0 fw-bold"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Gradebook Dashboard</h2>
+            <p class="text-muted small fw-bold mb-0">Live evaluation matrix with school and grade-level focus.</p>
+        </div>
         
         <div class="d-flex flex-wrap justify-content-start justify-content-md-end gap-2">
-            <!-- 🛡️ SECURITY CONTROL: Export Data -->
             {% if session.get('can_export_data') %}
             <a href="/export_grades" class="btn btn-sm btn-outline-success shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover d-none d-md-inline-block">
-                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel
+                <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Data
             </a>
             {% endif %}
             
-            <!-- 🛡️ SECURITY CONTROL: Manage Academics -->
-            {% if session.get('can_manage_academics') %}
-            <button class="btn btn-sm btn-primary shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover" data-bs-toggle="modal" data-bs-target="#quickAddModal">
-                <i class="bi bi-journal-plus me-1"></i> Add Report
+            {% if session.get('can_manage_academics') or session.get('can_create_academics') %}
+            <button class="btn btn-sm btn-primary shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover d-none d-md-block" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                <i class="bi bi-plus-lg me-1"></i> Add Report
             </button>
             {% endif %}
         </div>
     </div>
 
-    <!-- The Quick Add Modal (Secured) -->
-    {% if session.get('can_manage_academics') %}
-    <div class="modal fade" id="quickAddModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header bg-primary text-white border-bottom-0 pt-4 pb-3 px-4 rounded-top-4">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Select Student</h5>
-                    <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <label class="form-label fw-bold small text-muted">Who are you entering grades for?</label>
-                    <select class="form-select form-select-lg bg-light mb-4" id="quickStudentSelect">
-                        <option value="" disabled selected>Search or select a student...</option>
-                        {% for s in active_students %}
-                            <option value="{{ s.id }}">{{ s.first_name }} {{ s.last_name }} ({{ s.ngo_id }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
-                    <button type="button" class="btn btn-white border fw-bold text-dark shadow-sm rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary fw-bold px-4 shadow-sm rounded-pill" onclick="routeToStudent()">Continue <i class="bi bi-arrow-right"></i></button>
+    <!-- ========================================== -->
+    <!-- 1. PERFORMANCE INSIGHT DASHBOARD          -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4 px-3 px-md-0">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 border-top border-primary border-4">
+                <div class="card-body p-3">
+                    <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Program Avg</span>
+                    <h4 class="fw-bold text-dark mb-0">
+                        {{ (stats.avg_sum / stats.avg_count)|round(1) if stats.avg_count > 0 else '-' }}%
+                    </h4>
                 </div>
             </div>
         </div>
-    </div>
-    {% endif %}
-
-    <!-- NGO LEADERBOARD / QUICK INSIGHTS (PC Only) -->
-    <div class="row mb-4 d-none d-lg-flex">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-primary text-white h-100 rounded-4">
-                <div class="card-body p-4 d-flex align-items-center">
-                    <i class="bi bi-trophy-fill display-4 me-3 opacity-50"></i>
-                    <div>
-                        <h6 class="fw-bold text-uppercase mb-1" style="letter-spacing: 1px;">Top Performer</h6>
-                        <p class="mb-0 small opacity-75">Table is sorted by 'Avg %' to show current rankings.</p>
-                    </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 border-top border-danger border-4">
+                <div class="card-body p-3">
+                    <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Active Risk (2026)</span>
+                    <h4 class="fw-bold text-danger mb-0">{{ stats.risk_count }} <small class="fw-normal text-muted fs-6">students</small></h4>
                 </div>
             </div>
         </div>
-        <div class="col-md-8">
-            <div class="alert alert-light border shadow-sm rounded-4 h-100 mb-0 p-4 d-flex align-items-center">
-                <i class="bi bi-grid-3x3-gap-fill fs-3 text-info me-3"></i>
-                <div>
-                    <strong class="d-block text-dark mb-1">Dynamic Heatmap Active</strong>
-                    <span class="text-muted small">Select a specific Grade Tier to instantly hide unused subjects and condense the table. Green (A/B), Yellow (C), Red (D/F).</span>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 border-top border-success border-4">
+                <div class="card-body p-3">
+                    <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Top Achievers</span>
+                    <h4 class="fw-bold text-success mb-0">{{ stats.high_count }} <small class="fw-normal text-muted fs-6">students</small></h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 border-top border-info border-4">
+                <div class="card-body p-3">
+                    <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Total Records</span>
+                    <h4 class="fw-bold text-info mb-0">{{ academic_records|length }}</h4>
                 </div>
             </div>
         </div>
@@ -79,43 +90,75 @@
 
     <!-- MAIN DATA CONTAINER -->
     <div class="card shadow-sm border-0 bg-white rounded-4 overflow-hidden native-card">
-        <div class="card-header bg-white border-bottom pt-3 pb-2 px-3 px-md-4 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 rounded-top-4">
-            <h5 class="fw-bold mb-0 text-dark d-none d-md-block"><i class="bi bi-grid-3x3-gap-fill text-info me-2"></i>Matrix</h5>
+        <div class="card-header bg-white border-bottom pt-4 pb-2 px-3 px-md-4">
             
-            <!-- SMART DUAL FILTERS (Edge-to-Edge scrolling on mobile) -->
-            <div class="d-flex flex-nowrap align-items-center gap-2 overflow-auto custom-scrollbar pb-2 pb-xl-0" style="white-space: nowrap;">
-                
-                <!-- 1. Year Filter -->
-                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm flex-shrink-0">
-                    <i class="bi bi-calendar3 text-muted ms-3 me-2"></i>
-                    <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4">
-                        <option value="all">All Years</option>
-                        <!-- Years injected via Javascript -->
-                    </select>
+            <div class="d-flex flex-column gap-3">
+                <!-- ROW 1: ANALYTICS PILLS & RECENT TOGGLE -->
+                <div class="d-flex flex-nowrap align-items-center gap-2 overflow-auto custom-scrollbar pb-2 w-100" style="white-space: nowrap;">
+                    <!-- Quick Analysis Pills -->
+                    <div class="btn-group p-1 bg-light rounded-pill border shadow-sm flex-shrink-0">
+                        <button class="btn btn-sm rounded-pill fw-bold px-3 analysis-btn active" data-analysis="all" onclick="setAnalysisFilter('all', this)">Show All</button>
+                        <button class="btn btn-sm rounded-pill fw-bold px-3 analysis-btn" data-analysis="risk" onclick="setAnalysisFilter('risk', this)">Risk ⚠️</button>
+                        <button class="btn btn-sm rounded-pill fw-bold px-3 analysis-btn" data-analysis="honors" onclick="setAnalysisFilter('honors', this)">Honors 🏆</button>
+                    </div>
+
+                    <div class="vr mx-2 text-muted opacity-25"></div>
+
+                    <!-- RECENT 3 MONTHS TOGGLE -->
+                    <button id="btnRecent3Months" class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-dark shadow-sm transition-hover flex-shrink-0" onclick="toggleRecentThree()">
+                        <i class="bi bi-clock-history me-1"></i> Last 3 Months
+                    </button>
+                    
+                    <div class="vr mx-2 text-muted opacity-25"></div>
+
+                    <!-- Year & Month Filters -->
+                    <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm flex-shrink-0">
+                        <i class="bi bi-calendar3 text-muted ms-3 me-2 small"></i>
+                        <select id="yearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" onchange="filterGradebook()">
+                            <option value="all">All School Years</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm flex-shrink-0">
+                        <i class="bi bi-calendar-month text-muted ms-3 me-2 small"></i>
+                        <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" onchange="filterGradebook()">
+                            <option value="all">All Months</option>
+                        </select>
+                    </div>
                 </div>
-                <!-- 2. Month Filter -->
-                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm flex-shrink-0">
-                    <i class="bi bi-calendar-month text-muted ms-3 me-2"></i>
-                    <select id="monthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4">
-                        <option value="all">All Months</option>
-                        <!-- Months injected via Javascript -->
-                    </select>
-                </div>
-                <!-- 3. Academic Tier Filter -->
-                <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-info border-2 flex-shrink-0">
-                    <i class="bi bi-layers-fill text-info ms-3 me-2"></i>
-                    <select id="tierFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4">
-                        <option value="all">All Grades</option>
-                        <option value="primary">Primary (K-6)</option>
-                        <option value="highschool">High School (7-12)</option>
-                        <option value="highered">Uni / Vocational</option>
-                    </select>
+
+                <!-- ROW 2: GRANULAR FILTERS (Grade & School) -->
+                <div class="d-flex flex-nowrap align-items-center gap-2 overflow-auto custom-scrollbar pb-2 w-100" style="white-space: nowrap;">
+                    <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-primary border-opacity-25 flex-shrink-0">
+                        <i class="bi bi-mortarboard-fill text-primary ms-3 me-2 small"></i>
+                        <select id="gradeFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" onchange="filterGradebook()">
+                            <option value="all">Every Grade Level</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-success border-opacity-25 flex-shrink-0">
+                        <i class="bi bi-building-fill text-success ms-3 me-2 small"></i>
+                        <select id="schoolFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" onchange="filterGradebook()">
+                            <option value="all">Every School</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center bg-light p-1 rounded-pill border shadow-sm border-info border-opacity-25 flex-shrink-0">
+                        <i class="bi bi-layers-fill text-info ms-3 me-2 small"></i>
+                        <select id="tierFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" onchange="filterGradebook()">
+                            <option value="all">All Tiers</option>
+                            <option value="primary">Primary (K-6)</option>
+                            <option value="highschool">High School (7-12)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border ms-md-auto" style="max-width: 300px;">
+                        <span class="input-group-text bg-white border-0 px-3"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="pcSearch" class="form-control border-0 bg-white py-2 fw-bold" placeholder="Student name..." onkeyup="filterGradebook()">
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="card-body p-0">
-            <!-- BULLETPROOF JINJA PIVOT LOGIC: Safely extract ALL unique subjects -->
+            
             {% set unique_subjects = [] %}
             {% for record in academic_records %}
                 {% if record.subjects %}
@@ -128,524 +171,451 @@
                 {% endif %}
             {% endfor %}
 
-            <!-- ======================================================== -->
-            <!-- 1. MOBILE NATIVE LIST (Visible only on small screens)    -->
-            <!-- ======================================================== -->
-            <div class="list-group list-group-flush d-lg-none rounded-bottom-4" id="mobileGradebookList">
-                {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
-                {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
-                
-                {% for record in academic_records %}
-                    {% set tier = 'other' %}
-                    {% if record.grade_level in primary_grades %}
-                        {% set tier = 'primary' %}
-                    {% elif record.grade_level in high_grades %}
-                        {% set tier = 'highschool' %}
-                    {% elif record.grade_level and ('University' in record.grade_level or 'Vocational' in record.grade_level) %}
-                        {% set tier = 'highered' %}
-                    {% endif %}
+            {% set primary_grades = ['Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'] %}
+            {% set high_grades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'] %}
 
-                    <div class="list-group-item bg-white py-3 px-3 border-bottom mobile-grade-card transition-hover"
-                         data-year="{{ record.academic_year }}" 
-                         data-month="{{ record.month }}"
-                         data-tier="{{ tier }}">
-                         
-                         <!-- Card Header: Identity & Overall Score -->
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="pe-2" style="min-width: 0;">
-                                <a href="/student/{{ record.student_id }}" class="fw-bold text-dark fs-6 text-decoration-none d-block text-truncate">
-                                    {{ record.first_name }} {{ record.last_name }}
-                                </a>
-                                <div class="text-muted fw-bold d-flex align-items-center gap-2 mt-1" style="font-size: 0.7rem;">
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill">{{ record.grade_level if record.grade_level else 'No Grade' }}</span>
-                                    <span><i class="bi bi-calendar-event me-1"></i>{{ record.month }}</span>
-                                </div>
-                            </div>
-                            <div class="text-end flex-shrink-0">
-                                {% if record.overall_average %}
-                                    <div class="fw-bold fs-5 lh-1 {% if record.overall_average >= 85 %}text-success{% elif record.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
-                                        {{ record.overall_average }}%
-                                    </div>
-                                    {% if record.overall_grade %}
-                                        <span class="badge {% if record.overall_average >= 85 %}bg-success{% elif record.overall_average >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} shadow-sm mt-1" style="font-size: 0.6rem;">{{ record.overall_grade }}</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="text-muted fw-bold">-</span>
-                                {% endif %}
-                            </div>
-                        </div>
+            <!-- ======================================================== -->
+            <!-- 2. MOBILE FLASHCARD GRID                                 -->
+            <!-- ======================================================== -->
+            <div class="p-3 d-lg-none bg-light bg-opacity-50" id="mobileGradebookList">
+                <div class="row row-cols-1 row-cols-sm-2 g-3">
+                    {% for record in academic_records %}
+                        {% set tier = 'other' %}
+                        {% if record.grade_level in primary_grades %}{% set tier = 'primary' %}
+                        {% elif record.grade_level in high_grades %}{% set tier = 'highschool' %}
+                        {% endif %}
+                        
+                        {# Analytics Metadata #}
+                        {% set is_recent = current_year_threshold in record.academic_year %}
+                        {% set is_risk = record.overall_average is not none and record.overall_average|float < 50 %}
+                        {% set showAlert = is_risk and is_recent %}
 
-                        <!-- Subjects Mini-Grid -->
-                        {% if record.subjects %}
-                        <div class="d-flex flex-wrap gap-1 mt-3">
-                            {% for sub in record.subjects %}
-                                {% set sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
-                                {% if sub.score and sub.score != '-' %}
-                                <div class="d-flex align-items-center border rounded px-2 py-1 {{ sub.box_class }}" style="background-color: #fff;">
-                                    <span class="text-muted small fw-bold me-2 text-uppercase" style="font-size: 0.55rem; letter-spacing: 0.5px;">{{ sname|truncate(8, True, '..') }}</span>
-                                    <span class="fw-bold {{ sub.text_class }} {% if sub.text_class == 'text-warning' %}text-darken{% endif %}" style="font-size: 0.8rem;">{{ sub.score }}</span>
-                                </div>
+                        {# Trajectory Logic #}
+                        {% set trend = 'neutral' %}
+                        {% set next_index = loop.index0 + 1 %}
+                        {% if next_index < academic_records|length %}
+                            {% set prev_rec = academic_records[next_index] %}
+                            {% if prev_rec.student_id == record.student_id and prev_rec.overall_average and record.overall_average %}
+                                {% if record.overall_average|float > prev_rec.overall_average|float %}{% set trend = 'better' %}
+                                {% elif record.overall_average|float < prev_rec.overall_average|float %}{% set trend = 'worse' %}
                                 {% endif %}
-                            {% endfor %}
-                        </div>
+                            {% endif %}
                         {% endif %}
 
-                        <!-- Actions -->
-                        <div class="mt-3 text-end">
-                            <span class="float-start text-muted fw-bold mt-1" style="font-size: 0.7rem;"><i class="bi bi-trophy-fill text-warning me-1"></i>Rank: {{ record.class_rank if record.class_rank else '-' }}</span>
-                            {% if session.get('can_manage_academics') %}
-                                <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-light border text-primary fw-bold rounded-pill px-3 shadow-sm transition-hover">Edit Data</a>
-                            {% else %}
-                                <span class="small text-muted"><i class="bi bi-lock-fill"></i> Locked</span>
-                            {% endif %}
+                        <div class="col mobile-grade-card" 
+                             data-year="{{ record.academic_year }}" 
+                             data-month="{{ record.month }}" 
+                             data-grade="{{ record.grade_level }}" 
+                             data-school="{{ record.school_name if record.school_name else '-' }}"
+                             data-avg="{{ record.overall_average if record.overall_average is not none else -1 }}"
+                             data-recent="{{ 'true' if is_recent else 'false' }}"
+                             data-tier="{{ tier }}"
+                             data-name="{{ record.first_name }} {{ record.last_name }}">
+                            
+                            <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100 bg-white transition-hover {% if showAlert %}border-top border-danger border-4{% endif %}">
+                                <div class="card-header bg-white border-bottom-0 pt-3 px-3 d-flex justify-content-between align-items-start">
+                                    <div class="min-w-0">
+                                        <a href="/student/{{ record.student_id }}" class="fw-bold text-dark fs-6 text-decoration-none d-block text-truncate">{{ record.first_name }} {{ record.last_name }}</a>
+                                        <span class="badge bg-light text-muted border rounded-pill mt-1" style="font-size: 0.6rem;">{{ record.grade_level }} • {{ record.academic_year }}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="d-flex align-items-center justify-content-end gap-1">
+                                            {% if trend == 'better' %}<i class="bi bi-arrow-up-short text-success fs-4"></i>
+                                            {% elif trend == 'worse' %}<i class="bi bi-arrow-down-short text-danger fs-4"></i>
+                                            {% endif %}
+                                            <h4 class="fw-bold mb-0 {% if record.overall_average is not none and record.overall_average|float >= 85 %}text-success{% elif is_risk %}text-danger{% elif record.overall_average is not none %}text-warning text-darken{% else %}text-muted{% endif %}" style="font-size: 1.1rem;">
+                                                {{ record.overall_average if record.overall_average is not none else '-' }}%
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-body p-3 pt-1">
+                                    {% if showAlert %}
+                                    <div class="bg-danger bg-opacity-10 text-danger py-1 px-2 mb-2 rounded-3 d-flex align-items-center fw-bold" style="font-size: 0.65rem;">
+                                        <i class="bi bi-shield-exclamation me-2"></i> EVALUATION REQUIRED
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Mini Flashcards (Unified %) -->
+                                    <div class="row row-cols-2 g-2">
+                                        {% for sub in record.subjects %}
+                                            {% if sub.score and sub.score != '-' %}
+                                            <div class="col">
+                                                <div class="bg-light p-2 rounded-3 border border-secondary border-opacity-10 h-100">
+                                                    <span class="text-muted fw-bold d-block text-truncate text-uppercase" style="font-size: 0.5rem; letter-spacing: 0.5px;">{{ sub.subject_name|truncate(12) }}</span>
+                                                    {% if sub.score|float(default=none) is not none %}
+                                                        {% set s_val = sub.score|float %}
+                                                        {% set s_max = sub.max_score|float if sub.max_score and sub.max_score|float > 0 else 100 %}
+                                                        <span class="fw-bold {{ sub.text_class if sub.text_class else 'text-dark' }}" style="font-size: 0.85rem;">{{ ((s_val / s_max) * 100)|round(0)|int }}%</span>
+                                                    {% else %}
+                                                        <span class="fw-bold text-dark" style="font-size: 0.85rem;">{{ sub.score }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="mt-3 pt-2 border-top border-light d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small fw-bold">{{ record.month }}</span>
+                                        <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold py-1">Analyze</a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                {% endfor %}
-                
-                <div id="noMobileRecords" class="text-center p-5 bg-light d-none rounded-bottom-4">
-                    <i class="bi bi-journal-x fs-1 text-muted opacity-50 mb-2 d-block"></i>
-                    <h6 class="fw-bold text-dark">No records match your filters.</h6>
+                    {% endfor %}
                 </div>
             </div>
 
             <!-- ======================================================== -->
-            <!-- 2. EXCEL SPREADSHEET (Visible only on PC/Large screens)  -->
+            <!-- 3. PC EXCEL VIEW                                         -->
             <!-- ======================================================== -->
-            <div class="p-0 w-100 custom-horizontal-scroll excel-container d-none d-lg-block rounded-bottom-4">
-                <table id="academicTable" class="table app-style-table align-middle mb-0 table-hover table-bordered m-0" style="width:100%;">
-                    
+            <div class="p-0 w-100 custom-horizontal-scroll excel-container d-none d-lg-block">
+                <table id="academicTable" class="table app-style-table align-middle mb-0 table-hover table-bordered m-0">
                     <thead class="table-light sticky-header">
                         <tr class="text-muted text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.5px;">
-                            <!-- Sticky Left Column -->
                             <th class="sticky-col px-3 align-middle" style="min-width: 200px; z-index: 15;">Student</th>
-                            <th class="text-center align-middle" style="min-width: 100px;">Term & Grade</th>
-                            <th class="text-center text-primary fw-bold align-middle" style="min-width: 80px;">Avg %</th>
-                            
-                            <!-- Dynamic Subject Headers -->
+                            <th class="text-center align-middle" style="min-width: 110px;">Log Details</th>
+                            <th class="text-center text-primary fw-bold align-middle" style="min-width: 100px;">Overall %</th>
                             {% for sub_name in unique_subjects %}
-                                <th class="text-center align-middle subject-header" style="min-width: 55px; max-width: 80px; white-space: normal; line-height: 1.1;">{{ sub_name }}</th>
+                                <th class="text-center align-middle subject-header" style="min-width: 60px; max-width: 80px; white-space: normal; line-height: 1.1;">{{ sub_name }}</th>
                             {% endfor %}
-                            
-                            <th class="text-center align-middle" style="min-width: 50px;">Rank</th>
-                            <th class="text-center align-middle" style="min-width: 60px;">Action</th>
+                            <th class="text-center align-middle" style="min-width: 60px;">Rank</th>
+                            <th class="text-center align-middle" style="min-width: 70px;">Action</th>
                         </tr>
                     </thead>
-                    
                     <tbody>
-                        {% set month_weights = {
-                            'September': '01', 'October': '02', 'November': '03', 'December': '04',
-                            'January': '05', 'February': '06', 'March': '07', 'April': '08', 
-                            'May': '09', 'June': '10', 'July': '11', 'August': '12'
-                        } %}
-
                         {% for record in academic_records %}
-                        
-                        <!-- Determine the tier so JS can filter it -->
-                        {% set tier = 'other' %}
-                        {% if record.grade_level in primary_grades %}
-                            {% set tier = 'primary' %}
-                        {% elif record.grade_level in high_grades %}
-                            {% set tier = 'highschool' %}
-                        {% elif record.grade_level and ('University' in record.grade_level or 'Vocational' in record.grade_level) %}
-                            {% set tier = 'highered' %}
-                        {% endif %}
-                        
-                        <!-- Determine secondary sort weight based on exam type -->
-                        {% set term_weight = '1' %}
-                        {% if record.semester %}
-                            {% if '1' in record.semester %}
-                                {% set term_weight = '2' %}
-                            {% elif '2' in record.semester %}
-                                {% set term_weight = '3' %}
-                            {% elif 'Final' in record.semester %}
-                                {% set term_weight = '4' %}
+                            {% set tier = 'other' %}
+                            {% if record.grade_level in primary_grades %}{% set tier = 'primary' %}
+                            {% elif record.grade_level in high_grades %}{% set tier = 'highschool' %}
                             {% endif %}
-                        {% endif %}
 
-                        <tr class="bg-white gradebook-row" 
+                            {% set is_recent = current_year_threshold in record.academic_year %}
+                            {% set is_risk = record.overall_average is not none and record.overall_average|float < 50 %}
+                            {% set showAlert = is_risk and is_recent %}
+
+                            {# PC Trajectory vars #}
+                            {% set pc_trend = 'neutral' %}
+                            {% set pc_next_index = loop.index0 + 1 %}
+                            {% if pc_next_index < academic_records|length %}
+                                {% set pc_prev_rec = academic_records[pc_next_index] %}
+                                {% if pc_prev_rec.student_id == record.student_id and pc_prev_rec.overall_average and record.overall_average %}
+                                    {% if record.overall_average|float > pc_prev_rec.overall_average|float %}{% set pc_trend = 'better' %}
+                                    {% elif record.overall_average|float < pc_prev_rec.overall_average|float %}{% set pc_trend = 'worse' %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+
+                        <tr class="gradebook-row {% if showAlert %}table-danger-light{% else %}bg-white{% endif %}" 
                             data-year="{{ record.academic_year }}" 
-                            data-month="{{ record.month }}"
-                            data-tier="{{ tier }}">
+                            data-month="{{ record.month }}" 
+                            data-grade="{{ record.grade_level }}"
+                            data-school="{{ record.school_name if record.school_name else '-' }}"
+                            data-avg="{{ record.overall_average if record.overall_average is not none else -1 }}"
+                            data-recent="{{ 'true' if is_recent else 'false' }}"
+                            data-tier="{{ tier }}"
+                            data-name="{{ record.first_name }} {{ record.last_name }}">
                             
-                            <!-- Student Info (Sticky on PC) -->
-                            <td class="sticky-col bg-white px-3 py-1">
-                                <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark text-truncate d-block" style="max-width: 180px; font-size: 0.85rem;">
-                                    {{ record.first_name }} {{ record.last_name }}
-                                </a>
-                                <span class="d-block text-muted mt-0 text-truncate" style="max-width: 180px; font-size: 0.65rem;">{{ record.school_name if record.school_name else '-' }}</span>
+                            <td class="sticky-col {% if showAlert %}bg-danger-light{% else %}bg-white{% endif %} px-3 py-2">
+                                <div class="d-flex align-items-center">
+                                    {% if showAlert %}<i class="bi bi-exclamation-triangle-fill text-danger me-2" title="Needs Evaluation"></i>{% endif %}
+                                    <div class="lh-sm">
+                                        <a href="/student/{{ record.student_id }}" class="text-decoration-none fw-bold text-dark d-block text-truncate" style="max-width: 170px;">{{ record.first_name }} {{ record.last_name }}</a>
+                                        <span class="text-muted small" style="font-size: 0.65rem;">{{ record.school_name if record.school_name else '-' }}</span>
+                                    </div>
+                                </div>
                             </td>
-                            
-                            <!-- Term & Grade Info (With Sub-Term Sorting) -->
-                            <td data-sort="{{ record.academic_year }}-{{ month_weights.get(record.month, '99') }}-{{ term_weight }}" class="text-center align-middle py-1" style="line-height: 1.1;">
-                                <span class="d-block text-dark fw-bold" style="font-size: 0.75rem;">{{ record.month }}</span>
-                                {% if record.semester %}
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-2 py-0 mt-1 d-inline-block text-truncate" style="font-size: 0.6rem; max-width: 80px;" title="{{ record.semester }}">{{ record.semester }}</span>
-                                {% endif %}
-                                {% if record.grade_level %}
-                                    <span class="text-muted fw-bold d-block mt-1" style="font-size: 0.65rem;">{{ record.grade_level }}</span>
-                                {% endif %}
+                            <td class="text-center align-middle py-1 lh-sm">
+                                <span class="d-block text-dark fw-bold small" style="font-size: 0.75rem;">{{ record.month }}</span>
+                                <div class="d-flex flex-column align-items-center gap-1 mt-1">
+                                    <span class="badge bg-light text-primary border border-primary border-opacity-10 px-2 py-0" style="font-size: 0.6rem;">{{ record.academic_year }}</span>
+                                    <span class="badge bg-light text-muted border px-2 py-0" style="font-size: 0.6rem;">{{ record.grade_level }}</span>
+                                </div>
                             </td>
-                            
-                            <!-- Overall Average & Overall A-F Rating -->
-                            <td data-sort="{{ record.overall_average if record.overall_average else -1 }}" class="text-center align-middle bg-light py-1 border-end border-2">
-                                <div class="d-flex flex-column align-items-center justify-content-center gap-1">
-                                    {% if record.overall_average %}
-                                        <span class="fw-bold {% if record.overall_average >= 85 %}text-success{% elif record.overall_average >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}" style="font-size: 0.9rem;">
-                                            {{ record.overall_average }}%
-                                        </span>
-                                    {% endif %}
-                                    {% if record.overall_grade %}
-                                        <span class="badge {% if record.overall_average and record.overall_average >= 85 %}bg-success{% elif record.overall_average and record.overall_average >= 50 %}bg-warning text-dark{% elif record.overall_average %}bg-danger{% else %}bg-secondary{% endif %} shadow-sm p-1" style="font-size: 0.6rem;">
-                                            {{ record.overall_grade }}
-                                        </span>
-                                    {% endif %}
-                                    {% if not record.overall_average and not record.overall_grade %}
-                                        <span class="text-muted">-</span>
+                            <td class="text-center align-middle py-1 border-end border-2 fw-bold {% if record.overall_average is none %}-{% elif record.overall_average|float >= 85 %}text-success bg-success bg-opacity-10{% elif is_risk %}text-danger bg-danger bg-opacity-10{% else %}text-warning bg-warning bg-opacity-10{% endif %}">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    {{ record.overall_average if record.overall_average is not none else '-' }}%
+                                    {% if pc_trend == 'better' %}<i class="bi bi-caret-up-fill text-success"></i>
+                                    {% elif pc_trend == 'worse' %}<i class="bi bi-caret-down-fill text-danger"></i>
                                     {% endif %}
                                 </div>
                             </td>
-
-                            <!-- Dynamic Pivot Columns (THE HEATMAP) -->
                             {% for sub_name in unique_subjects %}
-                                {% set score_val = namespace(score='-', max='', text_class='text-muted', box_class='', badge_class='', grade_letter='') %}
-                                {% if record.subjects %}
-                                    {% for sub in record.subjects %}
-                                        {% set current_sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
-                                        {% if current_sname and current_sname.strip() == sub_name %}
-                                            {% set score_val.score = sub.score %}
-                                            {% set score_val.max = sub.max_score %}
-                                            {% set score_val.text_class = sub.text_class if sub.text_class else 'text-dark' %}
-                                            {% set score_val.box_class = sub.box_class if sub.box_class else '' %}
-                                            {% set score_val.badge_class = sub.badge_class if sub.badge_class else '' %}
-                                            {% set score_val.grade_letter = sub.grade_letter if sub.grade_letter else '' %}
+                                {% set cell = namespace(val='-', cls='text-muted opacity-25', sort='-1') %}
+                                {% for sub in record.subjects %}
+                                    {% set current_sname = sub.subject_name|default(sub.name, true)|default(sub.custom_subject_name, true) %}
+                                    {% if current_sname and current_sname.strip() == sub_name and sub.score %}
+                                        {% if sub.score|float(default=none) is not none %}
+                                            {% set s_val = sub.score|float %}
+                                            {% set s_max = sub.max_score|float if sub.max_score and sub.max_score|float > 0 else 100 %}
+                                            {% set cell.val = ((s_val / s_max) * 100)|round(0)|int ~ '%' %}
+                                            {% set cell.cls = sub.text_class if sub.text_class else 'text-dark fw-bold' %}
+                                            {% set cell.sort = s_val %}
+                                        {% else %}
+                                            {% set cell.val = sub.score %}{% set cell.cls = sub.text_class if sub.text_class else 'text-dark' %}{% set cell.sort = 0 %}
                                         {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                                
-                                <td data-sort="{{ score_val.score if score_val.score != '-' else -1 }}" class="text-center align-middle p-1 subject-cell {{ score_val.box_class }}" style="transition: background-color 0.2s;">
-                                    {% if score_val.score != '-' %}
-                                        <div class="d-flex flex-column align-items-center justify-content-center">
-                                            <div class="d-flex align-items-center justify-content-center gap-1">
-                                                <span class="fw-bold {{ score_val.text_class }} {% if score_val.text_class == 'text-warning' %}text-darken{% endif %}" style="font-size: 0.85rem;">{{ score_val.score }}</span>
-                                                {% if score_val.grade_letter %}
-                                                    <span class="badge {{ score_val.badge_class }} shadow-sm" style="font-size: 0.55rem; padding: 0.15rem 0.25rem;">{{ score_val.grade_letter }}</span>
-                                                {% endif %}
-                                            </div>
-                                            {% if score_val.max and score_val.max|string not in ['100', '100.0'] %}
-                                                <span class="text-muted fw-bold" style="font-size: 0.5rem; line-height: 1; opacity: 0.6;">/{{ score_val.max|string|replace('.0', '') }}</span>
-                                            {% endif %}
-                                        </div>
-                                    {% else %}
-                                        <span class="text-muted opacity-25">-</span>
                                     {% endif %}
-                                </td>
+                                {% endfor %}
+                                <td class="text-center align-middle p-1 small subject-cell {{ cell.cls }}" data-sort="{{ cell.sort }}">{{ cell.val }}</td>
                             {% endfor %}
-                            
-                            <!-- Class Rank -->
-                            <td data-sort="{{ record.class_rank if record.class_rank else 999 }}" class="text-center align-middle fw-bold text-secondary border-start border-2" style="font-size: 0.8rem;">
-                                {{ record.class_rank if record.class_rank else '-' }}
-                            </td>
-                            
-                            <!-- Action Column -->
-                            <td class="text-center align-middle">
-                                {% if session.get('can_manage_academics') %}
-                                    <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-light border fw-bold text-primary px-2 py-0 rounded" style="font-size: 0.75rem;">
-                                        Edit
-                                    </a>
-                                {% else %}
-                                    <span class="small text-muted"><i class="bi bi-lock-fill" title="Editing Restricted"></i></span>
-                                {% endif %}
+                            <td class="text-center align-middle fw-bold text-secondary border-start border-2 small">{{ record.class_rank if record.class_rank else '-' }}</td>
+                            <td class="text-center align-middle px-2">
+                                <a href="/edit_report/{{ record.report_id if record.report_id else record.id }}" class="btn btn-sm btn-white border py-0 px-2 fw-bold text-primary small transition-hover">Analyze</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+            
+            <div id="noRecordsFound" class="text-center p-5 bg-white rounded-4 d-none shadow-sm">
+                <i class="bi bi-search fs-1 text-muted opacity-25 mb-2 d-block"></i>
+                <h6 class="fw-bold text-dark">No records found matching filters.</h6>
+                <p class="text-muted small">Try adjusting your year, school, or grade selection.</p>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- SMART MODAL: QUICK ADD -->
+<div class="modal fade" id="quickAddModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Select Student</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div class="input-group mb-3 shadow-sm rounded-3 overflow-hidden border">
+                    <span class="input-group-text bg-white border-0 px-3"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="modalStudentSearch" class="form-control border-0 py-2 fw-bold" placeholder="Type name or ID...">
+                </div>
+                <div class="list-group rounded-4 border shadow-sm overflow-auto" style="max-height: 350px;" id="modalStudentList">
+                    {% for s in active_students %}
+                    <button type="button" class="list-group-item list-group-item-action py-3 px-3 d-flex align-items-center transition-hover student-modal-item" 
+                            data-name="{{ s.first_name }} {{ s.last_name }} {{ s.ngo_id }}"
+                            onclick="window.location.href='/add_report/{{ s.id }}'">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0 fw-bold" style="width: 35px; height: 35px;">
+                            {{ s.first_name[0] }}
+                        </div>
+                        <div class="lh-sm text-start">
+                            <h6 class="mb-0 fw-bold text-dark">{{ s.first_name }} {{ s.last_name }}</h6>
+                            <small class="text-muted fw-bold">ID: {{ s.ngo_id }} • {{ s.grade_level }}</small>
+                        </div>
+                        <i class="bi bi-chevron-right ms-auto text-muted small opacity-50"></i>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top-0 rounded-bottom-4 px-4 py-3">
+                <button type="button" class="btn btn-light fw-bold text-muted rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MOBILE FAB -->
+{% if session.get('can_manage_academics') or session.get('can_create_academics') %}
+<button class="btn btn-success text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-circle border border-2 border-white" data-bs-toggle="modal" data-bs-target="#quickAddModal" style="bottom: 90px; right: 20px; width: 60px; height: 60px; z-index: 1040;">
+    <i class="bi bi-plus-lg fs-3"></i>
+</button>
+{% endif %}
+
 <style>
-    /* The main wrapper that allows scrolling */
-    .excel-container {
-        max-height: 70vh; /* Keeps the headers on screen when scrolling down */
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
-        background-color: #f8f9fa;
-    }
+    .transition-hover { transition: all 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
     
-    /* Elegant scrollbar for the table wrapper */
-    .excel-container::-webkit-scrollbar { height: 12px; width: 12px; }
-    .excel-container::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 4px; }
-    .excel-container::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 6px; border: 2px solid #f1f3f5; }
-    .excel-container::-webkit-scrollbar-thumb:hover { background: #adb5bd; }
+    .analysis-btn { background: transparent; color: #6c757d; border: 0 !important; }
+    .analysis-btn.active { background: #0d6efd !important; color: white !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .analysis-btn[data-analysis="risk"].active { background: #dc3545 !important; }
+    .analysis-btn[data-analysis="honors"].active { background: #198754 !important; }
 
-    /* Force the table to never wrap text */
-    .app-style-table {
-        white-space: nowrap;
-        border-collapse: separate; 
-        border-spacing: 0;
-    }
+    .excel-container { max-height: 75vh; overflow: auto; background-color: #f8f9fa; border-radius: 0 0 1rem 1rem; }
+    .app-style-table { white-space: nowrap; border-collapse: separate; border-spacing: 0; }
+    .sticky-header th { position: sticky; top: 0; z-index: 10; background-color: #f8f9fa !important; border-bottom: 2px solid #dee2e6 !important; }
+    .sticky-col { position: sticky; left: 0; z-index: 5; border-right: 2px solid #dee2e6 !important; }
     
-    .app-style-table td, .app-style-table th {
-        border-right: 1px solid #dee2e6;
-        border-bottom: 1px solid #dee2e6;
-    }
+    .table-danger-light { background-color: rgba(220, 53, 69, 0.03) !important; }
+    .bg-danger-light { background-color: #fff5f5 !important; }
 
-    /* 🚨 THE FREEZE PANE MAGIC 🚨 */
-    .sticky-header th {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background-color: #f8f9fa !important;
-        border-bottom: 2px solid #dee2e6 !important;
-        box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
-    }
+    .custom-scrollbar::-webkit-scrollbar { display: none; }
+    .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    .sticky-col {
-        position: sticky;
-        left: 0;
-        background-color: #fff;
-        z-index: 5;
-        border-right: 2px solid #dee2e6 !important; 
-        box-shadow: 2px 0 5px rgba(0,0,0,0.02);
-    }
-    
-    .sticky-header th.sticky-col {
-        z-index: 15;
-    }
-
-    /* Remove DataTables default weird margins when scrolling */
-    .dataTables_wrapper .row { margin-left: 0; margin-right: 0; }
-    .dataTables_wrapper .dataTables_filter { margin-bottom: 1rem; padding: 0 1rem; margin-top: 1rem;}
-    
-    .text-warning.text-darken { color: #b48600 !important; }
-    
-    .table-hover>tbody>tr:hover>* {
-        box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.02);
-    }
-    
-    .transition-hover { transition: transform 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-1px); }
-
-    /* Native App Styling for Mobile Edge-to-Edge */
-    @media (max-width: 767.98px) {
-        .native-card {
-            border-radius: 0 !important;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            margin-left: -1rem;
-            margin-right: -1rem;
-        }
-        .custom-scrollbar::-webkit-scrollbar { display: none; }
-        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    }
+    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; margin-left: -1rem; margin-right: -1rem; } }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    function routeToStudent() {
-        const studentId = document.getElementById('quickStudentSelect').value;
-        if (studentId) {
-            window.location.href = `/add_report/${studentId}`;
-        }
+    let currentAnalysisFilter = 'all';
+    let filterRecent3 = false;
+
+    const academicOrder = ["September", "October", "November", "December", "January", "February", "March", "April", "May", "June", "July", "August"];
+
+    function setAnalysisFilter(type, btn) {
+        document.querySelectorAll('.analysis-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentAnalysisFilter = type;
+        filterGradebook();
     }
 
-    var academicTable;
+    function toggleRecentThree() {
+        filterRecent3 = !filterRecent3;
+        const btn = document.getElementById('btnRecent3Months');
+        btn.classList.toggle('btn-primary', filterRecent3);
+        btn.classList.toggle('text-white', filterRecent3);
+        btn.classList.toggle('btn-light', !filterRecent3);
+        filterGradebook();
+    }
 
-    $(document).ready(function() {
-        const yearSet = new Set();
-        const yearMonthMap = {}; 
+    document.addEventListener("DOMContentLoaded", function() {
+        const yearFilter = document.getElementById('yearFilter');
+        const monthFilter = document.getElementById('monthFilter');
+        const gradeFilter = document.getElementById('gradeFilter');
+        const schoolFilter = document.getElementById('schoolFilter');
         
-        // 1. Extract all exact years and months from the HTML rows (from the PC table)
-        $('.gradebook-row').each(function() {
-            const year = $(this).attr('data-year') ? $(this).attr('data-year').trim() : "";
-            let monthAttr = $(this).attr('data-month');
-            const month = monthAttr ? monthAttr.replace(/\s+/g, ' ').trim() : "";
-            
-            if(year) {
-                yearSet.add(year);
-                if (!yearMonthMap[year]) {
-                    yearMonthMap[year] = new Set();
-                }
-                if(month) {
-                    yearMonthMap[year].add(month);
-                }
+        const years = new Set();
+        const months = new Set();
+        const grades = new Set();
+        const schools = new Set();
+        
+        // 1. SCAN DATA
+        const items = document.querySelectorAll('.gradebook-row, .mobile-grade-card');
+        items.forEach(item => {
+            const y = item.getAttribute('data-year');
+            const m = item.getAttribute('data-month');
+            const g = item.getAttribute('data-grade');
+            const s = item.getAttribute('data-school');
+            if(y) years.add(y);
+            if(m) months.add(m);
+            if(g) grades.add(g);
+            if(s && s !== '-') schools.add(s);
+        });
+
+        // 2. POPULATE DROPDOWNS
+        const sortedYears = Array.from(years).sort().reverse();
+        sortedYears.forEach(y => yearFilter.add(new Option(y, y)));
+        Array.from(months).sort((a,b) => academicOrder.indexOf(a) - academicOrder.indexOf(b)).forEach(m => monthFilter.add(new Option(m, m)));
+        Array.from(grades).sort().forEach(g => gradeFilter.add(new Option(g, g)));
+        Array.from(schools).sort().forEach(s => schoolFilter.add(new Option(s, s)));
+
+        // 3. SET RECENCY DEFAULTS
+        if(sortedYears.length > 0) yearFilter.value = sortedYears[0];
+        
+        let maxMonthIdx = -1;
+        items.forEach(item => {
+            if(item.getAttribute('data-year') === yearFilter.value) {
+                const m = item.getAttribute('data-month');
+                const idx = academicOrder.indexOf(m);
+                if(idx > maxMonthIdx) maxMonthIdx = idx;
             }
         });
+        if(maxMonthIdx > -1) monthFilter.value = academicOrder[maxMonthIdx];
 
-        // 2. Populate Year Dropdown
-        const yearFilter = $('#yearFilter');
-        const monthFilter = $('#monthFilter');
-        const tierFilter = $('#tierFilter');
-
-        const sortedYears = Array.from(yearSet).sort().reverse();
-        sortedYears.forEach(year => {
-            yearFilter.append(new Option(year, year));
+        // 4. LIVE MODAL SEARCH
+        document.getElementById('modalStudentSearch')?.addEventListener('keyup', function() {
+            const query = this.value.toLowerCase();
+            document.querySelectorAll('.student-modal-item').forEach(item => {
+                item.style.display = item.getAttribute('data-name').toLowerCase().includes(query) ? 'flex' : 'none';
+            });
         });
 
-        // 🚨 PURE MONTHLY ORDER 🚨
-        const academicOrder = [
-            "September", "October", "November", "December", 
-            "January", "February", "March", "April", 
-            "May", "June", "July", "August"
-        ];
-        
-        function populateMonths(selectedYear) {
-            const currentMonth = monthFilter.val();
-            monthFilter.find('option:not(:first)').remove(); // Keep "All"
+        window.filterGradebook = function() {
+            const y = yearFilter.value;
+            const m = monthFilter.value;
+            const g = gradeFilter.value;
+            const s = schoolFilter.value;
+            const t = document.getElementById('tierFilter').value;
+            const q = document.getElementById('pcSearch').value.toLowerCase();
             
-            let monthsToUse = new Set();
-            if (selectedYear === 'all') {
-                Object.values(yearMonthMap).forEach(mSet => {
-                    mSet.forEach(m => monthsToUse.add(m));
+            let visibleCount = 0;
+            
+            // Current anchor for "Last 3 Months"
+            let anchorMonthIdx = academicOrder.indexOf(m);
+            if (anchorMonthIdx === -1) {
+                // If "All Months", find the latest available month for the current selected year
+                items.forEach(item => {
+                    if (item.getAttribute('data-year') === y || y === 'all') {
+                        const idx = academicOrder.indexOf(item.getAttribute('data-month'));
+                        if (idx > anchorMonthIdx) anchorMonthIdx = idx;
+                    }
                 });
-            } else if (yearMonthMap[selectedYear]) {
-                monthsToUse = yearMonthMap[selectedYear];
             }
-            
-            const sortedMonths = Array.from(monthsToUse).sort((a, b) => {
-                let indexA = academicOrder.findIndex(m => a.includes(m));
-                let indexB = academicOrder.findIndex(m => b.includes(m));
-                if (indexA === -1) indexA = 99;
-                if (indexB === -1) indexB = 99;
-                return indexA - indexB;
+
+            items.forEach(item => {
+                const cy = item.getAttribute('data-year');
+                const cm = item.getAttribute('data-month');
+                const cg = item.getAttribute('data-grade');
+                const cs = item.getAttribute('data-school');
+                const ct = item.getAttribute('data-tier');
+                const avgVal = item.getAttribute('data-avg');
+                const isRecent = item.getAttribute('data-recent') === 'true';
+                const avg = (avgVal === "-1" || avgVal === null) ? null : parseFloat(avgVal);
+                const name = item.getAttribute('data-name').toLowerCase();
+                
+                let match = true;
+
+                // Timeframe Logic
+                if (!filterRecent3) {
+                    if (y !== 'all' && cy !== y) match = false;
+                    if (m !== 'all' && cm !== m) match = false;
+                } else {
+                    // Combine Recent 3 months logic
+                    const mIdx = academicOrder.indexOf(cm);
+                    // Must be within same academic year as selected year (or any if all)
+                    if (y !== 'all' && cy !== y) match = false;
+                    // Check range from anchor
+                    if (mIdx < anchorMonthIdx - 2 || mIdx > anchorMonthIdx) match = false;
+                }
+
+                // Property Logic
+                if (g !== 'all' && cg !== g) match = false;
+                if (s !== 'all' && cs !== s) match = false;
+                if (t !== 'all' && ct !== t) match = false;
+                if (q && !name.includes(q)) match = false;
+                
+                // Analytics Pills Logic
+                if (currentAnalysisFilter === 'risk') {
+                    if (!isRecent || avg === null || avg >= 50) match = false;
+                } else if (currentAnalysisFilter === 'honors') {
+                    if (avg === null || avg < 85) match = false;
+                }
+
+                if (item.classList.contains('gradebook-row')) {
+                    item.style.display = match ? '' : 'none';
+                } else {
+                    item.classList.toggle('d-none', !match);
+                }
+                if(match) visibleCount++;
             });
 
-            sortedMonths.forEach(month => {
-                monthFilter.append(new Option(month, month));
-            });
+            document.getElementById('noRecordsFound').classList.toggle('d-none', visibleCount > 0);
 
-            if (currentMonth && currentMonth !== 'all' && sortedMonths.includes(currentMonth)) {
-                monthFilter.val(currentMonth);
-            } else if (sortedMonths.length > 0) {
-                // If they are on a new year, default to the most recent chronological entry
-                monthFilter.val(sortedMonths[sortedMonths.length - 1]);
-            } else {
-                monthFilter.val('all');
+            // PC TABLE COLUMN COLLAPSING (Excel Optimization)
+            const table = document.getElementById('academicTable');
+            if (table && window.getComputedStyle(table).display !== 'none') {
+                const headerCells = table.querySelectorAll('.subject-header');
+                const rows = document.querySelectorAll('.gradebook-row');
+                headerCells.forEach((header, index) => {
+                    const colIndex = index + 3;
+                    let hasData = false;
+                    rows.forEach(row => {
+                        if (row.style.display !== 'none') {
+                            const cell = row.children[colIndex];
+                            if (cell && cell.getAttribute('data-sort') !== "-1") hasData = true;
+                        }
+                    });
+                    header.style.display = hasData ? '' : 'none';
+                    rows.forEach(row => { 
+                        if(row.children[colIndex]) row.children[colIndex].style.display = hasData ? '' : 'none'; 
+                    });
+                });
             }
-        }
-
-        if (sortedYears.length > 0) {
-            yearFilter.val(sortedYears[0]);
-        }
-        populateMonths(yearFilter.val());
-
-        // 5. Initialize DataTables for the PC View
-        academicTable = $('#academicTable').DataTable({
-            "pageLength": 50,
-            "order": [[1, "desc"]], // Default sort by the "Term & Grade" column (chronologically)
-            "language": {
-                "search": "",
-                "searchPlaceholder": "🔍 Search Matrix...",
-                "emptyTable": "No academic records found for the selected filters."
-            },
-            "scrollX": false, 
-            "autoWidth": false,
-            "info": false
-        });
-
-        // 6. Build the Custom Search Extension (BULLETPROOF FILTERING for PC Table)
-        $.fn.dataTable.ext.search.push(
-            function(settings, data, dataIndex, rowData, counter) {
-                if (settings.nTable.id !== 'academicTable') return true;
-
-                var selectedYear = $('#yearFilter').val() || 'all';
-                var selectedMonth = $('#monthFilter').val() || 'all';
-                var selectedTier = $('#tierFilter').val() || 'all'; 
-                
-                var rowNode = settings.aoData[dataIndex].nTr;
-                if (!rowNode) return true;
-                
-                var rowYear = ($(rowNode).attr('data-year') || "").trim();
-                var rowMonth = ($(rowNode).attr('data-month') || "").trim();
-                var rowTier = ($(rowNode).attr('data-tier') || "").trim();
-                
-                var yearMatch = (selectedYear === 'all' || rowYear === selectedYear);
-                var monthMatch = (selectedMonth === 'all' || rowMonth === selectedMonth);
-                var tierMatch = (selectedTier === 'all' || rowTier === selectedTier);
-                
-                return yearMatch && monthMatch && tierMatch;
-            }
-        );
-
-        yearFilter.on('change', function() {
-            populateMonths($(this).val()); 
-            filterGradebook();
-        });
-
-        monthFilter.on('change', function() { filterGradebook(); });
-        tierFilter.on('change', function() { filterGradebook(); });
+        };
 
         filterGradebook();
     });
-
-    // 🚨 DUAL FILTER LOGIC (Filters both PC Table and Mobile Cards)
-    function filterGradebook() {
-        var selectedYear = $('#yearFilter').val() || 'all';
-        var selectedMonth = $('#monthFilter').val() || 'all';
-        var selectedTier = $('#tierFilter').val() || 'all'; 
-
-        // 1. Filter the PC DataTables
-        if (academicTable) {
-            academicTable.draw();
-            
-            let numCols = academicTable.columns().count();
-            let columnsToHide = [];
-            let columnsToShow = [];
-
-            // Skip Student(0), Term(1), Avg(2), and the last two columns (Rank, Action)
-            for (let i = 3; i < numCols - 2; i++) {
-                let columnHasData = false;
-                
-                // Get all the <td> DOM nodes for this specific column that are CURRENTLY visible
-                let nodes = academicTable.column(i, {search: 'applied'}).nodes();
-                
-                $(nodes).each(function() {
-                    // Check our foolproof data-sort attribute! 
-                    if ($(this).attr('data-sort') !== "-1") {
-                        columnHasData = true;
-                        return false; 
-                    }
-                });
-                
-                if (columnHasData) {
-                    columnsToShow.push(i);
-                } else {
-                    columnsToHide.push(i);
-                }
-            }
-            
-            academicTable.columns(columnsToShow).visible(true, false);
-            academicTable.columns(columnsToHide).visible(false, false);
-            academicTable.columns.adjust();
-        }
-
-        // 2. Filter the Mobile Native Cards
-        let mobileVisibleCount = 0;
-        $('.mobile-grade-card').each(function() {
-            var rowYear = ($(this).attr('data-year') || "").trim();
-            var rowMonth = ($(this).attr('data-month') || "").trim();
-            var rowTier = ($(this).attr('data-tier') || "").trim();
-
-            var yearMatch = (selectedYear === 'all' || rowYear === selectedYear);
-            var monthMatch = (selectedMonth === 'all' || rowMonth === selectedMonth);
-            var tierMatch = (selectedTier === 'all' || rowTier === selectedTier);
-
-            if (yearMatch && monthMatch && tierMatch) {
-                $(this).removeClass('d-none');
-                mobileVisibleCount++;
-            } else {
-                $(this).addClass('d-none');
-            }
-        });
-
-        if (mobileVisibleCount === 0) {
-            $('#noMobileRecords').removeClass('d-none');
-        } else {
-            $('#noMobileRecords').addClass('d-none');
-        }
-    }
 </script>
 {% endblock %}

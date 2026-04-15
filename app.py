@@ -671,6 +671,7 @@ def add_student():
         guardian_name = request.form.get("guardian_name")
         phone = request.form.get("phone_number")
         slum = request.form.get("slum_area")
+        previous_school = request.form.get("previous_school")
         current_school = request.form.get("current_school")
         grade = request.form.get("grade_level")
         meal_plan = request.form.get("meal_plan")
@@ -693,9 +694,9 @@ def add_student():
         try:
             db.execute("""
                 INSERT INTO students
-                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, program_id, updated_at)
+                (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, previous_school, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, program_id, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
-            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, pid)
+            """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, previous_school, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, pid)
             
             student_id = db.execute("SELECT id FROM students WHERE ngo_id = ?", ngo_id)[0]['id']
             
@@ -738,6 +739,7 @@ def edit_student(id):
         guardian_name = request.form.get("guardian_name")
         phone = request.form.get("phone_number")
         slum = request.form.get("slum_area")
+        previous_school = request.form.get("previous_school")
         current_school = request.form.get("current_school")
         grade = request.form.get("grade_level")
         meal_plan = request.form.get("meal_plan")
@@ -759,12 +761,12 @@ def edit_student(id):
                 UPDATE students 
                 SET ngo_id = ?, first_name = ?, last_name = ?, khmer_name = ?, gender = ?, 
                     dob = ?, joined_date = ?, guardian_name = ?, phone_number = ?, 
-                    slum_area = ?, current_school = ?, grade_level = ?, meal_plan = ?, 
+                    slum_area = ?, previous_school = ?, current_school = ?, grade_level = ?, meal_plan = ?, 
                     comment = ?, status = ?, household_id = ?, caregiver_relationship = ?, 
                     mother_name = ?, father_name = ?, updated_at = datetime('now', 'localtime')
                 WHERE id = ?
             """, ngo_id, first_name, last_name, khmer_name, gender, dob, joined_date, 
-                 guardian_name, phone, slum, current_school, grade, meal_plan, comment, status, 
+                 guardian_name, phone, slum, previous_school, current_school, grade, meal_plan, comment, status, 
                  household_id, caregiver_relationship, mother_name, father_name, id)
             
             log_action(f"Edited student profile: {first_name} {last_name}")
@@ -781,7 +783,7 @@ def edit_student(id):
 
         student = student_data[0]
         households = db.execute("""
-            SELECT h.id, h.guardian_name, h.phone_number, GROUP_CONCAT(s.first_name, ', ') as kids
+            SELECT h.id, h.guardian_name, h.slum_area, h.phone_number, GROUP_CONCAT(s.first_name, ', ') as kids
             FROM households h
             LEFT JOIN students s ON h.id = s.household_id
             GROUP BY h.id
@@ -880,8 +882,11 @@ def household_profile(id):
             guardian = request.form.get("guardian_name")
             phone = request.form.get("phone_number")
             slum = request.form.get("slum_area")
-            db.execute("UPDATE households SET guardian_name = ?, phone_number = ?, slum_area = ? WHERE id = ?", 
-                       guardian, phone, slum, id)
+            income = request.form.get("household_income")
+            ledger = request.form.get("adults_in_home")
+            notes = request.form.get("notes")
+            db.execute("UPDATE households SET guardian_name = ?, phone_number = ?, slum_area = ?, household_income = ?, adults_in_home = ?, notes = ? WHERE id = ?", 
+                       guardian, phone, slum, income, ledger, notes, id)
             log_action(f"Updated Household ID {id} profile")
             flash("Caregiver details updated successfully.", "success")
 

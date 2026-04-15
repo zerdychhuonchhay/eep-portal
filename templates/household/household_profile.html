@@ -1,70 +1,88 @@
 {% extends "layout.html" %}
 
-{% block title %}Household: {{ household.guardian_name }}{% endblock %}
+{% block title %}Family File: {{ household.guardian_name }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid mt-3 mt-md-4 mb-5 px-3 px-xl-5" style="max-width: 1200px;">
+<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 1200px;">
 
     <!-- NATIVE iOS/ANDROID STYLE HEADER -->
-    <div class="mb-4 d-flex justify-content-between align-items-center">
+    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
         <a href="/manage_households" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
-            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Households
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Families
         </a>
         
-        <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 w-auto">
+        <!-- PC HEADER ACTION -->
+        <div class="d-none d-md-block">
             {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
-            <!-- Desktop Edit Button -->
-            <button class="btn btn-sm btn-dark fw-bold shadow-sm rounded-pill px-4 transition-hover d-none d-md-flex align-items-center" data-bs-toggle="modal" data-bs-target="#editHouseholdModal">
-                <i class="bi bi-pencil-square me-1"></i> Edit Details
+            <button class="btn btn-white border fw-bold rounded-pill px-4 shadow-sm transition-hover" data-bs-toggle="modal" data-bs-target="#editHouseholdModal">
+                <i class="bi bi-pencil-square me-2 text-primary"></i>Update Family File
             </button>
             {% endif %}
         </div>
     </div>
 
-    <div class="row g-4">
+    <div class="row g-4 px-0 px-md-0">
         <!-- ========================================== -->
-        <!-- LEFT COLUMN: Identity & Stats              -->
+        <!-- LEFT COLUMN: Family Identity (Sticky)      -->
         <!-- ========================================== -->
-        <div class="col-12 col-lg-5 col-xl-4">
+        <div class="col-12 col-lg-4 col-xl-4 mb-3 mb-lg-0">
             <div class="sticky-lg-top" style="top: 80px; z-index: 5;">
                 
-                <!-- Native Hero Card -->
+                <!-- Family Hero Card -->
                 <div class="card shadow-sm border-0 rounded-4 native-card text-center mb-4 bg-white pt-4 pb-2 border-top border-info border-4">
                     <div class="card-body px-4">
                         <div class="bg-info bg-opacity-10 text-info rounded-circle d-inline-flex justify-content-center align-items-center mb-3 shadow-sm" style="width: 100px; height: 100px;">
                             <i class="bi bi-house-heart-fill" style="font-size: 3rem;"></i>
                         </div>
-                        <h4 class="fw-bold mb-1 text-dark">{{ household.guardian_name }}</h4>
-                        <p class="text-muted fw-bold small mb-3"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ household.slum_area if household.slum_area else 'Location Unknown' }}</p>
+                        <h3 class="fw-bold mb-1 text-dark">{{ household.guardian_name }}</h3>
+                        <div class="badge bg-light text-primary border border-primary border-opacity-10 px-3 py-1 rounded-pill mb-4 font-monospace" style="font-size: 0.7rem;">
+                            FAMILY ID: #{{ household.id }}
+                        </div>
                         
-                        <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
-                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-people-fill text-muted me-1"></i> Size: {{ household.total_headcount if household.total_headcount else '?' }}</span>
+                        <!-- Primary Contact -->
+                        <div class="d-flex flex-column gap-2 mb-4">
                             {% if household.phone_number %}
-                            <a href="tel:{{ household.phone_number }}" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill shadow-sm text-decoration-none transition-hover"><i class="bi bi-telephone-fill me-1"></i> Call</a>
+                            <a href="tel:{{ household.phone_number }}" class="btn btn-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill shadow-sm transition-hover fw-bold py-2">
+                                <i class="bi bi-telephone-fill me-2"></i> {{ household.phone_number }}
+                            </a>
                             {% endif %}
+                        </div>
+
+                        <div class="row g-2 text-start">
+                            <div class="col-6">
+                                <span class="text-muted small fw-bold text-uppercase d-block" style="font-size: 0.6rem;">Book/Doc ID</span>
+                                <span class="text-dark fw-bold font-monospace text-truncate d-block">{{ household.household_income if household.household_income else 'N/A' }}</span>
+                            </div>
+                            <div class="col-6 text-end">
+                                <span class="text-muted small fw-bold text-uppercase d-block" style="font-size: 0.6rem;">Total Members</span>
+                                <span class="text-dark fw-bold">{{ household.total_headcount if household.total_headcount else '?' }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Details List (iOS Settings Style) -->
-                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-md-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Household Metrics</h6>
+                <!-- PARENTAL PARITY (Borrowing from linked students) -->
+                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Parental Identity</h6>
                 <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
                     <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white border-bottom border-light">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-telephone me-2"></i>Phone</span>
-                            {% if household.phone_number %}
-                                <a href="tel:{{ household.phone_number }}" class="fw-bold text-end ms-3 text-decoration-none transition-hover text-wrap text-break" style="color: #007AFF;">{{ household.phone_number }}</a>
-                            {% else %}
-                                <span class="text-muted fst-italic text-end ms-3 small">Not Provided</span>
-                            {% endif %}
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white border-bottom border-light">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-cash-coin me-2"></i>Est. Income</span>
-                            <span class="fw-bold text-dark text-end ms-3 khmer-font text-wrap text-break">{{ household.household_income if household.household_income else 'Unknown' }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white border-bottom-0">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-person-standing me-2"></i>Adults in Home</span>
-                            <span class="fw-bold text-dark text-end ms-3 khmer-font text-wrap text-break">{{ household.adults_in_home if household.adults_in_home else '-' }}</span>
+                        {% if kids and kids|length > 0 %}
+                            {% set ref_child = kids[0] %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
+                                <span class="text-muted fw-bold small flex-shrink-0"><i class="bi bi-person-fill me-2 text-danger"></i>Mother</span>
+                                <span class="fw-bold text-dark text-end ms-3 khmer-font">{{ ref_child.mother_name if ref_child.mother_name else 'Not Logged' }}</span>
+                            </div>
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white border-bottom border-light">
+                                <span class="text-muted fw-bold small flex-shrink-0"><i class="bi bi-person-fill me-2 text-primary"></i>Father</span>
+                                <span class="fw-bold text-dark text-end ms-3 khmer-font">{{ ref_child.father_name if ref_child.father_name else 'Not Logged' }}</span>
+                            </div>
+                        {% else %}
+                            <div class="list-group-item py-4 text-center bg-light bg-opacity-50">
+                                <p class="text-muted small mb-0 fw-bold fst-italic">Link a child to see parents.</p>
+                            </div>
+                        {% endif %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
+                            <span class="text-muted fw-bold small flex-shrink-0"><i class="bi bi-geo-alt-fill me-2 text-secondary"></i>Slum Area</span>
+                            <span class="fw-bold text-dark text-end ms-3 khmer-font">{{ household.slum_area if household.slum_area else 'Unknown' }}</span>
                         </div>
                     </div>
                 </div>
@@ -72,62 +90,128 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- RIGHT COLUMN: Students & Notes             -->
+        <!-- RIGHT COLUMN: Members & Social Context     -->
         <!-- ========================================== -->
-        <div class="col-12 col-lg-7 col-xl-8">
+        <div class="col-12 col-lg-8 col-xl-8 mx-0 px-0 px-md-3 order-1 order-lg-2">
             
-            <!-- Linked Students List -->
-            <div class="d-flex align-items-center mb-3 px-3 px-md-0">
-                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-mortarboard-fill text-success me-2"></i>Linked Students ({{ students|length }})</h5>
+            <!-- Linked EEP Students -->
+            <div class="d-flex align-items-center justify-content-between mb-3 px-3 px-md-0">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-mortarboard-fill text-success me-2"></i>Linked Students ({{ kids|length }})</h5>
             </div>
 
             <div class="card shadow-sm border-0 rounded-4 native-card bg-white overflow-hidden mb-4 border-top border-success border-4">
                 <div class="list-group list-group-flush">
-                    {% for student in students %}
-                    <a href="/student/{{ student.id }}" class="list-group-item list-group-item-action py-3 px-3 px-md-4 d-flex align-items-center transition-hover bg-white border-bottom border-light">
-                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=50" %}
-                        <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle border border-2 border-white me-3 shadow-sm flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
+                    {% for s in kids %}
+                    <div class="list-group-item py-3 px-3 px-md-4 d-flex align-items-center bg-white border-bottom">
+                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ s.first_name ~ "+" ~ s.last_name ~ "&background=random&color=fff&size=50" %}
+                        <img src="{{ url_for('static', filename='uploads/profiles/' + s.profile_picture) if s.profile_picture else thumb_url }}" class="rounded-circle border border-2 border-white me-3 shadow-sm flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
                         
-                        <div class="flex-grow-1 min-w-0">
-                            <h6 class="fw-bold text-dark mb-1 text-truncate">{{ student.first_name }} {{ student.last_name }}</h6>
-                            <p class="text-muted small mb-0 khmer-font text-truncate">{{ student.khmer_name if student.khmer_name else student.ngo_id }}</p>
+                        <div class="flex-grow-1 min-w-0 pe-2">
+                            <h6 class="fw-bold text-dark mb-1 text-truncate">
+                                <a href="/student/{{ s.id }}" class="text-decoration-none text-dark hover-primary">{{ s.first_name }} {{ s.last_name }}</a>
+                            </h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-light text-muted border rounded-pill" style="font-size: 0.6rem;">{{ s.grade_level }}</span>
+                                {% if s.caregiver_relationship %}
+                                    <span class="text-muted fw-bold small"> • Lives with {{ s.caregiver_relationship }}</span>
+                                {% endif %}
+                            </div>
                         </div>
                         
-                        <div class="text-end ms-3 flex-shrink-0">
-                            <span class="badge bg-light text-dark border px-2 py-1 rounded-pill shadow-sm mb-1 d-block" style="font-size: 0.7rem;">{{ student.grade_level }}</span>
-                            <span class="badge {% if student.status == 'Active' %}bg-success text-white{% elif student.status == 'Dropped Out' %}bg-danger text-white{% else %}bg-secondary text-white{% endif %} rounded-pill" style="font-size: 0.6rem;">{{ student.status }}</span>
+                        <div class="text-end flex-shrink-0 d-flex align-items-center gap-2">
+                            <span class="badge {% if s.status == 'Active' %}bg-success{% elif s.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %} rounded-pill text-white d-none d-sm-inline-block">{{ s.status }}</span>
+                            
+                            <!-- Action Dropdown for kinship logic in your app.py -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" style="width: 32px; height: 32px; padding: 0;">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
+                                    <li><a class="dropdown-item fw-bold py-2" href="#" data-bs-toggle="modal" data-bs-target="#kinshipModal{{ s.id }}"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Edit Kinship</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="/household/{{ household.id }}" method="POST" onsubmit="return confirm('Unlink this child from the family file?');">
+                                            <input type="hidden" name="action" value="unlink">
+                                            <input type="hidden" name="student_id" value="{{ s.id }}">
+                                            <button type="submit" class="dropdown-item text-danger fw-bold py-2"><i class="bi bi-link-45deg me-2"></i>Unlink Child</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
-                        <i class="bi bi-chevron-right text-muted opacity-50 ms-3"></i>
-                    </a>
-                    {% else %}
-                    <div class="text-center p-5 bg-white">
-                        <i class="bi bi-people x-2 mb-3 d-block text-muted opacity-25" style="font-size: 3rem;"></i>
-                        <h6 class="fw-bold text-dark mb-1">No Students Linked</h6>
-                        <p class="small text-muted mb-0">Edit a student's profile to link them to this household.</p>
+                    </div>
+
+                    <!-- KINSHIP MODAL PER STUDENT -->
+                    <div class="modal fade" id="kinshipModal{{ s.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-lg rounded-4">
+                                <div class="modal-header bg-primary text-white border-bottom-0">
+                                    <h5 class="modal-title fw-bold">Update Kinship: {{ s.first_name }}</h5>
+                                    <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="/household/{{ household.id }}" method="POST">
+                                    <div class="modal-body p-4 text-start">
+                                        <input type="hidden" name="action" value="edit_kinship">
+                                        <input type="hidden" name="student_id" value="{{ s.id }}">
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Mother's Name</label>
+                                            <input type="text" class="form-control bg-light border-0 fw-bold khmer-font" name="mother_name" value="{{ s.mother_name if s.mother_name else '' }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Father's Name</label>
+                                            <input type="text" class="form-control bg-light border-0 fw-bold khmer-font" name="father_name" value="{{ s.father_name if s.father_name else '' }}">
+                                        </div>
+                                        <div class="mb-0">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Relationship to {{ household.guardian_name }}</label>
+                                            <input type="text" class="form-control bg-light border-0 fw-bold" name="caregiver_relationship" value="{{ s.caregiver_relationship if s.caregiver_relationship else '' }}" placeholder="e.g. Niece, Son, Granddaughter">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer bg-white border-top-0 rounded-bottom-4 px-4 py-3">
+                                        <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm">Save Kinship</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- Qualitative Notes Section -->
-            <div class="row g-4">
+            <!-- FAMILY BOOK COMPOSITION -->
+            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Family Book Composition (All Members)</h6>
+            <div class="card shadow-sm border-0 rounded-4 native-card bg-white mb-4 border-start border-primary border-4">
+                <div class="card-body p-4">
+                    {% if household.adults_in_home %}
+                    <div class="khmer-font text-dark mb-0 text-wrap text-break" style="line-height: 1.7; word-break: break-word; font-size: 1.05rem; white-space: pre-line;">
+                        {{ household.adults_in_home }}
+                    </div>
+                    {% else %}
+                    <span class="text-muted fst-italic small">No detailed family ledger recorded. Use the "Update" button to list siblings/cousins from the family book.</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- PROTECTION & EMPLOYMENT NOTES -->
+            <div class="row g-4 mb-5">
                 <div class="col-md-6">
-                    <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-md-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Living Conditions</h6>
-                    <div class="card shadow-sm border-0 rounded-4 native-card bg-white h-100">
+                    <h6 class="fw-bold text-danger text-uppercase mb-2 ms-3" style="font-size: 0.75rem;"><i class="bi bi-shield-exclamation me-1"></i> Social Protection</h6>
+                    <div class="card shadow-sm border-0 rounded-4 native-card bg-white h-100 border-start border-danger border-4">
                         <div class="card-body p-4">
-                            <p class="khmer-font text-dark mb-0 text-wrap text-break" style="line-height: 1.6; word-break: break-word;">
-                                {{ household.living_conditions if household.living_conditions else '<span class="text-muted fst-italic small">No details provided.</span>'|safe }}
-                            </p>
+                            <div class="khmer-font text-dark mb-0 text-wrap text-break small" style="line-height: 1.6;">
+                                {{ household.notes if household.notes else 'No sensitive history or behavioral notes logged.' }}
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-md-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">General Notes</h6>
-                    <div class="card shadow-sm border-0 rounded-4 native-card bg-white h-100">
+                    <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3" style="font-size: 0.75rem;">Jobs & Housing</h6>
+                    <div class="card shadow-sm border-0 rounded-4 native-card bg-white h-100 border-start border-info border-4">
                         <div class="card-body p-4">
-                            <p class="khmer-font text-dark mb-0 text-wrap text-break" style="line-height: 1.6; word-break: break-word;">
-                                {{ household.notes if household.notes else '<span class="text-muted fst-italic small">No additional notes.</span>'|safe }}
-                            </p>
+                            <div class="khmer-font text-dark mb-0 text-wrap text-break small" style="line-height: 1.6;">
+                                {{ household.living_conditions if household.living_conditions else 'No employment or housing scan logged.' }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -136,7 +220,7 @@
         </div>
     </div>
 
-    <!-- MOBILE FLOATING ADD BUTTON (FAB) -->
+    <!-- MOBILE FAB -->
     {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
     <button class="btn btn-dark text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-circle border border-2 border-white" data-bs-toggle="modal" data-bs-target="#editHouseholdModal" style="bottom: 90px; right: 20px; width: 60px; height: 60px; z-index: 1040;">
         <i class="bi bi-pencil-fill fs-4"></i>
@@ -145,53 +229,37 @@
 
 </div>
 
-<!-- 🛡️ CRUD SECURITY: EDIT HOUSEHOLD MODAL -->
+<!-- EDIT HOUSEHOLD MODAL (Matches Python edit_household action) -->
 {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
 <div class="modal fade" id="editHouseholdModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header bg-dark text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-house-gear-fill me-2 text-info"></i>Edit Household Data</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-house-gear-fill me-2 text-info"></i>Update Family File</h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/edit_household/{{ household.id }}" method="post">
+            <form action="/household/{{ household.id }}" method="post">
                 <div class="modal-body p-4 bg-light">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Primary Guardian *</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2" name="guardian_name" value="{{ household.guardian_name }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Phone Number</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2 text-primary" name="phone_number" value="{{ household.phone_number if household.phone_number else '' }}" placeholder="e.g. 012 345 678">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Slum / Area</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="slum_area" value="{{ household.slum_area if household.slum_area else '' }}" placeholder="Location Name">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Est. Income</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="household_income" value="{{ household.household_income if household.household_income else '' }}" placeholder="e.g. $150/mo">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Total Headcount</label>
-                            <input type="number" class="form-control bg-white border-0 shadow-sm px-3 py-2 fw-bold" name="total_headcount" value="{{ household.total_headcount if household.total_headcount else '' }}" placeholder="Total people">
-                        </div>
+                    <input type="hidden" name="action" value="edit_household">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Primary Guardian *</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2" name="guardian_name" value="{{ household.guardian_name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Phone Number</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2 text-primary" name="phone_number" value="{{ household.phone_number if household.phone_number else '' }}">
+                    </div>
 
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Adults in Home (Names/Roles)</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="adults_in_home" value="{{ household.adults_in_home if household.adults_in_home else '' }}" placeholder="e.g. Grandmother (Caregiver), Uncle (Works)">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Living Conditions</label>
-                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="living_conditions" rows="3" placeholder="Condition of the house, rent, safety...">{{ household.living_conditions if household.living_conditions else '' }}</textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">General Notes</label>
-                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="notes" rows="3" placeholder="Any other relevant details...">{{ household.notes if household.notes else '' }}</textarea>
-                        </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Slum / Area</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="slum_area" value="{{ household.slum_area if household.slum_area else '' }}">
+                    </div>
+                    
+                    <!-- Reminder: Backend doesn't currently support saving Income/Notes in HH edit -->
+                    <div class="mt-4 p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-3">
+                        <small class="text-dark fw-bold"><i class="bi bi-info-circle me-1"></i> Family Ledger and Social Protection notes are managed via individual student intakes.</small>
                     </div>
                 </div>
                 <div class="modal-footer bg-white border-top-0 rounded-bottom-4 px-4 py-3 d-flex justify-content-between">
@@ -205,23 +273,12 @@
 {% endif %}
 
 <style>
-    .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-2px); }
-    .min-w-0 { min-width: 0; }
-    
-    /* Clean input focus states */
-    .form-control:focus {
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-    }
-    
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.08) !important; }
+    .hover-primary:hover { color: #007AFF !important; }
+    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     @media (max-width: 767.98px) { 
-        .native-card { 
-            border-radius: 0 !important; 
-            border-left: 0 !important; 
-            border-right: 0 !important; 
-            margin-left: -1rem; 
-            margin-right: -1rem; 
-        } 
+        .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; } 
     }
 </style>
 {% endblock %}

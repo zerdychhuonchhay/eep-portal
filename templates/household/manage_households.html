@@ -5,18 +5,17 @@
 {% block main %}
 <div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
     
-    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
+    <!-- HEADER SECTION -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
         <div>
             <h2 class="mb-0 fw-bold"><i class="bi bi-houses-fill text-info me-2"></i>Household Directory</h2>
-            <p class="text-muted small mb-0 d-none d-md-block">Manage families, group siblings, and track living conditions.</p>
+            <p class="text-muted small mb-0 d-none d-md-block">Official family records, document IDs, and household composition tracking.</p>
         </div>
         
         <div class="d-flex flex-wrap justify-content-start justify-content-md-end gap-2 w-100 w-md-auto">
-            <!-- 🛡️ SECURITY CONTROL: Add New Household -->
             {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
-            <button class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover d-none d-md-flex align-items-center flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
-                <i class="bi bi-plus-lg me-2"></i> Add Household
+            <button class="btn btn-info text-white shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover w-100 w-md-auto" data-bs-toggle="modal" data-bs-target="#addHouseholdModal">
+                <i class="bi bi-plus-lg me-2"></i> New Family File
             </button>
             {% endif %}
         </div>
@@ -27,45 +26,46 @@
         
         <!-- Live Search Header -->
         <div class="card-header bg-white border-bottom pt-4 pb-3 px-3 px-md-4 rounded-top-4">
-            <!-- Search Bar (Native Pill Style) -->
             <div class="input-group input-group-sm w-100 shadow-sm rounded-pill overflow-hidden">
                 <span class="input-group-text bg-light border-0 px-3"><i class="bi bi-search text-info fs-6"></i></span>
-                <input type="text" id="householdSearch" class="form-control border-0 bg-light py-2 fw-bold text-dark shadow-none" placeholder="Search by Guardian name, phone, or location...">
+                <input type="text" id="householdSearch" class="form-control border-0 bg-light py-2 fw-bold text-dark shadow-none" placeholder="Search by Guardian, Phone, or Family Book ID...">
             </div>
         </div>
 
         <div class="card-body p-0">
             <div class="list-group list-group-flush rounded-bottom-4" id="householdList">
                 {% for hh in households %}
-                <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom household-item transition-hover">
+                <div class="list-group-item bg-white py-4 px-3 px-md-4 border-bottom household-item transition-hover">
                     <div class="row gx-3 gy-2 align-items-center">
 
-                        <!-- Identity (Avatar, Name, ID) -->
+                        <!-- Identity -->
                         <div class="col-12 col-md-5 d-flex align-items-center mb-2 mb-md-0">
                             <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex justify-content-center align-items-center me-3 flex-shrink-0 shadow-sm border border-info border-opacity-25" style="width: 55px; height: 55px;">
                                 <i class="bi bi-house-heart-fill fs-4"></i>
                             </div>
-                            
                             <div class="text-start w-100" style="min-width: 0;">
                                 <a href="/household/{{ hh.id }}" class="guardian-name fw-bold text-dark fs-5 hover-info text-decoration-none d-block text-truncate mb-1">
                                     {{ hh.guardian_name }}
                                 </a>
-                                <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 rounded-pill"><i class="bi bi-people-fill me-1"></i> Size: {{ hh.total_headcount if hh.total_headcount else '?' }}</span>
+                                <div class="d-flex align-items-center gap-2 mt-1">
+                                    <span class="badge bg-light text-primary border border-primary border-opacity-10 px-2 py-1 rounded-pill" style="font-size: 0.6rem;" title="Total Headcount">
+                                        <i class="bi bi-people-fill me-1"></i> Size: {{ hh.total_headcount if hh.total_headcount else '?' }}
+                                    </span>
+                                    <span class="text-muted fw-bold font-monospace" style="font-size: 0.65rem;">REF: {{ hh.household_income[:12] if hh.household_income else '#' ~ hh.id }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Meta Info (Location, Phone) -->
+                        <!-- Meta Info -->
                         <div class="col-12 col-md-4 mb-2 mb-md-0">
                             <div class="d-flex flex-column gap-1" style="font-size: 0.85rem;">
-                                <div class="household-slum fw-bold text-dark khmer-font text-truncate"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ hh.slum_area if hh.slum_area else 'Unknown Area' }}</div>
+                                <div class="household-slum fw-bold text-dark khmer-font text-truncate"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ hh.slum_area if hh.slum_area else 'Location Unknown' }}</div>
                                 <div class="household-phone text-muted text-truncate">
                                     <i class="bi bi-telephone-fill me-2 text-primary opacity-75"></i>
                                     {% if hh.phone_number %}
-                                        <a href="tel:{{ hh.phone_number }}" class="text-decoration-none fw-bold" style="color: #007AFF;">{{ hh.phone_number }}</a>
+                                        <span class="fw-bold text-dark">{{ hh.phone_number }}</span>
                                     {% else %}
-                                        <span class="fst-italic">No Phone</span>
+                                        <span class="fst-italic opacity-50">No Contact Number</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -73,14 +73,13 @@
 
                         <!-- Action Buttons -->
                         <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-2 mt-md-0 pt-3 pt-md-0 border-top border-md-0 border-light border-opacity-50">
-                            <a href="/household/{{ hh.id }}" class="btn btn-sm btn-light border text-info fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="View Profile">
-                                <i class="bi bi-eye-fill fs-6 d-md-none d-lg-inline me-md-1"></i> <span>View</span>
+                            <a href="/household/{{ hh.id }}" class="btn btn-sm btn-light border text-info fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center">
+                                <i class="bi bi-eye-fill fs-6 d-md-none d-lg-inline me-md-1"></i> <span>Manage</span>
                             </a>
                             
-                            <!-- 🛡️ SECURITY CONTROL: Admin Only Delete -->
                             {% if session.get('role') == 'Admin' %}
-                            <form action="/delete_household/{{ hh.id }}" method="post" class="m-0" onsubmit="return confirm('Are you sure you want to delete this household? The linked students will remain in the database, but will no longer be linked to this family.');">
-                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold rounded-circle shadow-sm transition-hover d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0;" title="Delete Household"><i class="bi bi-trash-fill"></i></button>
+                            <form action="/delete_household/{{ hh.id }}" method="post" class="m-0" onsubmit="return confirm('Delete this family file? Links to students will be removed, but child profiles will stay.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold rounded-circle shadow-sm transition-hover d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; padding: 0;"><i class="bi bi-trash-fill"></i></button>
                             </form>
                             {% endif %}
                         </div>
@@ -91,86 +90,115 @@
                 <div class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4">
                     <i class="bi bi-houses fs-1 opacity-50 mb-2 d-block"></i>
                     <h5 class="fw-bold text-dark mb-1">No households found.</h5>
-                    <p class="small mb-0">Click the Add button to create a family profile.</p>
+                    <p class="small mb-0">Create your first household file to begin grouping siblings.</p>
                 </div>
                 {% endfor %}
                 
                 <div id="noResultsMessage" class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4 d-none">
                     <i class="bi bi-search fs-1 opacity-25 mb-2 d-block"></i>
-                    <h6 class="fw-bold text-dark mb-1">No households match your search.</h6>
-                    <p class="small mb-0">Try checking the spelling of the Guardian's name.</p>
+                    <h6 class="fw-bold text-dark mb-1">No families match.</h6>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MOBILE FLOATING ADD BUTTON (FAB) -->
+<!-- MOBILE FAB -->
 {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
 <button class="btn btn-info text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-circle border border-2 border-white" data-bs-toggle="modal" data-bs-target="#addHouseholdModal" style="bottom: 90px; right: 20px; width: 60px; height: 60px; z-index: 1040;">
     <i class="bi bi-plus-lg fs-3"></i>
 </button>
 {% endif %}
 
-
 <!-- 🛡️ CRUD SECURITY: ADD HOUSEHOLD MODAL -->
 {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
 <div class="modal fade" id="addHouseholdModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-dark text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-house-add-fill me-2 text-info"></i>Create New Household</h5>
+                <h5 class="modal-title fw-bold"><i class="bi bi-house-add-fill me-2 text-info"></i>New Family Intake</h5>
                 <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <form action="/add_household" method="post">
+            <form action="/add_household" method="post" id="addHouseholdForm">
                 <div class="modal-body p-4 bg-light">
                     
-                    <div class="alert alert-info border-0 shadow-sm rounded-3 small py-2 mb-4 d-flex">
-                        <i class="bi bi-info-circle-fill fs-5 me-2 mt-1"></i>
-                        <span class="fw-bold text-info-emphasis pt-1">After creating a household, go to a student's Edit Profile page to link them to this family!</span>
+                    <!-- UX Step 1: Identity from Official Docs -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Primary Guardian / Head *</label>
+                            <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2" name="guardian_name" placeholder="Name as per Family Book" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Family Book / Document ID</label>
+                            <!-- Hijacking 'household_income' for Document ID to keep schema stable but UX clear -->
+                            <input type="text" class="form-control bg-white border-0 shadow-sm font-monospace px-3 py-2 text-primary" name="household_income" placeholder="ID Number from Official Book">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Family Status (Life Events)</label>
+                            <select class="form-select bg-white border-0 shadow-sm fw-bold" name="family_status">
+                                <option value="Active/Intact" selected>Intact / Together</option>
+                                <option value="Separated/Divorced">Separated / Divorced</option>
+                                <option value="Widowed">Widowed (Death in family)</option>
+                                <option value="Grandparent Care">Living with Grandparents</option>
+                                <option value="Other">Other Extended Family</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Slum / Area</label>
+                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="slum_area" placeholder="Village or Slum name">
+                        </div>
                     </div>
 
-                    <div class="row g-3">
+                    <!-- UX Step 2: Communication -->
+                    <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Primary Guardian *</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2" name="guardian_name" placeholder="e.g. Sok San" required>
+                            <label class="form-label fw-bold small text-muted text-uppercase">Primary Phone (Mother/Father)</label>
+                            <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2" name="phone_number" placeholder="Main contact number">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Phone Number</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold px-3 py-2 text-primary" name="phone_number" placeholder="e.g. 012 345 678">
+                            <label class="form-label fw-bold small text-muted text-uppercase">Secondary Phone (Relative/Neighbor)</label>
+                            <input type="text" class="form-control bg-white border-0 shadow-sm px-3 py-2" name="secondary_phone" placeholder="Alternative contact">
                         </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Slum / Area</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="slum_area" placeholder="Location Name">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Est. Income</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="household_income" placeholder="e.g. $150/mo">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Total Headcount</label>
-                            <input type="number" class="form-control bg-white border-0 shadow-sm px-3 py-2 fw-bold" name="total_headcount" placeholder="Total people">
-                        </div>
+                    </div>
 
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Adults in Home (Names/Roles)</label>
-                            <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="adults_in_home" placeholder="e.g. Grandmother (Caregiver), Uncle (Works)">
+                    <!-- UX Step 3: Full House Composition (Calculating Headcount) -->
+                    <div class="col-12 mb-4">
+                        <div class="bg-white p-3 rounded-4 border shadow-sm">
+                            <label class="form-label fw-bold small text-muted text-uppercase d-block mb-3">Household Composition (Official Headcount)</label>
+                            <div class="row g-3">
+                                <div class="col-4">
+                                    <label class="small text-muted fw-bold">Adults</label>
+                                    <input type="number" id="input_adults" class="form-control bg-light border-0 fw-bold" value="0" min="0" onchange="calcTotal()">
+                                </div>
+                                <div class="col-4">
+                                    <label class="small text-muted fw-bold">Children (Inc. Non-Program)</label>
+                                    <input type="number" id="input_children" class="form-control bg-light border-0 fw-bold" value="0" min="0" onchange="calcTotal()">
+                                </div>
+                                <div class="col-4">
+                                    <label class="small text-primary fw-bold">Total (Under this roof)</label>
+                                    <input type="number" id="total_display" name="total_headcount" class="form-control bg-primary bg-opacity-10 border-0 fw-bold text-primary" value="0" readonly>
+                                </div>
+                            </div>
+                            <div class="mt-3 p-2 bg-light rounded-3 border-start border-info border-4">
+                                <small class="text-muted fw-bold"><i class="bi bi-info-circle me-1"></i> Count all family members living here, even if they aren't in the EEP program yet (like cousins or unsponsored siblings).</small>
+                            </div>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Living Conditions</label>
-                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="living_conditions" rows="3" placeholder="Condition of the house, rent, safety..."></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted text-uppercase">General Notes</label>
-                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="notes" rows="3" placeholder="Any other relevant details..."></textarea>
-                        </div>
+                    </div>
+
+                    <!-- UX Step 4: Family Book Members List -->
+                    <div class="col-12 mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Member Details (Family Book Names/Ages)</label>
+                        <textarea class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="adults_in_home" rows="3" placeholder="List all members by name/age (e.g. Sreynoch, Sister, 12; Sophal, Cousin, 19). Helps with future sponsorship!"></textarea>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Family Background & Living Conditions</label>
+                        <textarea class="form-control bg-white border-0 shadow-sm khmer-font px-3 py-2" name="living_conditions" rows="3" placeholder="Describe the house status, employment history, or background for social worker review..."></textarea>
                     </div>
                 </div>
                 <div class="modal-footer bg-white border-top-0 rounded-bottom-4 px-4 py-3 d-flex justify-content-between">
                     <button type="button" class="btn btn-light border shadow-sm fw-bold text-dark rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info text-white shadow-sm fw-bold px-5 transition-hover rounded-pill">Create Household</button>
+                    <button type="submit" class="btn btn-info text-white shadow-sm fw-bold px-5 transition-hover rounded-pill">Create Family File</button>
                 </div>
             </form>
         </div>
@@ -179,52 +207,37 @@
 {% endif %}
 
 <style>
-    /* Desktop Hover Effects */
-    .transition-hover { transition: all 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-1px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
-    .hover-info { transition: color 0.2s ease; }
+    .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
     .hover-info:hover { color: #0dcaf0 !important; }
-    
-    /* Native App Styling for Mobile Edge-to-Edge */
-    @media (max-width: 767.98px) {
-        .native-card {
-            border-radius: 0 !important;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            margin-left: -1rem;
-            margin-right: -1rem;
-        }
-    }
+    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; } }
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    function calcTotal() {
+        const adults = parseInt(document.getElementById('input_adults').value) || 0;
+        const children = parseInt(document.getElementById('input_children').value) || 0;
+        document.getElementById('total_display').value = adults + children;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-        // Live Native Search Engine
         document.getElementById('householdSearch')?.addEventListener('keyup', function() {
             const query = this.value.toLowerCase().trim();
             const items = document.querySelectorAll('.household-item');
             const noResults = document.getElementById('noResultsMessage');
-            let visibleCount = 0;
-
+            let count = 0;
             items.forEach(item => {
-                const textContent = item.innerText.toLowerCase();
-                
-                if (textContent.includes(query)) {
+                const text = item.innerText.toLowerCase();
+                if (text.includes(query)) {
                     item.style.display = '';
-                    visibleCount++;
+                    count++;
                 } else {
                     item.style.display = 'none';
                 }
             });
-
-            // Show "No Results" state if empty
-            if (visibleCount === 0 && items.length > 0) {
-                noResults.classList.remove('d-none');
-            } else {
-                noResults.classList.add('d-none');
-            }
+            noResults.classList.toggle('d-none', count > 0);
         });
     });
 </script>

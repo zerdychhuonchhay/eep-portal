@@ -1,288 +1,237 @@
 {% extends "layout.html" %}
 
-{% block title %}
-    Add New Student
-{% endblock %}
+{% block title %}Enroll New Student{% endblock %}
 
 {% block main %}
-<div class="container-fluid px-lg-5 mt-4 mb-5 text-start">
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1200px;">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-0 fw-bold"><i class="bi bi-person-plus-fill text-primary me-2"></i>Register New Student</h2>
-            <p class="text-muted small mb-0">Enroll a new child into the EEP program</p>
-        </div>
-        <a href="/" class="btn btn-outline-secondary shadow-sm fw-bold">
-            <i class="bi bi-arrow-left"></i> Back to Roster
+    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
+    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
+        <a href="/roster" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Cancel
         </a>
+        <h5 class="fw-bold mb-0 text-dark d-none d-md-block">New Enrollment</h5>
+        <button type="submit" form="addStudentForm" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm transition-hover d-none d-md-block">Enroll Student</button>
     </div>
 
-    <form action="/add_student" method="post" enctype="multipart/form-data">
-        <div class="row">
+    <form id="addStudentForm" action="/add_student" method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="row g-4">
             
-            <!-- LEFT COLUMN: Profile Picture -->
-            <div class="col-lg-3 mb-4">
-                <div class="card shadow-sm border-0 rounded-4 sticky-top" style="top: 20px;">
-                    <div class="card-body text-center p-4">
-                        <div class="mb-3">
-                            <i class="bi bi-person-bounding-box text-secondary opacity-25" style="font-size: 6rem;"></i>
+            <!-- LEFT COLUMN: PHOTO & STATUS -->
+            <div class="col-12 col-lg-4">
+                <div class="sticky-lg-top" style="top: 80px; z-index: 5;">
+                    <div class="card shadow-sm border-0 rounded-4 native-card text-center mb-4 bg-white pt-5 pb-4">
+                        <div class="card-body px-4">
+                            <div class="mb-4">
+                                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center border border-2 border-dashed border-secondary border-opacity-25" style="width: 130px; height: 130px;">
+                                    <i class="bi bi-person-bounding-box text-muted opacity-25" style="font-size: 4rem;"></i>
+                                </div>
+                            </div>
+                            <h5 class="fw-bold mb-3">Student Photo</h5>
+                            <input type="file" name="profile_picture" class="form-control form-control-sm rounded-pill mb-2" accept="image/*">
+                            <p class="text-muted small mb-0">Optional. Can be uploaded later.</p>
                         </div>
-                        <h5 class="fw-bold mb-3">Student Photo</h5>
-                        <label class="form-label fw-bold small text-muted text-start w-100" for="profile_picture">Upload Initial Photo</label>
-                        <input type="file" id="profile_picture" name="profile_picture" class="form-control form-control-sm mb-2" accept="image/*" aria-label="Upload Profile Picture">
-                        <small class="text-muted d-block text-start">Optional. You can add this later.</small>
+                    </div>
+
+                    <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item py-3 bg-white">
+                                <label class="form-label fw-bold small text-muted text-uppercase d-block" style="font-size: 0.6rem;">Joined Date</label>
+                                <input class="form-control border-0 bg-light fw-bold" name="joined_date" type="date" value="{{ today_date }}">
+                            </div>
+                            <div class="list-group-item py-3 bg-white border-bottom-0">
+                                <label class="form-label fw-bold small text-muted text-uppercase d-block" style="font-size: 0.6rem;">Nutrition Plan</label>
+                                <select class="form-select border-0 bg-light fw-bold" name="meal_plan">
+                                    <option value="None" selected>No Meals Assigned</option>
+                                    <option value="Daily Hot Lunch">Daily Hot Lunch</option>
+                                    <option value="Monthly Groceries">Monthly Groceries</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: The Form -->
-            <div class="col-lg-9">
+            <!-- RIGHT COLUMN: INTAKE DATA -->
+            <div class="col-12 col-lg-8">
                 
-                <!-- CARD 1: Core Identity -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                        <h5 class="text-primary fw-bold mb-0"><i class="bi bi-person-vcard me-2"></i>1. Core Identity & Demographics</h5>
+                <!-- 1. CORE IDENTITY -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-vcard-fill me-2 text-primary"></i>Core Identification</h5>
                     </div>
                     <div class="card-body p-4">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted" for="ngo_id">NGO ID / <span class="khmer-font fw-normal">លេខសម្គាល់អង្គការ</span> *</label>
-                                <input autocomplete="off" class="form-control bg-light border-primary" id="ngo_id" name="ngo_id" type="text" placeholder="e.g. EEB19027" required>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold small text-muted text-uppercase">NGO ID *</label>
+                                <input class="form-control bg-light border-primary border-opacity-25 fw-bold p-2 font-monospace text-primary" name="ngo_id" type="text" placeholder="e.g. EEB24001" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted" for="status">Initial Status</label>
-                                <select class="form-select fw-bold" id="status" name="status">
-                                    <option value="Active" selected>🟢 Active</option>
-                                    <option value="Dropped Out">🔴 Dropped Out</option>
-                                </select>
+                                <label class="form-label fw-bold small text-muted text-uppercase">First Name (EN) *</label>
+                                <input class="form-control bg-light border-0 fw-bold p-2" name="first_name" type="text" placeholder="GIVEN NAME" required>
                             </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="first_name">First Name (EN) *</label>
-                                <input class="form-control" id="first_name" name="first_name" type="text" required>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Last Name (EN) *</label>
+                                <input class="form-control bg-light border-0 fw-bold p-2" name="last_name" type="text" placeholder="FAMILY NAME" required>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="last_name">Last Name (EN) *</label>
-                                <input class="form-control" id="last_name" name="last_name" type="text" required>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Khmer Name</label>
+                                <input class="form-control bg-light border-0 khmer-font p-2" name="khmer_name" type="text">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="khmer_name">Khmer Name</label>
-                                <input class="form-control khmer-font" id="khmer_name" name="khmer_name" type="text">
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="gender">Gender *</label>
-                                <select class="form-select" id="gender" name="gender" required>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Gender *</label>
+                                <select class="form-select bg-light border-0 fw-bold" name="gender" required>
                                     <option disabled selected value="">Select...</option>
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="dob">Date of Birth</label>
-                                <input class="form-control" id="dob" name="dob" type="date">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="joined_date">Joined Date</label>
-                                <input class="form-control" id="joined_date" name="joined_date" type="date" value="{{ today_date }}">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Date of Birth</label>
+                                <input class="form-control bg-light border-0 fw-bold" name="dob" type="date">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARD 2: Enterprise Household Linking -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-start border-info border-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                        <h5 class="text-info fw-bold mb-0"><i class="bi bi-house-heart-fill me-2"></i>2. Household & Kinship Link</h5>
+                <!-- 2. FAMILY & HOUSEHOLD LINK -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-start border-info border-4">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-house-heart-fill me-2 text-info"></i>Household & Kinship</h5>
                     </div>
                     <div class="card-body p-4">
-                        
-                        <div class="bg-info bg-opacity-10 p-3 rounded border border-info mb-4">
-                            <label class="form-label fw-bold small text-info-emphasis" for="householdSelect"><i class="bi bi-link-45deg me-1"></i>Link to Existing Household</label>
-                            
-                            <select class="form-select border-info fw-bold shadow-sm" name="household_id" id="householdSelect" onchange="syncHouseholdData()">
-                                <option value="" class="text-danger fw-bold" selected>
-                                    ➕ Create New (Unlinked - Type details below)
-                                </option>
-                                {% for household in households %}
-                                    <option value="{{ household.id }}" 
-                                            data-guardian="{{ household.guardian_name }}"
-                                            data-phone="{{ household.phone_number }}"
-                                            data-slum="{{ household.slum_area }}">
-                                        Family: {{ household.guardian_name }} {% if household.phone_number %}({{ household.phone_number }}){% endif %}
+                        <div class="p-3 bg-info bg-opacity-10 border border-info border-opacity-25 rounded-4 mb-4">
+                            <label class="form-label fw-bold small text-info-emphasis text-uppercase" for="householdSelect"><i class="bi bi-link-45deg me-1"></i>Link to Existing Family File</label>
+                            <select class="form-select border-info border-opacity-50 fw-bold shadow-sm" name="household_id" id="householdSelect" onchange="syncHouseholdData()">
+                                <option value="" selected>➕ CREATE NEW (Type individual family data below)</option>
+                                {% for hh in households %}
+                                    <option value="{{ hh.id }}" 
+                                            data-guardian="{{ hh.guardian_name }}"
+                                            data-phone="{{ hh.phone_number }}"
+                                            data-slum="{{ hh.slum_area }}">
+                                        {{ hh.household_income if hh.household_income else '#' ~ hh.id }} — {{ hh.guardian_name }}
                                     </option>
                                 {% endfor %}
                             </select>
-                            <small class="text-muted mt-2 d-block">If a sibling is already in the program, select their family here to auto-fill the address!</small>
                         </div>
 
-                        <!-- Caregiver Info -->
-                        <div class="row mb-4">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" id="label_guardian" for="guardian_name">Primary Caregiver</label>
-                                <input class="form-control" id="guardian_name" name="guardian_name" type="text" placeholder="e.g. Aunt Sokha">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Mother's Name</label>
+                                <input class="form-control bg-light border-0 khmer-font p-2" name="mother_name" type="text" placeholder="As per Birth Cert">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" id="label_phone" for="phone_number">Phone Number</label>
-                                <input class="form-control" id="phone_number" name="phone_number" type="text">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Father's Name</label>
+                                <input class="form-control bg-light border-0 khmer-font p-2" name="father_name" type="text" placeholder="As per Birth Cert">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" id="label_slum" for="slum_area">Slum Area</label>
-                                <input class="form-control" id="slum_area" name="slum_area" type="text" placeholder="e.g., Steung Meanchey">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Relation to Guardian</label>
+                                <input class="form-control bg-light border-0 fw-bold p-2" name="caregiver_relationship" type="text" placeholder="e.g. Living with Grandmother">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Address / Village</label>
+                                <input class="form-control bg-light border-0 khmer-font p-2" id="slum_area" name="slum_area" type="text">
                             </div>
                         </div>
 
-                        <!-- Biological Parents & Kinship -->
-                        <h6 class="text-secondary fw-bold small text-uppercase mb-3"><i class="bi bi-diagram-3 me-1"></i> Biological Parents & Kinship</h6>
-                        <div class="row bg-light p-3 rounded border mx-0">
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted" for="caregiver_relationship">Relation to Caregiver</label>
-                                <select class="form-select form-select-sm" id="caregiver_relationship" name="caregiver_relationship">
-                                    <option value="" selected>Not Specified</option>
-                                    <option value="Son">Son</option>
-                                    <option value="Daughter">Daughter</option>
-                                    <option value="Nephew">Nephew</option>
-                                    <option value="Niece">Niece</option>
-                                    <option value="Grandson">Grandson</option>
-                                    <option value="Granddaughter">Granddaughter</option>
-                                    <option value="Sibling">Sibling</option>
-                                    <option value="NGO/Orphanage">NGO / Orphanage</option>
-                                    <option value="Other">Other</option>
-                                </select>
+                        <!-- Sync/Legacy Fields -->
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Guardian Name</label>
+                                <input class="form-control border-0 p-2 text-muted fw-bold" id="guardian_name" name="guardian_name" type="text">
                             </div>
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted" for="mother_name">Mother's Name</label>
-                                <input class="form-control form-control-sm khmer-font" id="mother_name" name="mother_name" type="text" placeholder="Unknown/Abandoned">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="father_name">Father's Name</label>
-                                <input class="form-control form-control-sm khmer-font" id="father_name" name="father_name" type="text" placeholder="Unknown/Abandoned">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Contact Phone</label>
+                                <input class="form-control border-0 p-2 text-muted fw-bold" id="phone_number" name="phone_number" type="text">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARD 3: Education -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                        <h5 class="text-success fw-bold mb-0"><i class="bi bi-mortarboard-fill me-2"></i>3. Education & Nutrition</h5>
+                <!-- 3. EDUCATION -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-mortarboard-fill me-2 text-success"></i>School Enrollment</h5>
                     </div>
                     <div class="card-body p-4">
-                        <div class="row">
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted" for="current_school">Current School</label>
-                                <input class="form-control khmer-font" id="current_school" name="current_school" type="text" placeholder="e.g., New Life School">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Current School</label>
+                                <input class="form-control bg-light border-0 khmer-font p-2" name="current_school" type="text">
                             </div>
-                            <div class="col-md-4 mb-3 mb-md-0">
-                                <label class="form-label fw-bold small text-muted" for="grade_level">Grade Level *</label>
-                                <select class="form-select" id="grade_level" name="grade_level" required>
-                                    <option value="" disabled selected>Select Grade...</option>
-                                    <optgroup label="Early Education">
-                                        <option value="Kindergarten">Kindergarten</option>
-                                    </optgroup>
-                                    <optgroup label="Primary & Secondary (K-12)">
-                                        <option value="Grade 1">Grade 1</option>
-                                        <option value="Grade 2">Grade 2</option>
-                                        <option value="Grade 3">Grade 3</option>
-                                        <option value="Grade 4">Grade 4</option>
-                                        <option value="Grade 5">Grade 5</option>
-                                        <option value="Grade 6">Grade 6</option>
-                                        <option value="Grade 7">Grade 7</option>
-                                        <option value="Grade 8">Grade 8</option>
-                                        <option value="Grade 9">Grade 9</option>
-                                        <option value="Grade 10">Grade 10</option>
-                                        <option value="Grade 11">Grade 11</option>
-                                        <option value="Grade 12">Grade 12</option>
-                                    </optgroup>
-                                    <optgroup label="Higher Education">
-                                        <option value="University Year 1">University Year 1</option>
-                                        <option value="University Year 2">University Year 2</option>
-                                        <option value="University Year 3">University Year 3</option>
-                                        <option value="University Year 4">University Year 4</option>
-                                        <option value="University Year 5">University Year 5</option>
-                                        <option value="Vocational Training">Vocational Training</option>
-                                    </optgroup>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Grade Level *</label>
+                                <select class="form-select bg-light border-0 fw-bold" name="grade_level" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Kindergarten">Kindergarten</option>
+                                    {% for i in range(1, 13) %}
+                                    <option value="Grade {{ i }}">Grade {{ i }}</option>
+                                    {% endfor %}
+                                    <option value="Vocational">Vocational</option>
+                                    <option value="University">University</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold small text-muted" for="meal_plan">Nutrition Plan</label>
-                                <select class="form-select border-success fw-bold" id="meal_plan" name="meal_plan">
-                                    <option value="None" selected>No Meals Assigned</option>
-                                    <option value="Daily Hot Lunch" class="text-success">🍛 Daily Hot Lunch</option>
-                                    <option value="Monthly Groceries" class="text-warning">🌾 Monthly Groceries/Rice</option>
-                                </select>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Previous School History</label>
+                                <input class="form-control bg-light border-0 khmer-font p-2" name="previous_school" type="text" placeholder="Where did they study before?">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARD 4: Additional Notes -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                        <h5 class="text-warning text-darken fw-bold mb-0"><i class="bi bi-journal-text me-2"></i>4. Additional Notes</h5>
+                <!-- 4. STAFF NARRATIVE -->
+                <div class="card shadow-sm border-0 rounded-4 mb-5 native-card bg-white">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-chat-left-text-fill me-2 text-secondary"></i>Staff Remarks</h5>
                     </div>
                     <div class="card-body p-4">
-                        <label class="form-label fw-bold small text-muted" for="comment">General Comments</label>
-                        <textarea class="form-control khmer-font" id="comment" name="comment" rows="3" placeholder="Any special notes, background info, or medical context about this student..."></textarea>
+                        <label class="form-label fw-bold small text-muted text-uppercase">Initial Intake Comments</label>
+                        <textarea class="form-control bg-light border-0 khmer-font p-3" name="comment" rows="5" placeholder="Family background, medical notes, or housing situation..."></textarea>
                     </div>
                 </div>
 
-                <!-- ACTION FOOTER -->
-                <div class="d-flex justify-content-end gap-3 mb-5">
-                    <a href="/" class="btn btn-light border btn-lg px-4 shadow-sm fw-bold text-dark">Cancel</a>
-                    <button class="btn btn-primary btn-lg px-5 shadow-sm fw-bold" type="submit">
-                        <i class="bi bi-person-plus-fill me-2"></i> Enroll Student
-                    </button>
+                <!-- Mobile Action -->
+                <div class="d-md-none mb-5">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold py-3 rounded-pill shadow-lg">Register & Enroll</button>
                 </div>
 
             </div>
         </div>
     </form>
 </div>
+
+<style>
+    .avatar-xl { width: 130px; height: 130px; object-fit: cover; }
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); }
+    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; } }
+</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // Logic to lock/sync the Guardian info if an existing household is selected
     function syncHouseholdData() {
         const select = document.getElementById("householdSelect");
-        const selectedOption = select.options[select.selectedIndex];
-        
-        const guardianInput = document.getElementById("guardian_name");
-        const phoneInput = document.getElementById("phone_number");
-        const slumInput = document.getElementById("slum_area");
+        const selected = select.options[select.selectedIndex];
+        const gName = document.getElementById("guardian_name");
+        const pNum = document.getElementById("phone_number");
+        const sArea = document.getElementById("slum_area");
 
         if (select.value === "") {
-            // Unlinked - Free to type
-            guardianInput.readOnly = false;
-            phoneInput.readOnly = false;
-            slumInput.readOnly = false;
-            
-            guardianInput.value = "";
-            phoneInput.value = "";
-            slumInput.value = "";
-            
-            guardianInput.classList.remove("bg-light", "text-muted");
-            phoneInput.classList.remove("bg-light", "text-muted");
-            slumInput.classList.remove("bg-light", "text-muted");
+            gName.readOnly = false; pNum.readOnly = false; sArea.readOnly = false;
+            gName.classList.remove("bg-light", "text-muted");
+            pNum.classList.remove("bg-light", "text-muted");
+            sArea.classList.remove("bg-light", "text-muted");
         } else {
-            // Synced - Auto-fill and lock
-            guardianInput.value = selectedOption.getAttribute("data-guardian") || "";
-            phoneInput.value = selectedOption.getAttribute("data-phone") || "";
-            slumInput.value = selectedOption.getAttribute("data-slum") || "";
-            
-            guardianInput.readOnly = true;
-            phoneInput.readOnly = true;
-            slumInput.readOnly = true;
-            
-            guardianInput.classList.add("bg-light", "text-muted");
-            phoneInput.classList.add("bg-light", "text-muted");
-            slumInput.classList.add("bg-light", "text-muted");
+            gName.value = selected.getAttribute("data-guardian") || "";
+            pNum.value = selected.getAttribute("data-phone") || "";
+            sArea.value = selected.getAttribute("data-slum") || "";
+            gName.readOnly = true; pNum.readOnly = true; sArea.readOnly = true;
+            gName.classList.add("bg-light", "text-muted");
+            pNum.classList.add("bg-light", "text-muted");
+            sArea.classList.add("bg-light", "text-muted");
         }
     }
+    document.addEventListener("DOMContentLoaded", syncHouseholdData);
 </script>
 {% endblock %}
