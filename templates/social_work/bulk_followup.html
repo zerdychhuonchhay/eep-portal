@@ -3,12 +3,12 @@
 {% block title %}Bulk Activity Logger{% endblock %}
 
 {% block main %}
-<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 1200px;">
+<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 900px;">
 
     <!-- NATIVE iOS/ANDROID STYLE HEADER -->
     <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
-        <a href="/" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
-            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Home
+        <a href="/roster" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Back to Roster
         </a>
     </div>
 
@@ -19,280 +19,296 @@
 
     <form action="/bulk_followup" method="post" id="bulkForm" class="needs-validation" novalidate>
         
-        <div class="row g-4">
-            <!-- ========================================== -->
-            <!-- LEFT COLUMN: Logistics & Assessments       -->
-            <!-- ========================================== -->
-            <div class="col-lg-7">
-                
-                <!-- SECTION 1: LOGISTICS -->
-                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">1. Logistics</h6>
-                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-                    <div class="card-body p-4">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted text-uppercase">Date *</label>
-                                <input type="date" class="form-control bg-light border-0 fw-bold" name="followup_date" id="bulk_date" required>
+        <!-- ========================================== -->
+        <!-- SELECTED PARTICIPANTS CONFIRMATION         -->
+        <!-- ========================================== -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Selected Participants</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4" id="participantsCard">
+            <div class="card-body p-4">
+                {% if selected_students %}
+                    <div class="d-flex flex-wrap gap-2" id="selectedParticipantsList">
+                        {% for s in selected_students %}
+                        <div class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm d-flex align-items-center participant-badge" id="student_badge_{{ s.id }}">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 20px; height: 20px; font-size: 0.6rem;">
+                                {{ s.first_name[0] }}
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted text-uppercase">Activity Type *</label>
-                                <select name="location" id="activitySelect" class="form-select bg-light border-0 fw-bold" required>
-                                    <option value="Hot Meal Service">🍚 Hot Meal Service</option>
-                                    <option value="Home Visit" selected>🏠 Home Visit (Multi-Sibling)</option>
-                                    <option value="Sponsor Letter Writing">✉️ Sponsor Letter Writing</option>
-                                    <option value="Church / Prayer">⛪ Church / Prayer</option>
-                                    <option value="Tutoring Session">📚 Tutoring Session</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted text-uppercase">Recorded By *</label>
-                                <input type="text" class="form-control bg-light border-0 fw-bold" name="completed_by" value="{{ session.get('name', session.get('username', 'Staff')) }}" required>
-                            </div>
+                            <span class="fw-bold fs-6">{{ s.first_name }} {{ s.last_name }}</span>
+                            <span class="text-muted ms-2 me-2 fw-normal" style="font-size: 0.7rem;">{{ s.ngo_id }}</span>
+                            
+                            <!-- Improved Remove Button -->
+                            <button type="button" class="btn btn-sm btn-danger rounded-circle p-0 ms-2 d-flex align-items-center justify-content-center shadow-sm transition-hover" style="width: 20px; height: 20px;" aria-label="Remove" onclick="removeParticipant('{{ s.id }}')">
+                                <i class="bi bi-x text-white"></i>
+                            </button>
+                            
+                            <!-- Hidden input ensures the IDs are passed in the POST request -->
+                            <input type="hidden" name="student_ids" value="{{ s.id }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div id="noParticipantsWarning" class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning-emphasis fw-bold shadow-sm rounded-4 d-none align-items-center mt-2">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i> 
+                        <div>
+                            No students remain selected. Please return to the <a href="/roster?mode=bulk" class="text-decoration-underline text-warning-emphasis">Roster</a> to select participants.
                         </div>
                     </div>
-                </div>
-
-                <!-- TASK TOGGLES (RESPONSIVE FIX) -->
-                <div class="row g-3 mb-4 px-3 px-md-0">
-                    <div class="col-12 col-sm-6">
-                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-success border-4">
-                            <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
-                                <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="sponsorLetterToggle" name="is_sponsor_update">
-                                <label class="form-check-label fw-bold text-success" for="sponsorLetterToggle">Sponsor Letter Update</label>
-                            </div>
+                {% else %}
+                    <div class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning-emphasis fw-bold shadow-sm rounded-4 d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i> 
+                        <div>
+                            No students were selected. Please return to the <a href="/roster?mode=bulk" class="text-decoration-underline text-warning-emphasis">Roster</a> to select participants before logging a group activity.
                         </div>
                     </div>
-                    <div class="col-12 col-sm-6">
-                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-primary border-4">
-                            <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
-                                <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="statusUpdateToggle" name="is_master_update">
-                                <label class="form-check-label fw-bold text-primary" for="statusUpdateToggle">Significant Family Change</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TASK: SPONSOR LETTER -->
-                <div id="sponsorLetterSection" style="display: none;">
-                    <h6 class="fw-bold text-success text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Batch Letter Update</h6>
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-success bg-opacity-10 border border-success border-opacity-25">
-                        <div class="card-body p-4">
-                            <div class="row g-3 mb-4">
-                                <div class="col-6">
-                                    <label class="form-label small fw-bold text-success-emphasis">Quarter</label>
-                                    <select name="letter_quarter" class="form-select border-0 shadow-sm fw-bold">
-                                        <option value="">N/A</option>
-                                        <option value="Q1">Q1 (Jan-Mar)</option>
-                                        <option value="Q2">Q2 (Apr-Jun)</option>
-                                        <option value="Q3">Q3 (Jul-Sep)</option>
-                                        <option value="Q4">Q4 (Oct-Dec)</option>
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small fw-bold text-success-emphasis">Year</label>
-                                    <input type="number" class="form-control border-0 shadow-sm fw-bold" name="letter_year" id="letter_year">
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-4 shadow-sm p-3 mb-3">
-                                <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_given" value="Yes" id="lg"><label class="ms-2 fw-bold text-dark" for="lg">1. Given to Students</label></div>
-                                <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_translated" value="Yes" id="lt"><label class="ms-2 fw-bold text-dark" for="lt">2. Translated</label></div>
-                                <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="letter_scanned" value="Yes" id="lsc"><label class="ms-2 fw-bold text-dark" for="lsc">3. Scanned to PDF</label></div>
-                            </div>
-                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="letter_notes" rows="2" placeholder="Letter notes..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TASK: MASTER DATA CHANGE -->
-                <div id="permanentStatusSection" style="display: none;">
-                    <h6 class="fw-bold text-primary text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Update Master Records</h6>
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4">
-                        <div class="card-body p-4">
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
-                                    <select name="home_condition" class="form-select bg-light border-0 fw-bold">
-                                        <option value="Excellent">Excellent</option>
-                                        <option value="Good" selected>Good</option>
-                                        <option value="Average">Average</option>
-                                        <option value="Poor">Poor</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Church Attendance</label>
-                                    <select name="church_attendance" class="form-select bg-light border-0 fw-bold">
-                                        <option value="Yes">Yes (Regularly)</option>
-                                        <option value="No" selected>No (Never)</option>
-                                        <option value="Occasionally">Occasionally</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Work Status (Mother / Father)</label>
-                                    <div class="p-2 border rounded bg-light">
-                                        <div class="d-flex justify-content-between mb-1"><span class="small fw-bold">Mother:</span><select name="mother_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none"><option>Select One</option><option>Yes</option><option>No</option><option>Searching</option></select></div>
-                                        <div class="d-flex justify-content-between"><span class="small fw-bold">Father:</span><select name="father_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none"><option>Select One</option><option>Yes</option><option>No</option><option>Searching</option></select></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Income Narrative</label>
-                                    <textarea class="form-control bg-light border-0 khmer-font" name="parent_working_notes" rows="2" placeholder="Detail family jobs or income changes..."></textarea>
-                                </div>
-                            </div>
-                            <div class="mb-0 p-3 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
-                                <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Update Risk Factors</label>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% set risks = ['Abandonment', 'Abuse', 'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 'Housing Insecurity', 'Mental Health', 'Neglect', 'Orphan', 'Marital Crisis', 'Drug use/selling', 'Single Parent'] %}
-                                    {% for r in risks %}
-                                    <input type="checkbox" class="btn-check" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}">
-                                    <label class="btn btn-white border rounded-pill fw-bold py-1 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ loop.index }}">{{ r }}</label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECTION 2: THOROUGH MONTHLY PULSE -->
-                <div id="standardFollowupSections">
-                    <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">2. Thorough Monthly Progress</h6>
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Physical Health</label>
-                                    <select name="physical_health" class="form-select bg-light border-0 fw-bold">
-                                        <option value="Good" selected>Good</option>
-                                        <option value="Average">Average</option>
-                                        <option value="Poor">Poor</option>
-                                    </select>
-                                    <textarea class="form-control bg-light border-0 khmer-font mt-2" name="physical_health_detail" rows="1" placeholder="Details..."></textarea>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Social Interaction</label>
-                                    <select name="social_interaction" class="form-select bg-light border-0 fw-bold">
-                                        <option value="Good" selected>Good</option>
-                                        <option value="Average">Average</option>
-                                        <option value="Isolated">Isolated</option>
-                                    </select>
-                                    <textarea class="form-control bg-light border-0 khmer-font mt-2" name="social_interaction_detail" rows="1" placeholder="Mood/Friends..."></textarea>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">School Behavior</label>
-                                    <select name="behavior_in_class" class="form-select bg-light border-0 fw-bold">
-                                        <option value="Good" selected>Good</option>
-                                        <option value="Average">Average</option>
-                                        <option value="Disruptive">Disruptive</option>
-                                    </select>
-                                    <textarea class="form-control bg-light border-0 khmer-font mt-2" name="behavior_in_class_detail" rows="1" placeholder="Class notes..."></textarea>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Tutoring / Extra Classes</label>
-                                    <select name="tutoring_participation" class="form-select bg-light border-0 fw-bold">
-                                        <option value="Regular" selected>Regular</option>
-                                        <option value="Absent">Absent</option>
-                                        <option value="N/A">N/A</option>
-                                    </select>
-                                    <textarea class="form-control bg-light border-0 khmer-font mt-2" name="tutoring_detail" rows="1" placeholder="Progress..."></textarea>
-                                </div>
-                                <div class="col-12 mt-1">
-                                    <label class="form-label small fw-bold text-muted text-uppercase">Attendance & Days Missed</label>
-                                    <input type="text" class="form-control bg-light border-0 fw-bold" name="attendance_notes" placeholder="e.g. Missed 5 days this month">
-                                </div>
-                                <div class="col-12 mt-1">
-                                    <label class="form-label small fw-bold text-danger text-uppercase">Evidence of Drugs, Alcohol, or Violence?</label>
-                                    <select name="evidence_drugs_violence" class="form-select bg-light border-0 fw-bold text-danger">
-                                        <option value="No" selected>No signs observed</option>
-                                        <option value="Yes">Yes (Detail in notes below)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SECTION 3: RISK TRACKER -->
-                    <h6 class="fw-bold text-danger text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">3. Current Risk Level</h6>
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
-                        <div class="card-body p-4 text-center">
-                            <div class="d-flex justify-content-between gap-2">
-                                {% set risk_ratings = [{'val': 1, 'label': 'Safe', 'color': 'success'}, {'val': 2, 'label': 'Stable', 'color': 'info'}, {'val': 3, 'label': 'Concern', 'color': 'warning'}, {'val': 4, 'label': 'Urgent', 'color': 'danger'}, {'val': 5, 'label': 'Crisis', 'color': 'danger'}] %}
-                                {% for rr in risk_ratings %}
-                                <div class="flex-fill">
-                                    <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}">
-                                    <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}">{{ rr.val }}<br><small>{{ rr.label }}</small></label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECTION 4: NARRATIVE -->
-                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">4. Narrative & Action</h6>
-                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-                    <div class="card-body p-4">
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Group Visit Narrative *</label>
-                            <textarea class="form-control bg-light border-0 khmer-font p-3" name="general_notes" id="bulk_notes" rows="6" required></textarea>
-                        </div>
-                        <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
-                            <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between"><span>Urgent Protection Concerns?</span><span class="badge bg-danger text-white">RED ZONE</span></label>
-                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3 mt-1" name="child_protection_concerns" rows="2" placeholder="Detail any immediate danger..."></textarea>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md-6"><label class="form-label small fw-bold text-muted text-uppercase">Trafficking Risk?</label><select name="trafficking_risk" class="form-select bg-light border-0 fw-bold"><option value="No" selected>No</option><option value="Yes">Yes (Flag Review)</option></select></div>
-                            <div class="col-md-6"><label class="form-label small fw-bold text-primary text-uppercase">Staff Recommendations</label><input type="text" class="form-control bg-light border-0 khmer-font p-2" name="staff_notes" placeholder="Required actions..."></div>
-                        </div>
-                    </div>
-                </div>
+                {% endif %}
             </div>
+        </div>
 
-            <!-- RIGHT COLUMN: Student Selection -->
-            <div class="col-lg-5">
-                <div class="sticky-lg-top" style="top: 80px; z-index: 5;">
-                    <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">2. Select Participants</h6>
-                    <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden border-top border-danger border-4">
-                        <div class="card-header bg-white border-bottom p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
-                            <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden">
-                                <span class="input-group-text bg-light border-0 px-3"><i class="bi bi-search text-muted"></i></span>
-                                <input type="text" id="studentSearch" class="form-control border-0 bg-light py-2" placeholder="Search roster...">
-                            </div>
-                            <button type="button" class="btn btn-sm btn-link fw-bold text-decoration-none" onclick="toggleAll()">All / None</button>
-                        </div>
-                        <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;">
-                            <div class="list-group list-group-flush" id="studentList">
-                                {% for s in students %}
-                                <label class="list-group-item d-flex align-items-center py-3 px-4 transition-hover student-row" style="cursor: pointer;">
-                                    <input class="form-check-input me-3 fs-4 student-checkbox" type="checkbox" name="student_ids" value="{{ s.id }}">
-                                    <div class="min-w-0 text-start">
-                                        <h6 class="fw-bold text-dark mb-0 student-name">{{ s.first_name }} {{ s.last_name }}</h6>
-                                        <span class="text-muted small fw-bold">{{ s.ngo_id }} • {{ s.grade_level }}</span>
-                                    </div>
-                                </label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="card-footer bg-light border-top text-center py-3"><span class="fw-bold text-dark fs-5" id="selectedCount">0 Selected</span></div>
+        <!-- ========================================== -->
+        <!-- SECTION 1: LOGISTICS                       -->
+        <!-- ========================================== -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">1. Logistics</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Date *</label>
+                        <input type="date" class="form-control bg-light border-0 fw-bold" name="followup_date" id="bulk_date" required>
                     </div>
-                    <div class="d-none d-md-block"><button type="submit" class="btn btn-danger w-100 fw-bold rounded-pill py-3 shadow-lg fs-5 transition-hover"><i class="bi bi-cloud-arrow-up-fill me-2"></i> Save Batch Report</button><a href="/" class="btn btn-link w-100 text-muted fw-bold text-decoration-none mt-2">Discard & Cancel</a></div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Activity Type *</label>
+                        <select name="location" id="activitySelect" class="form-select bg-light border-0 fw-bold" required>
+                            <option value="Hot Meal Service">🍚 Hot Meal Service</option>
+                            <option value="Home Visit" selected>🏠 Home Visit (Multi-Sibling)</option>
+                            <option value="Sponsor Letter Writing">✉️ Sponsor Letter Writing</option>
+                            <option value="Church / Prayer">⛪ Church / Prayer</option>
+                            <option value="Tutoring Session">📚 Tutoring Session</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Recorded By *</label>
+                        <input type="text" class="form-control bg-light border-0 fw-bold" name="completed_by" value="{{ session.get('name', session.get('username', 'Staff')) }}" required>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- TASK TOGGLES -->
+        <div class="row g-3 mb-4 px-3 px-md-0">
+            <div class="col-12 col-sm-6">
+                <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-success border-4">
+                    <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
+                        <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="sponsorLetterToggle" name="is_sponsor_update">
+                        <label class="form-check-label fw-bold text-success" for="sponsorLetterToggle">Sponsor Letter Update</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6">
+                <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-primary border-4">
+                    <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
+                        <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="statusUpdateToggle" name="is_master_update">
+                        <label class="form-check-label fw-bold text-primary" for="statusUpdateToggle">Significant Family Change</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TASK: SPONSOR LETTER -->
+        <div id="sponsorLetterSection" style="display: none;">
+            <h6 class="fw-bold text-success text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Batch Letter Update</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-success bg-opacity-10 border border-success border-opacity-25">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-success-emphasis">Quarter</label>
+                            <select name="letter_quarter" class="form-select border-0 shadow-sm fw-bold">
+                                <option value="">N/A</option>
+                                <option value="Q1">Q1 (Jan-Mar)</option>
+                                <option value="Q2">Q2 (Apr-Jun)</option>
+                                <option value="Q3">Q3 (Jul-Sep)</option>
+                                <option value="Q4">Q4 (Oct-Dec)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-success-emphasis">Year</label>
+                            <input type="number" class="form-control border-0 shadow-sm fw-bold" name="letter_year" id="letter_year">
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-4 shadow-sm p-3 mb-3">
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_given" value="Yes" id="lg"><label class="ms-2 fw-bold text-dark" for="lg">1. Given to Students</label></div>
+                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_translated" value="Yes" id="lt"><label class="ms-2 fw-bold text-dark" for="lt">2. Translated</label></div>
+                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="letter_scanned" value="Yes" id="lsc"><label class="ms-2 fw-bold text-dark" for="lsc">3. Scanned to PDF</label></div>
+                    </div>
+                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="letter_notes" rows="2" placeholder="Letter notes..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- TASK: MASTER DATA CHANGE -->
+        <div id="permanentStatusSection" style="display: none;">
+            <h6 class="fw-bold text-primary text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Update Master Records</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
+                            <select name="home_condition" class="form-select bg-light border-0 fw-bold">
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Church Attendance</label>
+                            <select name="church_attendance" class="form-select bg-light border-0 fw-bold">
+                                <option value="Yes">Yes (Regularly)</option>
+                                <option value="No" selected>No (Never)</option>
+                                <option value="Occasionally">Occasionally</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Work Status (Mother / Father)</label>
+                            <div class="p-2 border rounded bg-light">
+                                <div class="d-flex justify-content-between mb-1"><span class="small fw-bold">Mother:</span><select name="mother_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none"><option>Select One</option><option>Yes</option><option>No</option><option>Searching</option></select></div>
+                                <div class="d-flex justify-content-between"><span class="small fw-bold">Father:</span><select name="father_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none"><option>Select One</option><option>Yes</option><option>No</option><option>Searching</option></select></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Income Narrative</label>
+                            <textarea class="form-control bg-light border-0 khmer-font" name="parent_working_notes" rows="2" placeholder="Detail family jobs or income changes..."></textarea>
+                        </div>
+                    </div>
+                    <div class="mb-0 p-3 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
+                        <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Update Risk Factors</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% set risks = ['Abandonment', 'Abuse', 'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 'Housing Insecurity', 'Mental Health', 'Neglect', 'Orphan', 'Marital Crisis', 'Drug use/selling', 'Single Parent'] %}
+                            {% for r in risks %}
+                            <input type="checkbox" class="btn-check" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}">
+                            <label class="btn btn-white border rounded-pill fw-bold py-1 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ loop.index }}">{{ r }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: THOROUGH MONTHLY PULSE -->
+        <div id="standardFollowupSections">
+            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">2. Thorough Monthly Progress</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Physical Health</label>
+                            <select name="physical_health" class="form-select bg-light border-0 fw-bold">
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="physical_health_detail" rows="1" placeholder="Details..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Social Interaction</label>
+                            <select name="social_interaction" class="form-select bg-light border-0 fw-bold">
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Isolated">Isolated</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="social_interaction_detail" rows="1" placeholder="Mood/Friends..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">School Behavior</label>
+                            <select name="behavior_in_class" class="form-select bg-light border-0 fw-bold">
+                                <option value="Good" selected>Good</option>
+                                <option value="Average">Average</option>
+                                <option value="Disruptive">Disruptive</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="behavior_in_class_detail" rows="1" placeholder="Class notes..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Tutoring / Extra Classes</label>
+                            <select name="tutoring_participation" class="form-select bg-light border-0 fw-bold">
+                                <option value="Regular" selected>Regular</option>
+                                <option value="Absent">Absent</option>
+                                <option value="N/A">N/A</option>
+                            </select>
+                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="tutoring_detail" rows="1" placeholder="Progress..."></textarea>
+                        </div>
+                        <div class="col-12 mt-1">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Attendance & Days Missed</label>
+                            <input type="text" class="form-control bg-light border-0 fw-bold" name="attendance_notes" placeholder="e.g. Missed 5 days this month">
+                        </div>
+                        <div class="col-12 mt-1">
+                            <label class="form-label small fw-bold text-danger text-uppercase">Evidence of Drugs, Alcohol, or Violence?</label>
+                            <select name="evidence_drugs_violence" class="form-select bg-light border-0 fw-bold text-danger">
+                                <option value="No" selected>No signs observed</option>
+                                <option value="Yes">Yes (Detail in notes below)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3: RISK TRACKER -->
+            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">3. Current Risk Level</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
+                <div class="card-body p-4 text-center">
+                    <div class="d-flex justify-content-between gap-2">
+                        {% set risk_ratings = [{'val': 1, 'label': 'Safe', 'color': 'success'}, {'val': 2, 'label': 'Stable', 'color': 'info'}, {'val': 3, 'label': 'Concern', 'color': 'warning'}, {'val': 4, 'label': 'Urgent', 'color': 'danger'}, {'val': 5, 'label': 'Crisis', 'color': 'danger'}] %}
+                        {% for rr in risk_ratings %}
+                        <div class="flex-fill">
+                            <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}">
+                            <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}">{{ rr.val }}<br><small>{{ rr.label }}</small></label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: NARRATIVE -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">4. Narrative & Action</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Group Visit Narrative *</label>
+                    <textarea class="form-control bg-light border-0 khmer-font p-3" name="general_notes" id="bulk_notes" rows="6" required></textarea>
+                </div>
+                <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
+                    <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between"><span>Urgent Protection Concerns?</span><span class="badge bg-danger text-white">RED ZONE</span></label>
+                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3 mt-1" name="child_protection_concerns" rows="2" placeholder="Detail any immediate danger..."></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label small fw-bold text-muted text-uppercase">Trafficking Risk?</label><select name="trafficking_risk" class="form-select bg-light border-0 fw-bold"><option value="No" selected>No</option><option value="Yes">Yes (Flag Review)</option></select></div>
+                    <div class="col-md-6"><label class="form-label small fw-bold text-primary text-uppercase">Staff Recommendations</label><input type="text" class="form-control bg-light border-0 khmer-font p-2" name="staff_notes" placeholder="Required actions..."></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Action Buttons -->
+        <div class="d-none d-md-flex justify-content-between gap-3 mb-5">
+            <a href="/roster" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 px-5 shadow-sm transition-hover">Cancel</a>
+            <button type="submit" class="btn btn-danger fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Save Batch Report
+            </button>
+        </div>
+
     </form>
 
-    <button type="submit" form="bulkForm" class="btn btn-danger text-white fw-bold shadow-lg position-fixed d-md-none d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;"><i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> Save</button>
+    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <button type="submit" form="bulkForm" class="btn btn-danger text-white fw-bold shadow-lg position-fixed d-md-none d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;">
+        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> Save
+    </button>
 </div>
 
 <style>
-    .transition-hover { transition: all 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important; }
+    /* Specific Risk Button Colors (Kept unique to this form's radio buttons) */
     .btn-check:checked + label.btn-outline-success { background-color: #198754 !important; color: white !important; }
     .btn-check:checked + label.btn-outline-info { background-color: #0dcaf0 !important; color: white !important; }
     .btn-check:checked + label.btn-outline-warning { background-color: #ffc107 !important; color: black !important; }
     .btn-check:checked + label.btn-outline-danger { background-color: #dc3545 !important; color: white !important; }
     .btn-check:checked + label.btn-white { background-color: #dc3545 !important; color: #fff !important; border-color: #dc3545 !important; }
-    .form-control:focus, .form-select:focus { border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); background-color: #fff !important; }
-    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; margin-left: -1rem; margin-right: -1rem; border-left: 0; border-right: 0; } }
 </style>
 {% endblock %}
 
@@ -302,24 +318,30 @@
         const form = document.getElementById('bulkForm');
         const draftKey = `eep_draft_bulk_followup`;
 
+        // Load Draft Logic (Ignoring student_ids since they are handled externally now)
         function loadDraft() {
             const saved = localStorage.getItem(draftKey);
             if (saved) {
                 try {
                     const data = JSON.parse(saved);
                     Object.keys(data).forEach(key => {
+                        if (key === 'student_ids' || key === 'completed_by') return;
+                        
                         const inputs = form.querySelectorAll(`[name="${key}"]`);
                         inputs.forEach(input => {
-                            if (key === 'completed_by') return;
                             if (input.type === 'checkbox' || input.type === 'radio') {
-                                if (Array.isArray(data[key])) { if (data[key].includes(input.value)) input.checked = true; }
-                                else { if (input.value === data[key]) input.checked = true; }
-                            } else { input.value = data[key]; }
+                                if (Array.isArray(data[key])) { 
+                                    if (data[key].includes(input.value)) input.checked = true; 
+                                } else { 
+                                    if (input.value === data[key]) input.checked = true; 
+                                }
+                            } else { 
+                                input.value = data[key]; 
+                            }
                         });
                     });
-                    updateCounter();
                     triggerToggles();
-                } catch(e) { console.error("Bulk failed", e); }
+                } catch(e) { console.error("Bulk draft restore failed", e); }
             }
         }
 
@@ -327,13 +349,25 @@
             const formData = new FormData(form);
             const data = {};
             for (let [key, value] of formData.entries()) {
-                if (key === 'student_ids' || key === 'risk_factors') { if (!data[key]) data[key] = []; data[key].push(value); }
-                else { data[key] = value; }
+                if (key === 'student_ids') continue; // Do not save IDs to draft
+                if (key === 'risk_factors') { 
+                    if (!data[key]) data[key] = []; 
+                    data[key].push(value); 
+                } else { 
+                    data[key] = value; 
+                }
             }
             localStorage.setItem(draftKey, JSON.stringify(data));
         });
 
-        form.addEventListener('submit', () => { if (form.checkValidity()) localStorage.removeItem(draftKey); });
+        form.addEventListener('submit', () => { 
+            if (form.checkValidity()) localStorage.removeItem(draftKey); 
+        });
+        
+        // Auto-fill date if empty
+        const dateInput = document.getElementById('bulk_date');
+        if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+
         setTimeout(loadDraft, 100);
 
         const activitySelect = document.getElementById('activitySelect');
@@ -353,30 +387,26 @@
         activitySelect.addEventListener('change', triggerToggles);
         statusToggle.addEventListener('change', triggerToggles);
         sponsorToggle.addEventListener('change', triggerToggles);
-
-        document.getElementById('studentSearch')?.addEventListener('keyup', function() {
-            const query = this.value.toLowerCase().trim();
-            document.querySelectorAll('.student-row').forEach(row => {
-                const name = row.querySelector('.student-name').textContent.toLowerCase();
-                row.style.display = name.includes(query) ? 'flex' : 'none';
-            });
-        });
-
-        function updateCounter() {
-            const count = document.querySelectorAll('.student-checkbox:checked').length;
-            document.getElementById('selectedCount').innerText = `${count} Selected`;
-        }
-
-        form.addEventListener('change', (e) => { if (e.target.classList.contains('student-checkbox')) updateCounter(); });
     });
 
-    function toggleAll() {
-        const checkboxes = document.querySelectorAll('.student-checkbox');
-        const visibleCBs = Array.from(checkboxes).filter(cb => cb.closest('.student-row').style.display !== 'none');
-        const allChecked = visibleCBs.every(cb => cb.checked);
-        visibleCBs.forEach(cb => cb.checked = !allChecked);
-        document.getElementById('selectedCount').innerText = `${document.querySelectorAll('.student-checkbox:checked').length} Selected`;
-        document.getElementById('bulkForm').dispatchEvent(new Event('input', { bubbles: true }));
+    // Remove Participant Logic
+    function removeParticipant(studentId) {
+        const badge = document.getElementById('student_badge_' + studentId);
+        if (badge) {
+            badge.remove();
+        }
+        
+        // Check if any remain
+        const remaining = document.querySelectorAll('.participant-badge');
+        if (remaining.length === 0) {
+            const warning = document.getElementById('noParticipantsWarning');
+            if (warning) {
+                warning.classList.remove('d-none');
+                warning.classList.add('d-flex');
+            }
+            // Disable the submit buttons to prevent empty submission errors
+            document.querySelectorAll('button[type="submit"]').forEach(btn => btn.disabled = true);
+        }
     }
 </script>
 {% endblock %}

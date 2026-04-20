@@ -1466,45 +1466,96 @@ def edit_followup(followup_id):
 def bulk_followup():
     """Log a single follow-up note for multiple students at once"""
     if request.method == "POST":
+        # 1. Logistics
         followup_date = request.form.get("followup_date")
         completed_by = request.form.get("completed_by")
         location = request.form.get("location")
-        general_notes = request.form.get("general_notes")
         
+        # 2. Check Toggles
+        is_sponsor_update = request.form.get("is_sponsor_update") == "on"
+        is_master_update = request.form.get("is_master_update") == "on"
+
+        # 3. Monthly Pulse
+        physical_health = request.form.get("physical_health")
+        physical_health_detail = request.form.get("physical_health_detail")
+        social_interaction = request.form.get("social_interaction")
+        social_interaction_detail = request.form.get("social_interaction_detail")
+        behavior_in_class = request.form.get("behavior_in_class")
+        behavior_in_class_detail = request.form.get("behavior_in_class_detail")
+        tutoring_participation = request.form.get("tutoring_participation")
+        tutoring_detail = request.form.get("tutoring_detail")
+        evidence_drugs_violence = request.form.get("evidence_drugs_violence")
+        risk_level = request.form.get("risk_level")
+
+        # 4. Narrative & Action
+        general_notes = request.form.get("general_notes")
+        child_protection_concerns = request.form.get("child_protection_concerns")
+        trafficking_risk = request.form.get("trafficking_risk")
+        staff_notes = request.form.get("staff_notes")
+        
+        # 5. Sponsor Letter fields
+        letter_quarter = request.form.get("letter_quarter") if is_sponsor_update else None
+        letter_year = request.form.get("letter_year") if is_sponsor_update else None
+        letter_given = request.form.get("letter_given") if is_sponsor_update else None
+        letter_translated = request.form.get("letter_translated") if is_sponsor_update else None
+        letter_scanned = request.form.get("letter_scanned") if is_sponsor_update else None
+        letter_sent = request.form.get("letter_sent") if is_sponsor_update else None
+        letter_notes = request.form.get("letter_notes") if is_sponsor_update else None
+
+        # 6. Master Data fields
+        home_condition = request.form.get("home_condition") if is_master_update else None
+        church_attendance = request.form.get("church_attendance") if is_master_update else None
+        parent_working_notes = request.form.get("parent_working_notes") if is_master_update else None
+        
+        risk_factors_list = request.form.getlist("risk_factors") if is_master_update else []
+        risk_factors = ", ".join(risk_factors_list) if risk_factors_list else ""
+
+        # 7. Students List
         student_ids = request.form.getlist("student_ids")
 
         if not followup_date or not completed_by:
             flash("Date and Completed By are required.", "danger")
-            return redirect("/bulk_followup")
+            return redirect("/roster")
 
         if not student_ids:
-            flash("You must select at least one student from the list.", "warning")
-            return redirect("/bulk_followup")
+            flash("You must select at least one student from the roster first.", "warning")
+            return redirect("/roster")
+
+        alert_status = 'Active' if child_protection_concerns and child_protection_concerns.strip() else None
 
         for sid in student_ids:
             db.execute("""
                 INSERT INTO followups (
-                    student_id, followup_date, location, completed_by, general_notes
-                ) VALUES (?, ?, ?, ?, ?)
-            """, sid, followup_date, location, completed_by, general_notes)
+                    student_id, followup_date, location, completed_by, general_notes,
+                    physical_health, physical_health_detail, social_interaction, social_interaction_detail,
+                    behavior_in_class, behavior_in_class_detail, tutoring_participation, tutoring_participation_detail,
+                    evidence_drugs_violence, risk_level, child_protection_concerns, trafficking_risk, staff_notes,
+                    letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes,
+                    home_life, church_attendance, parent_working_notes, risk_factors, alert_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, sid, followup_date, location, completed_by, general_notes,
+                physical_health, physical_health_detail, social_interaction, social_interaction_detail,
+                behavior_in_class, behavior_in_class_detail, tutoring_participation, tutoring_detail,
+                evidence_drugs_violence, risk_level, child_protection_concerns, trafficking_risk, staff_notes,
+                letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes,
+                home_condition, church_attendance, parent_working_notes, risk_factors, alert_status)
 
         log_action(f"Logged Group Follow-Up ({location}) for {len(student_ids)} students")
         flash(f"Successfully logged group follow-up for {len(student_ids)} students!", "success")
-        return redirect("/dashboard")
+        return redirect("/")
 
-    pid = session.get("program_id", 0)
-    students = db.execute("""
-        SELECT id, first_name, last_name, khmer_name, ngo_id, grade_level 
-        FROM students 
-        WHERE status = 'Active' AND (program_id = ? OR ? = 0)
-        ORDER BY first_name ASC
-    """, pid, pid)
-    today_date = datetime.now().strftime('%Y-%m-%d')
-    
-    staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
-    current_user = staff_query[0]["username"] if staff_query else ""
+    else:
+        # === GET REQUEST LOGIC (The Roster Handoff) ===
+        student_ids = request.args.getlist("student_ids")
+        
+        selected_students = []
+        if student_ids:
+            # Create a string of question marks for the SQL IN clause (?,?,?)
+            placeholders = ','.join('?' * len(student_ids))
+            query = f"SELECT id, first_name, last_name, ngo_id FROM students WHERE id IN ({placeholders})"
+            selected_students = db.execute(query, *student_ids)
 
-    return render_template("social_work/bulk_followup.html", students=students, today_date=today_date, current_user=current_user)
+        return render_template("social_work/bulk_followup.html", selected_students=selected_students)
 
 @app.route("/resolve_alert/<int:followup_id>", methods=["POST"])
 @login_required
@@ -1606,33 +1657,49 @@ def log_expense(student_id):
 
 @app.route("/log_services", methods=["GET", "POST"])
 @login_required
+# Make sure your decorator matches your permissions layout. If you don't have a specific
+# permission for logging services yet, you can leave it out, or use @admin_required.
 def log_services():
-    """Bulk log daily meals, missing meals, or individual support"""
+    """Log meals, supplies, or absences for multiple students at once"""
     if request.method == "POST":
         service_date = request.form.get("service_date")
         service_type = request.form.get("service_type")
         notes = request.form.get("notes")
         student_ids = request.form.getlist("student_ids")
 
-        if not service_date or not service_type:
-            flash("Date and Service Type are required.", "danger")
-            return redirect("/log_services")
         if not student_ids:
-            flash("You must select at least one student.", "warning")
-            return redirect("/log_services")
+            flash("You must select at least one student from the Roster.", "warning")
+            return redirect("/roster?mode=bulk")
 
+        if not service_date or not service_type:
+            flash("Service Date and Type are required.", "danger")
+            return redirect("/roster?mode=bulk")
+
+        # Save the logs to the database
         for sid in student_ids:
-            db.execute("INSERT INTO student_services (student_id, service_date, service_type, notes) VALUES (?, ?, ?, ?)", 
-                       sid, service_date, service_type, notes)
+            db.execute("""
+                INSERT INTO student_services (student_id, service_date, service_type, notes)
+                VALUES (?, ?, ?, ?)
+            """, sid, service_date, service_type, notes)
 
-        log_action(f"Logged Bulk Service: {service_type} for {len(student_ids)} students")
-        flash(f"Successfully logged '{service_type}' for {len(student_ids)} students!", "success")
+        log_action(f"Logged '{service_type}' for {len(student_ids)} students")
+        flash(f"Successfully logged {service_type} for {len(student_ids)} students!", "success")
         return redirect("/dashboard")
 
-    pid = session.get("program_id", 0)
-    students = db.execute("SELECT id, first_name, last_name, khmer_name, grade_level, meal_plan FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name ASC", pid, pid)
-    today_date = datetime.now().strftime('%Y-%m-%d')
-    return render_template("operations/log_services.html", students=students, today_date=today_date)
+    else:
+        # GET REQUEST: Catch the student IDs from the Roster's multi-select URL arguments
+        student_ids = request.args.getlist("student_ids")
+        
+        selected_students = []
+        if student_ids:
+            # Dynamically create the placeholders (?,?,?) based on how many kids were selected
+            placeholders = ','.join('?' * len(student_ids))
+            # Include meal_plan so the template can show the indicator badges
+            query = f"SELECT id, first_name, last_name, ngo_id, meal_plan FROM students WHERE id IN ({placeholders})"
+            selected_students = db.execute(query, *student_ids)
+
+        today_date = datetime.now().strftime('%Y-%m-%d')
+        return render_template("operations/log_services.html", selected_students=selected_students, today_date=today_date)
 
 @app.route("/log_activity", methods=["POST"])
 @login_required
@@ -1713,12 +1780,19 @@ def api_tasks():
 @app.route("/add_task", methods=["POST"])
 @login_required
 def add_task():
+    """Handles both single tasks and multi-day holiday ranges"""
     title = request.form.get("title")
-    due_date = request.form.get("due_date")
+    due_date = request.form.get("due_date")     # Start Date (or Task Date)
+    end_date = request.form.get("end_date")     # End Date (Holidays only)
     description = request.form.get("description")
     priority = request.form.get("priority")
     student_id = request.form.get("student_id")
     
+    # Scope & Type
+    is_team_task = 1 if request.form.get("is_team_task") == "1" else 0
+    is_holiday = request.form.get("is_holiday") == "1"
+    
+    # 1. Validations
     if not student_id or student_id == "None": student_id = None
     if not title or not due_date:
         flash("Task Title and Date are required.", "danger")
@@ -1726,11 +1800,85 @@ def add_task():
         
     pid = session.get("program_id", 1)
     if pid == 0: pid = 1 
+    
+    # 2. HOLIDAY RANGE LOGIC
+    if is_holiday:
+        try:
+            # Normalize dates (Strip 'T' if coming from datetime-local)
+            start_str = due_date.split('T')[0]
+            # If no end_date provided, treat as a single day
+            end_str = end_date.split('T')[0] if (end_date and end_date.strip()) else start_str
+            
+            # --- THE FIX: PREVENT OVERLAPS ---
+            # Delete any existing holidays in this specific window to allow a "Clean Overwrite"
+            db.execute("""
+                DELETE FROM tasks 
+                WHERE status = 'Holiday' 
+                AND due_date >= ? AND due_date <= ? 
+                AND program_id = ?
+            """, start_str, end_str, pid)
+
+            # Insert new entries day-by-day
+            start_dt = datetime.strptime(start_str, '%Y-%m-%d')
+            end_dt = datetime.strptime(end_str, '%Y-%m-%d')
+            current_dt = start_dt
+            
+            while current_dt <= end_dt:
+                db.execute("""
+                    INSERT INTO tasks (
+                        title, description, due_date, priority, status, 
+                        student_id, staff_id, program_id, is_team_task
+                    ) VALUES (?, ?, ?, 'High', 'Holiday', ?, ?, ?, 1)
+                """, title, description, current_dt.strftime('%Y-%m-%d'), student_id, session["user_id"], pid)
+                current_dt += timedelta(days=1)
+            
+            log_action(f"Logged Holiday range: {title} ({start_str} to {end_str})")
+            flash(f"Holiday '{title}' saved successfully.", "success")
+        except Exception as e:
+            flash(f"Error processing holiday range: {e}", "danger")
+    
+    # 3. STANDARD TASK LOGIC
+    else:
+        db.execute("""
+            INSERT INTO tasks (
+                title, description, due_date, priority, status, 
+                student_id, staff_id, program_id, is_team_task
+            ) VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?, ?)
+        """, title, description, due_date, priority, student_id, session["user_id"], pid, is_team_task)
         
-    db.execute("INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id, program_id) VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?)", 
-               title, description, due_date, priority, student_id, session["user_id"], pid)
-    log_action(f"Created new task: {title}")
-    flash("Task successfully added to your calendar!", "success")
+        log_action(f"Created new task: {title}")
+        flash("Task successfully added to your calendar!", "success")
+        
+    return redirect("/calendar")
+
+@app.route("/edit_task", methods=["POST"])
+@login_required
+def edit_task():
+    """Handles updating existing task details"""
+    task_id = request.form.get("task_id")
+    title = request.form.get("title")
+    due_date = request.form.get("due_date")
+    description = request.form.get("description")
+    priority = request.form.get("priority")
+    
+    # Permission Check: Ensure the user owns the task or is Admin
+    task = db.execute("SELECT staff_id FROM tasks WHERE id = ?", task_id)
+    if not task:
+        flash("Task not found.", "danger")
+        return redirect("/calendar")
+        
+    if session["role"] not in ["Admin", "Director"] and task[0]["staff_id"] != session["user_id"]:
+        flash("Unauthorized: You can only edit your own tasks.", "danger")
+        return redirect("/calendar")
+
+    db.execute("""
+        UPDATE tasks 
+        SET title = ?, due_date = ?, description = ?, priority = ?
+        WHERE id = ?
+    """, title, due_date, description, priority, task_id)
+    
+    log_action(f"Updated task: {title}")
+    flash("Task details updated successfully.", "success")
     return redirect("/calendar")
 
 @app.route("/complete_task/<int:task_id>", methods=["POST"])

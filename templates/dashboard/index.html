@@ -24,7 +24,7 @@
                     </div>
                 </div>
                 
-                <!-- NEW: Right-Side Banner Logo (Hidden on very small phones, beautiful on PC/Tablets) -->
+                <!-- NEW: Right-Side Banner Logo -->
                 <div>
                     <!-- Settings Gear (Mobile Only) -->
                     <a href="/settings" class="text-white opacity-75 transition-hover d-lg-none"><i class="bi bi-gear-fill fs-3"></i></a>
@@ -34,7 +34,7 @@
                          alt="ELM Ministries" 
                          class="d-none d-sm-block transition-hover" 
                          style="height: 55px; width: auto; object-fit: contain; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));"
-                         onerror="this.style.display='none';">
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=ELM&background=ffffff&color=005a9c&bold=true';">
                 </div>
             </div>
 
@@ -69,11 +69,11 @@
         </div>
         {% endif %}
         
-        <!-- 🛡️ CRUD SECURITY: Group Notes -->
+        <!-- 🛡️ CRUD SECURITY: Group Notes (Enables Bulk Roster Mode) -->
         {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
         <div class="col-6 col-md-3 col-lg">
             <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-3 position-relative overflow-hidden tool-card border-light">
-                <a href="/bulk_followup" class="stretched-link text-decoration-none"></a>
+                <a href="/roster?mode=bulk" class="stretched-link text-decoration-none"></a>
                 <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2 icon-wrapper" style="width: 55px; height: 55px;">
                     <i class="bi bi-clipboard2-heart-fill text-danger fs-4"></i>
                 </div>
@@ -82,10 +82,10 @@
         </div>
         {% endif %}
         
-        <!-- Log Nutrition -->
+        <!-- Log Nutrition (Enables Bulk Roster Mode with Meals Filter) -->
         <div class="col-6 col-md-3 col-lg">
             <div class="card border-0 shadow-sm rounded-4 h-100 transition-hover bg-white text-center p-3 position-relative overflow-hidden tool-card border-light">
-                <a href="/log_services" class="stretched-link text-decoration-none"></a>
+                <a href="/roster?mode=bulk&action=meals" class="stretched-link text-decoration-none"></a>
                 <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mx-auto mb-2 icon-wrapper" style="width: 55px; height: 55px;">
                     <i class="bi bi-basket2-fill text-warning text-darken fs-4"></i>
                 </div>
@@ -113,7 +113,7 @@
         <!-- LEFT COL: PROGRAM OVERVIEW & ACTION CENTER -->
         <div class="col-12 col-lg-4 col-xl-3">
             
-            <!-- Quick Program Snapshot (Calculated securely via Jinja) -->
+            <!-- Quick Program Snapshot -->
             <div class="card shadow-sm border-0 rounded-4 mb-4 native-card border-top border-info border-4">
                 <div class="card-body p-4">
                     <h6 class="fw-bold text-muted text-uppercase mb-3" style="letter-spacing: 0.5px;">Program Snapshot</h6>

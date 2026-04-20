@@ -1,5 +1,5 @@
 -- ==============================================================================
--- EEP PORTAL: MASTER DATABASE SCHEMA (v2.6)
+-- EEP PORTAL: MASTER DATABASE SCHEMA (v2.8)
 -- ==============================================================================
 
 -- 1. STAFF (The Security Bouncers & Users)
@@ -121,6 +121,12 @@ CREATE TABLE followups (
     letter_scanned TEXT,
     letter_sent TEXT,
     letter_notes TEXT,
+    parent_working_notes TEXT,
+    support_level INTEGER,
+    church_attendance TEXT,
+    child_jobs TEXT,
+    risk_level INTEGER,
+    student_story TEXT,
     alert_status TEXT DEFAULT 'Active',
     FOREIGN KEY(student_id) REFERENCES students(id)
 );
@@ -207,11 +213,14 @@ CREATE TABLE tasks (
     title TEXT NOT NULL,
     description TEXT,
     due_date DATETIME NOT NULL,
+    end_date DATETIME,           -- NEW v2.8: Support for date ranges
     priority TEXT DEFAULT 'Medium',
     status TEXT DEFAULT 'Pending',
     student_id INTEGER,
     staff_id INTEGER,
-    program_id INTEGER DEFAULT 1
+    program_id INTEGER DEFAULT 1,
+    is_team_task INTEGER DEFAULT 0,
+    is_holiday INTEGER DEFAULT 0 -- NEW v2.8: Explicit flag to suppress nutrition logs
 );
 
 -- 15. SYSTEM SETTINGS

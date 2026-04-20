@@ -1,337 +1,203 @@
 {% extends "layout.html" %}
 
-{% block title %}
-    Log Nutrition & Services
-{% endblock %}
+{% block title %}Log Nutrition & Services{% endblock %}
 
 {% block main %}
-<div class="container-fluid px-lg-4 pt-3 pb-5">
-    
-    <!-- HEADER SECTION -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0 bg-transparent p-0">
-                <li class="breadcrumb-item"><a href="/dashboard" class="text-decoration-none text-muted fw-bold">Dashboard</a></li>
-                <li class="breadcrumb-item active fw-bold text-success" aria-current="page">Log Services</li>
-            </ol>
-        </nav>
-        <a href="/dashboard" class="btn btn-light border shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover">
-            <i class="bi bi-x-lg me-1"></i> Cancel
+<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 900px;">
+
+    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
+    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
+        <a href="/roster?mode=bulk" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Back to Roster
         </a>
     </div>
 
     <!-- PAGE TITLE -->
-    <div class="mb-4 text-center text-md-start">
-        <h2 class="fw-bold text-dark mb-1"><i class="bi bi-basket2-fill text-success me-2"></i>Log Student Services</h2>
-        <p class="text-muted small fw-bold">Bulk log daily meals, missing meals, or individual support.</p>
+    <div class="d-flex align-items-center mb-4 px-3 px-md-0">
+        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-basket2-fill text-warning text-darken me-2"></i>Log Student Services</h3>
     </div>
 
-    <!-- THE FORM -->
-    <form action="/log_services" method="POST" class="needs-validation" novalidate>
-        <div class="row g-4">
-            
-            <!-- ========================================== -->
-            <!-- LEFT COLUMN: The Service Details           -->
-            <!-- ========================================== -->
-            <div class="col-lg-5">
-                
-                <!-- CARD 1: Service Overview -->
-                <div class="card shadow-sm border-0 rounded-4 mb-4 border-top border-success border-4">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-clipboard-check me-2 text-success"></i>1. Service Overview</h5>
-                    </div>
-                    <div class="card-body p-4">
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Service Date *</label>
-                            <div class="input-group shadow-sm">
-                                <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-date"></i></span>
-                                <input type="date" class="form-control border-start-0 bg-light fw-bold" name="service_date" value="{{ today_date }}" required>
+    <form action="/log_services" method="post" id="servicesForm" class="needs-validation" novalidate>
+        
+        <!-- ========================================== -->
+        <!-- SELECTED PARTICIPANTS CONFIRMATION         -->
+        <!-- ========================================== -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Selected Participants</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-warning border-4" id="participantsCard">
+            <div class="card-body p-4">
+                {% if selected_students %}
+                    <div class="d-flex flex-wrap gap-2" id="selectedParticipantsList">
+                        {% for s in selected_students %}
+                        <div class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm d-flex align-items-center participant-badge" id="student_badge_{{ s.id }}">
+                            <div class="bg-warning bg-opacity-10 text-darken rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 20px; height: 20px; font-size: 0.6rem;">
+                                {{ s.first_name[0] }}
                             </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Service Type *</label>
-                            <select class="form-select bg-light fw-bold text-primary shadow-sm border-primary" name="service_type" id="service_type" required onchange="autoFilterList()">
-                                <option value="" disabled selected>Select Support...</option>
-                                <option value="Missed Hot Lunch">🍛 Missed Hot Lunch (Absence)</option>
-                                <option value="Holiday - No Meals">🚫 Holiday (Nobody Ate)</option>
-                                <option disabled>------------------------</option>
-                                <option value="Monthly Groceries">🌾 Monthly Groceries / Rice</option>
-                                <option value="Hygiene Kit">🧼 Hygiene Kit</option>
-                                <option value="School Supplies">🎒 School Supplies</option>
-                                <option value="Other Individual Support">📦 Other Support</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-2">
-                            <label class="form-label fw-bold small text-muted text-uppercase">Notes (Optional)</label>
-                            <textarea class="form-control bg-light khmer-font shadow-sm" name="notes" rows="4" placeholder="e.g. 5kg Rice bag, or reason for absence..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SMART FILTER ALERT (Dynamic) -->
-                <div id="filterAlert" class="alert alert-info border-0 shadow-sm rounded-4 small py-3 mb-4 d-flex align-items-center" style="display: none !important;">
-                    <i class="bi bi-info-circle-fill me-3 fs-4"></i> 
-                    <span id="alertText">Showing only students officially assigned to receive this specific food plan.</span>
-                </div>
-
-            </div>
-
-            <!-- ========================================== -->
-            <!-- RIGHT COLUMN: Sticky Student Selection Table-->
-            <!-- ========================================== -->
-            <div class="col-lg-7">
-                
-                <!-- CARD 2: Students (Sticky Wrapper) -->
-                <div class="sticky-lg-top" style="top: 20px; z-index: 5; height: calc(100vh - 40px);">
-                    <div class="card shadow-sm border-0 rounded-4 border-top border-primary border-4 h-100 d-flex flex-column">
-                        
-                        <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                            <h5 class="fw-bold text-dark mb-0"><i class="bi bi-check2-square me-2 text-primary"></i>2. Apply to Students</h5>
+                            <span class="fw-bold fs-6">{{ s.first_name }} {{ s.last_name }}</span>
+                            <span class="text-muted ms-2 me-2 fw-normal" style="font-size: 0.7rem;">{{ s.ngo_id }}</span>
                             
-                            <div id="selectionButtons" class="d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary shadow-sm fw-bold rounded-pill px-3" onclick="toggleAll(true)"><i class="bi bi-check-all"></i> Select All</button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary shadow-sm fw-bold rounded-pill px-3" onclick="toggleAll(false)"><i class="bi bi-eraser"></i> Clear</button>
-                            </div>
-                        </div>
-                        
-                        <!-- The scrolling list -->
-                        <div class="card-body p-0 d-flex flex-column" style="flex: 1; min-height: 0;">
-                            <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
-                                <table class="table table-hover mb-0 align-middle border-top mobile-cards-table">
-                                    <thead class="table-light position-sticky top-0" style="z-index: 1;">
-                                        <tr class="small text-muted text-uppercase">
-                                            <th style="width: 50px;" class="text-center d-none d-md-table-cell">#</th>
-                                            <th class="ps-3">Student Name</th>
-                                            <th>Assigned Plan</th>
-                                            <th class="text-end pe-4" id="tableHeaderAction">Received?</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for student in students %}
-                                        <!-- We inject the meal_plan into data-meal-plan so JS can read it! -->
-                                        <tr style="cursor: pointer;" class="student-row transition-hover" onclick="toggleCheckbox('check_{{ student.id }}')" data-meal-plan="{{ student.meal_plan if student.meal_plan else 'None' }}">
-                                            
-                                            <td class="text-center text-muted small fw-bold d-none d-md-table-cell">{{ loop.index }}</td>
-                                            
-                                            <td data-label="Student" class="ps-md-3 py-3 student-identity-cell">
-                                                <div class="d-flex align-items-center">
-                                                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex justify-content-center align-items-center me-2 me-md-3" style="width: 35px; height: 35px;">
-                                                        <i class="bi bi-person-fill fs-5"></i>
-                                                    </div>
-                                                    <div class="lh-sm text-start">
-                                                        <span class="fw-bold text-dark fs-6 searchable-name d-block">{{ student.first_name }} {{ student.last_name }}</span> 
-                                                        {% if student.khmer_name %}
-                                                            <span class="khmer-font text-muted fw-normal small d-block">{{ student.khmer_name }}</span>
-                                                        {% endif %}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            
-                                            <td data-label="Plan">
-                                                <!-- Visual Badges so staff know exactly what they get -->
-                                                {% if student.meal_plan == 'Daily Hot Lunch' %}
-                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-3 py-1">🍛 Hot Lunch</span>
-                                                {% elif student.meal_plan == 'Monthly Groceries' %}
-                                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill px-3 py-1">🌾 Groceries</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary opacity-50 rounded-pill px-3 py-1">No Meals</span>
-                                                {% endif %}
-                                            </td>
-                                            
-                                            <td data-label="Received?" class="text-end pe-4 action-cell">
-                                                <input class="form-check-input fs-4 border-secondary shadow-sm student-checkbox" style="cursor: pointer;" type="checkbox" name="student_ids" value="{{ student.id }}" id="check_{{ student.id }}" onclick="event.stopPropagation()">
-                                            </td>
-                                            
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- STICKY ACTION FOOTER inside the card -->
-                        <div class="card-footer bg-white border-top p-3 d-flex flex-column justify-content-center align-items-center rounded-bottom-4 gap-3">
-                            <button type="submit" id="submitBtn" class="btn btn-success fw-bold px-4 py-3 rounded-pill shadow-sm w-100 transition-hover fs-5">
-                                <i class="bi bi-save-fill me-2"></i> Save Support Logs
+                            <!-- Meal Plan Hint -->
+                            {% if s.meal_plan == 'Daily Hot Lunch' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0 ms-1" style="font-size: 0.5rem;">Hot Lunch</span>
+                            {% elif s.meal_plan == 'Monthly Groceries' %}
+                                <span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25 rounded-pill px-2 py-0 ms-1" style="font-size: 0.5rem;">Groceries</span>
+                            {% else %}
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill px-2 py-0 ms-1" style="font-size: 0.5rem;">No Plan</span>
+                            {% endif %}
+                            
+                            <!-- Remove Button -->
+                            <button type="button" class="btn btn-sm btn-danger rounded-circle p-0 ms-2 d-flex align-items-center justify-content-center shadow-sm transition-hover" style="width: 20px; height: 20px;" aria-label="Remove" onclick="removeParticipant('{{ s.id }}')">
+                                <i class="bi bi-x text-white"></i>
                             </button>
+                            
+                            <!-- Hidden input ensures the IDs are passed in the POST request -->
+                            <input type="hidden" name="student_ids" value="{{ s.id }}">
                         </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div id="noParticipantsWarning" class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning-emphasis fw-bold shadow-sm rounded-4 d-none align-items-center mt-2">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i> 
+                        <div>
+                            No students remain selected. Please return to the <a href="/roster?mode=bulk" class="text-decoration-underline text-warning-emphasis">Roster</a> to select participants.
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning mb-0 border-0 bg-warning bg-opacity-10 text-warning-emphasis fw-bold shadow-sm rounded-4 d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i> 
+                        <div>
+                            No students were selected. Please return to the <a href="/roster?mode=bulk" class="text-decoration-underline text-warning-emphasis">Roster</a> to select participants before logging a service.
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SERVICE LOGISTICS                          -->
+        <!-- ========================================== -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Service Details</h6>
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+            <div class="card-body p-4">
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Service Date *</label>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border">
+                            <span class="input-group-text bg-white text-muted border-0"><i class="bi bi-calendar-date"></i></span>
+                            <input type="date" class="form-control border-0 bg-light fw-bold py-2" name="service_date" value="{{ today_date }}" required>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Service / Item Type *</label>
+                        <select class="form-select bg-light fw-bold text-dark py-2 border-0 shadow-sm" name="service_type" id="service_type" required onchange="updateUI()">
+                            <option value="" disabled selected>Select Support...</option>
+                            <option value="Missed Hot Lunch">🍛 Missed Hot Lunch (Absence)</option>
+                            <option value="Holiday - No Meals">🚫 Holiday (Nobody Ate)</option>
+                            <option disabled>------------------------</option>
+                            <option value="Monthly Groceries">🌾 Monthly Groceries / Rice</option>
+                            <option value="Hygiene Kit">🧼 Hygiene Kit</option>
+                            <option value="School Supplies">🎒 School Supplies</option>
+                            <option value="Other Individual Support">📦 Other Support</option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Notes (Optional)</label>
+                        <textarea class="form-control bg-light border-0 khmer-font shadow-sm p-3" name="notes" rows="3" placeholder="e.g. 5kg Rice bag, reason for absence, or specific items given..."></textarea>
                     </div>
                 </div>
 
             </div>
         </div>
+
+        <!-- SMART FILTER ALERT (Dynamic) -->
+        <div id="filterAlert" class="alert alert-info border-0 shadow-sm rounded-4 small p-4 mb-4 d-flex align-items-center" style="display: none !important;">
+            <i class="bi bi-info-circle-fill me-3 fs-3"></i> 
+            <span id="alertText">Showing information related to the selected service.</span>
+        </div>
+
+        <!-- Desktop Action Buttons -->
+        <div class="d-none d-md-flex justify-content-between gap-3 mb-5">
+            <a href="/roster" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 px-5 shadow-sm transition-hover">Cancel</a>
+            <button type="submit" id="submitBtn" class="btn btn-success fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Save Support Logs
+            </button>
+        </div>
+
     </form>
+
+    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <button type="submit" form="servicesForm" id="fabSubmitBtn" class="btn btn-success text-white fw-bold shadow-lg position-fixed d-md-none d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;">
+        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span id="fabSubmitText" class="fs-6">Save Logs</span>
+    </button>
 </div>
 
-<!-- Custom UI Polish CSS -->
-<style>
-    .transition-hover {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .transition-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-    }
-    
-    /* Prevent table rows from physically lifting, but give them a nice background highlight */
-    tr.transition-hover:hover {
-        transform: none;
-        box-shadow: none !important;
-        background-color: #f8f9fa !important;
-    }
-    
-    /* Clean input focus states */
-    .form-control:focus, .form-select:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-        background-color: #fff !important;
-    }
-    
-    /* Input Group styling */
-    .input-group .form-control:focus {
-        box-shadow: none;
-        border-color: #dee2e6;
-    }
-    .input-group:focus-within {
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-        border-radius: 0.375rem;
-    }
-
-    /* ---------------------------------------------------
-       MOBILE CARDS CSS (Fixes squishing on phones)
-       --------------------------------------------------- */
-    @media (max-width: 767.98px) {
-        .mobile-cards-table, .mobile-cards-table tbody, .mobile-cards-table th, .mobile-cards-table td, .mobile-cards-table tr { display: block; width: 100%; }
-        .mobile-cards-table thead { display: none !important; }
-        .mobile-cards-table tr { margin-bottom: 1rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; background-color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.03); padding: 0.75rem; position: relative; }
-        .mobile-cards-table td { position: relative; padding: 0.75rem 0.5rem 0.75rem 40% !important; border: none !important; border-bottom: 1px dashed #e9ecef !important; text-align: right; }
-        .mobile-cards-table td:last-child { border-bottom: none !important; }
-        .mobile-cards-table td::before { content: attr(data-label); position: absolute; left: 0.5rem; top: 0.9rem; width: 35%; text-align: left; font-weight: bold; font-size: 0.75rem; color: #adb5bd; text-transform: uppercase; }
-        
-        /* Identity Section (Top of Card) */
-        .student-identity-cell { border-bottom: 2px solid #f8f9fa !important; padding-bottom: 1rem !important; margin-bottom: 0.5rem; display: flex !important; justify-content: flex-start !important; padding-left: 0.5rem !important;}
-        .student-identity-cell::before { display: none; }
-        
-        /* Checkbox Section */
-        .action-cell { display: flex !important; justify-content: space-between !important; align-items: center !important; }
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // ONLY checks/unchecks rows that are currently VISIBLE on the screen
-    function toggleAll(selectState) {
-        const rows = document.querySelectorAll('.student-row');
-        rows.forEach(row => {
-            if (row.style.display !== 'none') {
-                const cb = row.querySelector('.student-checkbox');
-                if(cb) cb.checked = selectState;
-            }
-        });
-    }
-
-    // Clicking the table row checks the box automatically
-    function toggleCheckbox(checkboxId) {
-        const cb = document.getElementById(checkboxId);
-        if(cb) cb.checked = !cb.checked;
-    }
-
-    // SMART AUTO-FILTER & DYNAMIC UI LOGIC
-    function autoFilterList() {
+    function updateUI() {
         const serviceType = document.getElementById('service_type').value;
-        const rows = document.querySelectorAll('.student-row');
         const alertBox = document.getElementById('filterAlert');
         const alertText = document.getElementById('alertText');
-        const tableHeader = document.getElementById('tableHeaderAction');
         const submitBtn = document.getElementById('submitBtn');
-        const selectionButtons = document.getElementById('selectionButtons');
-        
-        let hiddenCount = 0;
+        const fabBtn = document.getElementById('fabSubmitBtn');
+        const fabText = document.getElementById('fabSubmitText');
 
         // Reset UI defaults
-        tableHeader.innerText = "Received?";
-        tableHeader.className = "text-end pe-4 text-dark";
-        submitBtn.innerHTML = '<i class="bi bi-save-fill me-2"></i> Save Support Logs';
-        submitBtn.className = "btn btn-success fw-bold px-4 py-3 rounded-pill shadow-sm w-100 transition-hover fs-5";
-        selectionButtons.style.display = 'flex';
+        submitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up-fill me-2"></i> Save Support Logs';
+        submitBtn.className = "btn btn-success fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5";
+        fabBtn.className = "btn btn-success text-white fw-bold shadow-lg position-fixed d-md-none d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white";
+        fabText.innerText = "Save Logs";
 
         // Custom UI for "Missed Hot Lunch"
         if (serviceType === 'Missed Hot Lunch') {
-            tableHeader.innerText = "Missed Lunch?";
-            tableHeader.className = "text-end pe-4 text-danger fw-bold";
             submitBtn.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i> Log Absences';
-            submitBtn.className = "btn btn-danger fw-bold px-4 py-3 rounded-pill shadow-sm w-100 transition-hover fs-5";
-            selectionButtons.style.display = 'none'; // Hide "Select All" to prevent accidents!
-            alertText.innerHTML = "<strong>EXCEPTION LOGGING:</strong> Only check the box if the student was ABSENT and did NOT get their lunch.";
-            alertBox.className = "alert alert-warning border-0 shadow-sm rounded-4 small py-3 mb-4 d-flex align-items-center text-dark";
+            submitBtn.className = "btn btn-danger fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5";
+            fabBtn.className = "btn btn-danger text-white fw-bold shadow-lg position-fixed d-md-none d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white";
+            fabText.innerText = "Log Absences";
+            
+            alertText.innerHTML = "<strong>EXCEPTION LOGGING:</strong> You are marking these students as ABSENT (meaning they did NOT get their lunch today).";
+            alertBox.className = "alert alert-warning border-0 shadow-sm rounded-4 small p-4 mb-4 d-flex align-items-center text-dark";
             alertBox.style.setProperty('display', 'flex', 'important');
         } 
         // Custom UI for "Holiday"
         else if (serviceType === 'Holiday - No Meals') {
-            alertText.innerHTML = "Check the box for all students who would normally receive a meal, but didn't due to the holiday.";
-            alertBox.className = "alert alert-info border-0 shadow-sm rounded-4 small py-3 mb-4 d-flex align-items-center";
+            alertText.innerHTML = "<strong>HOLIDAY MODE:</strong> These selected students missed their meal due to a holiday closure.";
+            alertBox.className = "alert alert-info border-0 shadow-sm rounded-4 small p-4 mb-4 d-flex align-items-center text-dark";
             alertBox.style.setProperty('display', 'flex', 'important');
         }
         else {
-             alertBox.className = "alert alert-info border-0 shadow-sm rounded-4 small py-3 mb-4 d-flex align-items-center";
-             alertText.innerHTML = "Showing only students officially assigned to receive this specific food plan.";
-        }
-
-        // Filtering Logic
-        rows.forEach(row => {
-            const mealPlan = row.getAttribute('data-meal-plan');
-            let showRow = true;
-
-            // If tracking Hot Lunches (Missed or Holiday), ONLY show Hot Lunch assigned kids.
-            if ((serviceType === 'Missed Hot Lunch' || serviceType === 'Holiday - No Meals') && mealPlan !== 'Daily Hot Lunch') {
-                showRow = false;
-            } 
-            // If logging Monthly Groceries, ONLY show Monthly Grocery assigned kids.
-            else if (serviceType === 'Monthly Groceries' && mealPlan !== 'Monthly Groceries') {
-                showRow = false;
-            }
-
-            if (showRow) {
-                row.style.display = ''; 
-            } else {
-                row.style.display = 'none';
-                row.querySelector('.student-checkbox').checked = false; // Uncheck them if hidden
-                hiddenCount++;
-            }
-        });
-
-        // Show a helpful message if we hid people
-        if (hiddenCount > 0 && (serviceType === 'Missed Hot Lunch' || serviceType === 'Holiday - No Meals' || serviceType === 'Monthly Groceries')) {
-            alertBox.style.setProperty('display', 'flex', 'important');
-        } else if (serviceType !== 'Missed Hot Lunch' && serviceType !== 'Holiday - No Meals') {
-            alertBox.style.setProperty('display', 'none', 'important');
+             alertBox.style.setProperty('display', 'none', 'important');
         }
     }
 
-    // Bootstrap Form Validation
-    (function () {
-        'use strict'
-        var forms = document.querySelectorAll('.needs-validation')
-        Array.prototype.slice.call(forms)
-            .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                        
-                        // Custom logic to ensure at least one checkbox is checked
-                        const checkboxes = form.querySelectorAll('input[name="student_ids"]:checked');
-                        if (checkboxes.length === 0) {
-                            alert("Please select at least one student from the list on the right.");
-                        }
-                    }
-                    form.classList.add('was-validated')
-                }, false)
-            })
-    })()
+    // Remove Participant Logic
+    function removeParticipant(studentId) {
+        const badge = document.getElementById('student_badge_' + studentId);
+        if (badge) {
+            badge.remove();
+        }
+        
+        // Check if any remain
+        const remaining = document.querySelectorAll('.participant-badge');
+        if (remaining.length === 0) {
+            const warning = document.getElementById('noParticipantsWarning');
+            if (warning) {
+                warning.classList.remove('d-none');
+                warning.classList.add('d-flex');
+            }
+            // Disable the submit buttons to prevent empty submission errors
+            document.querySelectorAll('button[type="submit"]').forEach(btn => btn.disabled = true);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initialize UI State
+        if (document.getElementById('service_type').value) {
+            updateUI();
+        }
+    });
 </script>
 {% endblock %}
