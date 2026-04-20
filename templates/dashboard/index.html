@@ -7,12 +7,12 @@
 <div class="dashboard-wrapper pb-5">
 
     <!-- ========================================== -->
-    <!-- 1. HERO HEADER (Unified for Mobile & PC)   -->
+    <!-- 1. HERO HEADER (With White Banner Logo)    -->
     <!-- ========================================== -->
     <div class="hero-header mx-n3 mt-n3 mx-md-0 mt-md-0 rounded-0 rounded-md-4 mb-4 pb-5 position-relative shadow-sm" style="background: linear-gradient(135deg, #005a9c 0%, #0d6efd 100%);">
         <div class="p-4 p-md-5">
             
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-4">
                 <div class="d-flex align-items-center">
                     <!-- User Avatar -->
                     <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-3 overflow-hidden flex-shrink-0" style="width: 60px; height: 60px; border: 3px solid rgba(255,255,255,0.4);">
@@ -23,8 +23,19 @@
                         <h3 class="fw-bold mb-0 lh-1" id="unifiedGreeting">Hello, {{ username }}</h3>
                     </div>
                 </div>
-                <!-- Settings (Mobile only, PC uses Sidebar) -->
-                <a href="/settings" class="text-white opacity-75 transition-hover d-lg-none"><i class="bi bi-gear-fill fs-3"></i></a>
+                
+                <!-- NEW: Right-Side Banner Logo (Hidden on very small phones, beautiful on PC/Tablets) -->
+                <div>
+                    <!-- Settings Gear (Mobile Only) -->
+                    <a href="/settings" class="text-white opacity-75 transition-hover d-lg-none"><i class="bi bi-gear-fill fs-3"></i></a>
+                    
+                    <!-- White Banner Logo (Tablet/PC) -->
+                    <img src="{{ url_for('static', filename='images/elm-banner-white.png') }}" 
+                         alt="ELM Ministries" 
+                         class="d-none d-sm-block transition-hover" 
+                         style="height: 55px; width: auto; object-fit: contain; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));"
+                         onerror="this.style.display='none';">
+                </div>
             </div>
 
             <!-- Unified Floating Search Bar -->
@@ -246,16 +257,6 @@
 </div>
 
 <style>
-    .tracking-wide { letter-spacing: 1px; }
-    
-    .transition-hover {
-        transition: all 0.2s ease-in-out;
-    }
-    .transition-hover:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-    }
-    
     /* Hover effect for Quick Tools */
     .tool-card:hover .icon-wrapper {
         transform: scale(1.1);
@@ -263,13 +264,6 @@
     }
     .icon-wrapper {
         transition: transform 0.2s ease;
-    }
-
-    .hover-primary {
-        transition: color 0.2s ease;
-    }
-    .hover-primary:hover {
-        color: #0d6efd !important;
     }
 
     .backdrop-blur {

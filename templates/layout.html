@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- PWA / Mobile App Links -->
+    <!-- PWA / Mobile App Links & Branding -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ffffff">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3281/3281307.png">
+    
+    <!-- 🚀 ELM LOGO INTEGRATION: Favicon and App Icons -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/elm-icon.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/elm-icon.png') }}">
     
     <!-- PWA STANDALONE CAPABILITY FOR iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -170,9 +173,48 @@
         }
 
         /* ---------------------------------------------------
+           GLOBAL UTILITY CLASSES (Consolidated)
+           --------------------------------------------------- */
+        .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.08) !important; }
+        
+        .hover-primary { transition: color 0.2s ease; }
+        .hover-primary:hover { color: #0d6efd !important; }
+        
+        .hover-danger:hover { background-color: rgba(220,53,69,0.1) !important; color: #dc3545 !important; }
+        
+        .text-warning.text-darken { color: #b48600 !important; }
+        
+        .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        
+        .tracking-wide { letter-spacing: 0.5px; }
+        
+        .btn-transparent { background-color: transparent !important; }
+        
+        /* Clean Form Focus across all inputs */
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+            background-color: #fff !important;
+        }
+
+        /* Hide Scrollbar for horizontal native scrolling */
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ---------------------------------------------------
            GLOBAL MOBILE CARDS (Anti-Horizontal Scroll Engine)
            --------------------------------------------------- */
         @media (max-width: 767.98px) {
+            /* Edge-to-edge native cards on mobile */
+            .native-card { 
+                border-radius: 0 !important; 
+                border-left: 0 !important; 
+                border-right: 0 !important; 
+                margin-left: -1rem; 
+                margin-right: -1rem; 
+            }
+
             .dataTables_wrapper .dataTables_length,
             .dataTables_wrapper .dataTables_info { display: none !important; }
             .dataTables_wrapper .dataTables_filter { text-align: center; margin-bottom: 1.5rem; padding: 0 1rem; margin-top: 1rem; }
@@ -213,7 +255,7 @@
                 text-transform: uppercase; 
                 font-size: 0.7rem; 
                 letter-spacing: 0.5px; 
-            }
+        .mobile-cards-table td:last-child::before { display: none; }
             
             .action-cell { 
                 display: flex !important; 
@@ -263,8 +305,10 @@
     <div class="bg-dark offcanvas offcanvas-start p-3 d-flex flex-column shadow-lg" tabindex="-1" id="sidebarMenu" style="width: 300px; z-index: 1055; border-right: 1px solid rgba(255,255,255,0.1);">
         <div class="d-flex align-items-center justify-content-between mb-4 mt-2 px-2">
             <a href="/" class="d-flex align-items-center text-white text-decoration-none">
-                <i class="bi bi-shield-shaded fs-3 text-primary me-2"></i>
-                <span class="fs-4 fw-bold text-white tracking-wide">ELM Portal</span>
+                <!-- 🚀 ELM LOGO INTEGRATION: Full White Banner for Dark Sidebar -->
+                <img src="{{ url_for('static', filename='images/elm-banner-white.png') }}" alt="ELM Portal" style="height: 42px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                <!-- Fallback if image is missing -->
+                <span class="fs-4 fw-bold text-white tracking-wide" style="display: none;"><i class="bi bi-shield-shaded text-primary me-2"></i>ELM Portal</span>
             </a>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
@@ -360,7 +404,8 @@
                     </button>
                     
                     <a class="navbar-brand fw-bold me-auto ms-1 d-flex align-items-center" href="/">
-                        <i class="bi bi-shield-shaded text-primary me-2"></i>
+                        <!-- 🚀 ELM LOGO INTEGRATION: Square Icon for White Navbar -->
+                        <img src="{{ url_for('static', filename='images/elm-icon.png') }}" alt="ELM" height="28" class="me-2 rounded-2" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=ELM&background=0d6efd&color=fff&rounded=true';">
                         <span class="d-none d-md-inline text-dark fs-5 tracking-wide">ELM Portal</span>
                     </a>
 
@@ -449,7 +494,8 @@
                 {% else %}
                     <!-- CLEAN NAVBAR FOR LOGGED OUT USERS -->
                     <a class="navbar-brand fw-bold ms-3 d-flex align-items-center" href="/">
-                        <i class="bi bi-shield-shaded fs-3 text-primary me-2"></i>
+                        <!-- 🚀 ELM LOGO INTEGRATION: Square Icon -->
+                        <img src="{{ url_for('static', filename='images/elm-icon.png') }}" alt="ELM" height="32" class="me-2 rounded-2" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=ELM&background=0d6efd&color=fff&rounded=true';">
                         <span class="fs-4 text-dark tracking-wide">ELM Portal</span>
                     </a>
                 {% endif %}
