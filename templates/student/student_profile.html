@@ -1,21 +1,60 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ student.first_name }} {{ student.last_name }} - Profile Hub{% endblock %}
+{% block title %}{{ student.first_name }} {{ student.last_name }} - Overview{% endblock %}
 
 {% block main %}
 <div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1300px;">
 
-    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
-    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
+    <!-- 1. NATIVE iOS/ANDROID STYLE HEADER & IDENTITY -->
+    <div class="mb-3 px-3 px-md-0 d-flex justify-content-between align-items-center">
         <a href="/roster" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
             <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Directory
         </a>
-        
-        <!-- PC ONLY ACTION: Header Edit -->
+        <div class="d-flex align-items-center gap-2">
+            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=40" %}
+            <span class="fw-bold text-dark d-none d-md-inline">{{ student.first_name }} {{ student.last_name }}</span>
+            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle shadow-sm border border-2 border-white" style="width: 35px; height: 35px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
+        </div>
+    </div>
+
+    <!-- 2. STUDENT 360 NAVIGATION TABS -->
+    <div class="bg-white border-bottom mx-n3 mx-md-0 mb-4 px-3 px-md-4 pt-2 sticky-md-top shadow-sm" style="top: 60px; z-index: 10;">
+        <ul class="nav nav-underline d-flex flex-nowrap overflow-auto custom-scrollbar gap-4" style="white-space: nowrap; border-bottom: none;">
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 active text-primary" style="border-bottom: 3px solid #0d6efd;" href="/student/{{ student.id }}">
+                    <i class="bi bi-person-vcard me-1"></i> Overview
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/academics">
+                    <i class="bi bi-mortarboard-fill me-1"></i> Academics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/timeline">
+                    <i class="bi bi-clock-history me-1"></i> Timeline
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/finance">
+                    <i class="bi bi-wallet2 me-1"></i> Finance
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/files">
+                    <i class="bi bi-folder-fill me-1"></i> Documents
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 3. PAGE TITLE & ACTIONS -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-3 px-md-0">
+        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-person-circle text-primary me-2"></i>Profile Overview</h3>
         <div class="d-none d-md-block">
             {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
-            <a href="/edit_student/{{ student.id }}" class="btn btn-white border fw-bold rounded-pill px-4 shadow-sm transition-hover">
-                <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Student
+            <a href="/edit_student/{{ student.id }}" class="btn btn-sm btn-white border fw-bold rounded-pill px-3 shadow-sm transition-hover">
+                <i class="bi bi-pencil-square me-1 text-primary"></i> Edit Profile
             </a>
             {% endif %}
         </div>
@@ -24,11 +63,9 @@
     <!-- TWO-COLUMN ADAPTIVE LAYOUT -->
     <div class="row g-4 px-0 px-md-0">
         
-        <!-- ========================================== -->
-        <!-- LEFT COLUMN: IDENTITY & META (Sticky)      -->
-        <!-- ========================================== -->
+        <!-- LEFT COLUMN: IDENTITY & META (Sticky) -->
         <div class="col-12 col-lg-4 col-xl-4 mb-3 mb-lg-0">
-            <div class="sticky-lg-top" style="top: 80px; z-index: 5;">
+            <div class="sticky-lg-top" style="top: 130px; z-index: 5;">
                 
                 <!-- Native App Profile Card -->
                 <div class="card shadow-sm border-0 rounded-4 native-card text-center mb-4 bg-white pt-4 pb-2">
@@ -76,7 +113,7 @@
                     </div>
                 </div>
 
-                <!-- Info Stack (iOS Settings Style) -->
+                <!-- Info Stack -->
                 <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
                     <div class="list-group list-group-flush">
                         <div class="list-group-item d-flex justify-content-between py-3 bg-white">
@@ -109,14 +146,13 @@
                         <div class="card-body p-0">
                             <div class="p-3 border-bottom d-flex justify-content-between align-items-center bg-light bg-opacity-25">
                                 <span class="fw-bold text-dark"><i class="bi bi-house-heart-fill text-danger me-2"></i>Family Record</span>
-                                <a href="/household/{{ household.id }}" class="btn btn-sm btn-white border rounded-pill fw-bold text-primary px-3 shadow-xs">Manage Family</a>
+                                <a href="/household/{{ household.id }}" class="btn btn-sm btn-white border rounded-pill fw-bold text-primary px-3 shadow-xs transition-hover">Manage Family</a>
                             </div>
                             <div class="list-group list-group-flush">
                                 <div class="list-group-item d-flex justify-content-between py-2 border-bottom-0">
                                     <span class="text-muted fw-bold small">Head of House</span>
                                     <span class="fw-bold text-dark">{{ household.guardian_name }}</span>
                                 </div>
-                                <!-- Caregiver Relationship Relates to Family Context -->
                                 {% if student.caregiver_relationship %}
                                 <div class="list-group-item d-flex justify-content-between py-2 border-bottom-0 bg-info bg-opacity-10 border-top border-bottom border-info border-opacity-10">
                                     <span class="text-muted fw-bold small">Living With</span>
@@ -141,7 +177,7 @@
                                         <div class="list-group-item d-flex justify-content-between align-items-center py-2 bg-white">
                                             <div class="min-w-0">
                                                 {% if sib.ngo_id %}
-                                                <a href="/student/{{ sib.id }}" class="text-dark fw-bold text-decoration-none hover-primary" style="font-size: 0.85rem;">{{ sib.first_name }}</a>
+                                                <a href="/student/{{ sib.id }}" class="text-dark fw-bold text-decoration-none hover-primary transition-hover" style="font-size: 0.85rem;">{{ sib.first_name }}</a>
                                                 {% else %}
                                                 <span class="text-muted fw-bold" style="font-size: 0.85rem;">{{ sib.first_name }}</span>
                                                 {% endif %}
@@ -169,20 +205,17 @@
                                 <i class="bi bi-house-x text-muted fs-4"></i>
                             </div>
                             <p class="small text-muted fw-bold mb-0">No household linked.</p>
-                            <a href="/edit_student/{{ student.id }}" class="text-primary text-decoration-none small fw-bold mt-2 d-inline-block">Update to Link →</a>
+                            <a href="/edit_student/{{ student.id }}" class="text-primary text-decoration-none small fw-bold mt-2 d-inline-block transition-hover">Update to Link →</a>
                         </div>
                     {% endif %}
                 </div>
             </div> 
         </div>
 
-        <!-- ========================================== -->
-        <!-- RIGHT COLUMN: APPS & RECENT FEED           -->
-        <!-- ========================================== -->
+        <!-- RIGHT COLUMN: APPS & RECENT FEED -->
         <div class="col-12 col-lg-8 col-xl-8 mx-0 px-0 px-md-3 order-1 order-lg-2">
             
             {% if student.comment %}
-            <!-- STAFF BIO / VITAL NOTES -->
             <div class="card shadow-sm border-0 rounded-4 native-card bg-white mb-4 border-start border-primary border-4">
                 <div class="card-body p-4">
                     <h6 class="fw-bold text-primary text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 1px;"><i class="bi bi-info-circle-fill me-1"></i>Staff Remarks & Background</h6>
@@ -193,7 +226,7 @@
             </div>
             {% endif %}
 
-            <!-- Program Quick Info (Nutrition/Meal Plan) -->
+            <!-- Program Quick Info -->
             <div class="card shadow-sm border-0 rounded-4 native-card bg-white mb-4 overflow-hidden border-top border-warning border-4">
                 <div class="card-body p-3 p-md-4">
                     <div class="d-flex justify-content-between align-items-center">
@@ -209,68 +242,6 @@
                 </div>
             </div>
 
-            <!-- Dashboard App Grid -->
-            <div class="row g-3 g-md-4 mb-4 px-3 px-md-0">
-                <div class="col-6">
-                    <a href="/student/{{ student.id }}/academics" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-success border-4">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
-                                    <i class="bi bi-mortarboard-fill fs-3 text-success"></i>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <h5 class="fw-bold text-dark mb-1">Academics</h5>
-                                    {% if reports %}<span class="badge bg-success rounded-pill">{{ reports|length }}</span>{% endif %}
-                                </div>
-                                <p class="text-muted small mb-0">Grades & Rank</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-6">
-                    <a href="/student/{{ student.id }}/timeline" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-danger border-4">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
-                                    <i class="bi bi-clock-history fs-3 text-danger"></i>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <h5 class="fw-bold text-dark mb-1">Timeline</h5>
-                                    {% if followups %}<span class="badge bg-danger rounded-pill">{{ followups|length }}</span>{% endif %}
-                                </div>
-                                <p class="text-muted small mb-0">Visits & Case Notes</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-6">
-                    <a href="/student/{{ student.id }}/files" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-secondary border-4">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="bg-secondary bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
-                                    <i class="bi bi-folder-fill fs-3 text-secondary"></i>
-                                </div>
-                                <h5 class="fw-bold text-dark mb-1">Documents</h5>
-                                <p class="text-muted small mb-0">Certs & Digital Files</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                <div class="col-6">
-                    <a href="/student/{{ student.id }}/finance" class="text-decoration-none">
-                        <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white border-bottom border-warning border-4">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 55px; height: 55px;">
-                                    <i class="bi bi-currency-dollar fs-3 text-warning text-darken"></i>
-                                </div>
-                                <h5 class="fw-bold text-dark mb-1">Finance</h5>
-                                <p class="text-muted small mb-0">Support Ledger</p>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            
             <!-- RECENT UPDATES FEED -->
             <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Latest Activity Review</h6>
             
@@ -353,7 +324,7 @@
                     <h6 class="text-white-50 fw-bold text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Support Invested</h6>
                     <h2 class="fw-bold mb-0">${{ total_spent }}</h2>
                 </div>
-                <a href="/student/{{ student.id }}/finance" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold position-relative z-1">Full Ledger</a>
+                <a href="/student/{{ student.id }}/finance" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold position-relative z-1 transition-hover">Full Ledger</a>
             </div>
             {% endif %}
 
@@ -367,7 +338,7 @@
 
 <!-- PRIMARY ACTION: ADD SOCIAL NOTE -->
 {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
-<a href="/add_followup/{{ student.id }}" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white fab-main" style="bottom: 90px; right: 20px; height: 60px; z-index: 1040;">
+<a href="/add_followup/{{ student.id }}" class="btn btn-danger text-white fw-bold shadow-lg position-fixed transition-hover d-flex align-items-center justify-content-center rounded-pill px-4 border border-2 border-white fab-main" style="bottom: 90px; right: 20px; height: 60px; z-index: 1040;">
     <i class="bi bi-clipboard2-heart-fill me-2 fs-4"></i> <span>Add Note</span>
 </a>
 {% endif %}
@@ -393,7 +364,7 @@
                 <p class="text-muted small mb-0 fw-bold text-primary"><i class="bi bi-info-circle-fill me-1"></i> Clear face photos make field work easier!</p>
             </div>
             <div class="modal-footer bg-white border-top-0 px-4 py-3 d-flex justify-content-between">
-                <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4 transition-hover" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow-sm transition-hover">Upload</button>
             </div>
         </form>
@@ -402,22 +373,9 @@
 {% endif %}
 
 <style>
-    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
-    .card.transition-hover:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
-    
     .fab-main:active, .fab-secondary:active { transform: scale(0.95); }
-    
-    a.list-group-item.transition-hover:hover { background-color: #f8f9fa !important; }
-    .text-darken { color: #b48600 !important; }
-    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .hover-primary:hover { color: #007AFF !important; }
-
     .pulse-red { animation: pulse-danger 2s infinite; }
     @keyframes pulse-danger { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-    @media (max-width: 767.98px) {
-        .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; }
-    }
 </style>
 {% endblock %}
 
