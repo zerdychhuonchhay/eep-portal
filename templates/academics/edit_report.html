@@ -2,8 +2,12 @@
 
 {% block title %}Edit Report - {{ student.first_name }} {{ student.last_name }}{% endblock %}
 
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block main %}
-<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1200px;">
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 1200px;">
     
     <div class="mb-4 px-3 px-md-0">
         <a href="/student/{{ student.id }}/academics" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
@@ -11,7 +15,7 @@
         </a>
         <div class="d-flex justify-content-between align-items-end">
             <div>
-                <h3 class="fw-bold text-dark mb-1"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Academic Report</h3>
+                <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Academic Report</h2>
                 <p class="text-muted small fw-bold mb-0">Updating grades for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
             </div>
         </div>
@@ -269,7 +273,7 @@
     </form>
 
     <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
-    <button type="submit" form="editReportForm" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;">
+    <button type="submit" form="editReportForm" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
         <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Update</span>
     </button>
 

@@ -24,45 +24,52 @@
 
 {% set rev_chrono_reports = chrono_reports | reverse | list %}
 
-<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1300px;">
+<!-- 1. RESPONSIVE CONTAINER WITH PREMIUM PADDING & MAX-WIDTH -->
+<div class="container-fluid container-xl mt-3 mt-md-4 mb-5 pb-5 px-3 px-md-4" style="max-width: 1400px;">
 
-    <!-- 1. NATIVE iOS/ANDROID STYLE HEADER & IDENTITY -->
-    <div class="mb-3 px-3 px-md-0 d-flex justify-content-between align-items-center">
-        <a href="/roster" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
-            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Directory
+    <!-- TOP NAVIGATION & GLOBAL ACTIONS -->
+    <div class="mb-3 d-flex justify-content-between align-items-center">
+        <a href="/roster" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem; letter-spacing: -0.2px;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Directory
         </a>
+        
         <div class="d-flex align-items-center gap-2">
+            {% if session.get('can_update_profiles') or session.get('can_edit_profiles') %}
+            <a href="/edit_student/{{ student.id }}" class="btn btn-white border border-primary border-opacity-25 text-primary fw-bold rounded-pill px-3 shadow-sm transition-hover btn-sm" style="font-size: 0.8rem;">
+                <i class="bi bi-pencil-square me-1"></i> Edit Profile
+            </a>
+            {% endif %}
+            
             {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=40" %}
-            <span class="fw-bold text-dark d-none d-md-inline">{{ student.first_name }} {{ student.last_name }}</span>
-            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle shadow-sm border border-2 border-white" style="width: 35px; height: 35px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
+            <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" class="rounded-circle shadow-sm border border-2 border-white ms-2" style="width: 32px; height: 32px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
         </div>
     </div>
 
-    <!-- 2. STUDENT 360 NAVIGATION TABS -->
-    <div class="bg-white border-bottom mx-n3 mx-md-0 mb-4 px-3 px-md-4 pt-2 sticky-md-top shadow-sm" style="top: 60px; z-index: 10;">
+    <!-- 2. STICKY 360 TABS (Frosted Glass) -->
+    <div class="glass-panel border-bottom mx-n3 mx-md-0 mb-4 px-3 px-md-4 pt-2 sticky-top" style="top: 0; z-index: 1020; border-radius: 0 0 24px 24px;">
         <ul class="nav nav-underline d-flex flex-nowrap overflow-auto custom-scrollbar gap-4" style="white-space: nowrap; border-bottom: none;">
             <li class="nav-item">
-                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted transition-hover" style="font-size: 0.9rem;" href="/student/{{ student.id }}">
                     <i class="bi bi-person-vcard me-1"></i> Overview
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fw-bold pb-3 px-0 active text-success" style="border-bottom: 3px solid #198754;" href="/student/{{ student.id }}/academics">
+                <a class="nav-link fw-bold pb-3 px-0 active text-success" style="border-bottom: 3px solid #198754; font-size: 0.9rem;" href="/student/{{ student.id }}/academics">
                     <i class="bi bi-mortarboard-fill me-1"></i> Academics
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/timeline">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted transition-hover" style="font-size: 0.9rem;" href="/student/{{ student.id }}/timeline">
                     <i class="bi bi-clock-history me-1"></i> Timeline
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/finance">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted transition-hover" style="font-size: 0.9rem;" href="/student/{{ student.id }}/finance">
                     <i class="bi bi-wallet2 me-1"></i> Finance
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link fw-bold pb-3 px-0 text-muted" style="border-bottom: 3px solid transparent;" href="/student/{{ student.id }}/files">
+                <a class="nav-link fw-bold pb-3 px-0 text-muted transition-hover" style="font-size: 0.9rem;" href="/student/{{ student.id }}/files">
                     <i class="bi bi-folder-fill me-1"></i> Documents
                 </a>
             </li>
@@ -131,11 +138,11 @@
                                 <div class="d-flex align-items-center gap-3 ms-auto">
                                     <div class="text-end">
                                         {% if report.overall_average %}
-                                            <h4 class="mb-0 fw-bold {% if report.overall_average|float >= 85 %}text-success{% elif report.overall_average|float >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}">
+                                            <h4 class="mb-0 fw-bold {% if report.overall_average|float >= 85 %}text-success{% elif report.overall_average|float >= 50 %}text-warning text-darken{% else %}text-danger{% endif %}" style="font-family: 'Poppins', sans-serif; letter-spacing: -0.5px;">
                                                 {{ report.overall_average|float|round(2) }}%
                                             </h4>
                                         {% elif report.total_score %}
-                                            <h4 class="mb-0 fw-bold text-dark">{{ report.total_score|float|round(2) }}</h4>
+                                            <h4 class="mb-0 fw-bold text-dark" style="font-family: 'Poppins', sans-serif;">{{ report.total_score|float|round(2) }}</h4>
                                         {% endif %}
                                     </div>
                                     <i class="bi bi-chevron-down text-muted opacity-50 fs-5 rotate-icon"></i>
@@ -249,7 +256,7 @@
         <!-- RIGHT COLUMN: Sticky Insights Sidebar      -->
         <!-- ========================================== -->
         <div class="col-12 col-lg-4 col-xl-3 order-1 order-lg-2 mb-4 mb-lg-0">
-            <div class="sticky-lg-top" style="top: 130px; z-index: 5;">
+            <div class="sticky-lg-top" style="top: 100px; z-index: 5;">
                 
                 <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-lg-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Performance Core</h6>
                 <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
@@ -264,7 +271,7 @@
                         </div>
                         <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white border-bottom-0">
                             <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-graph-up text-success me-2"></i>Latest Avg</span>
-                            <span class="fw-bold text-success fs-4">
+                            <span class="fw-bold text-success fs-4" style="font-family: 'Poppins', sans-serif;">
                                 {% if rev_chrono_reports|length > 0 and rev_chrono_reports[0].overall_average %}
                                     {{ rev_chrono_reports[0].overall_average|float|round(2) }}%
                                 {% else %}<span class="text-muted fs-6">-</span>{% endif %}
@@ -343,6 +350,10 @@
     .report-header[aria-expanded="true"] .rotate-icon { transform: rotate(180deg); }
     .rotate-icon { transition: transform 0.3s ease; }
     .nav-year-item.active { background-color: #f0f7ff !important; color: #0d6efd !important; font-weight: bold; }
+    @media (max-width: 767.98px) {
+        .container-fluid { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+        .glass-panel { border-radius: 0 !important; }
+    }
 </style>
 {% endblock %}
 

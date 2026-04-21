@@ -2,411 +2,490 @@
 
 {% block title %}System Settings{% endblock %}
 
+{% block head %}
+<!-- Premium Branding Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block main %}
-<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
+<div class="container-fluid container-xl mt-3 mt-md-4 mb-5 pb-5 px-3 px-md-4" style="max-width: 1300px;">
     
-    <div class="d-flex justify-content-between align-items-center mb-3 px-3 px-md-0">
+    <!-- PAGE TITLE -->
+    <div class="d-flex justify-content-between align-items-center mb-4 px-3 px-md-0">
         <div>
-            <h2 class="mb-0 fw-bold"><i class="bi bi-gear-fill text-secondary me-2"></i>Settings</h2>
-            <p class="text-muted small mb-0 d-none d-md-block">Manage global NGO configurations, security roles, and program variables.</p>
+            <h2 class="mb-0 fw-bold text-dark lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1.5px;"><i class="bi bi-gear-fill text-secondary me-2"></i>System Settings</h2>
+            <p class="text-muted small mb-0 mt-1 fw-bold">Manage system preferences, academic standards, and security.</p>
         </div>
     </div>
 
-    <!-- Native Menu Navigation (Stacked on Mobile, Row on PC) -->
-    <div class="sticky-md-top bg-light pt-2 pb-2 px-3 px-md-0" style="top: 0px; z-index: 10;">
-        <ul class="nav nav-pills flex-column flex-md-row fw-bold bg-white rounded-4 shadow-sm border p-2 gap-2" id="settingsTabs" role="tablist">
-            <!-- GLOBAL TABS -->
-            <li class="nav-item flex-md-fill" role="presentation">
-                <button class="nav-link active rounded-3 text-dark w-100 text-start text-md-center transition-hover py-2 px-3" id="programs-tab" data-bs-toggle="tab" data-bs-target="#programs" type="button" role="tab">
-                    <i class="bi bi-globe-americas text-primary me-2"></i> Programs
-                </button>
-            </li>
-            <li class="nav-item flex-md-fill" role="presentation">
-                <button class="nav-link rounded-3 text-dark w-100 text-start text-md-center transition-hover py-2 px-3" id="permissions-tab" data-bs-toggle="tab" data-bs-target="#permissions" type="button" role="tab">
-                    <i class="bi bi-shield-lock-fill text-danger me-2"></i> Security
-                </button>
-            </li>
-            <li class="nav-item flex-md-fill" role="presentation">
-                <button class="nav-link rounded-3 text-dark w-100 text-start text-md-center transition-hover py-2 px-3" id="localization-tab" data-bs-toggle="tab" data-bs-target="#localization" type="button" role="tab">
-                    <i class="bi bi-translate text-info me-2"></i> Languages
-                </button>
-            </li>
-            
-            <!-- EEP SPECIFIC TABS -->
-            {% if session.get('program_id') == 1 %}
-            <li class="nav-item flex-md-fill" role="presentation">
-                <button class="nav-link rounded-3 text-dark w-100 text-start text-md-center transition-hover py-2 px-3" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
-                    <i class="bi bi-sliders text-success me-2"></i> Prefs
-                </button>
-            </li>
-            <li class="nav-item flex-md-fill" role="presentation">
-                <button class="nav-link rounded-3 text-dark w-100 text-start text-md-center transition-hover py-2 px-3" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab">
-                    <i class="bi bi-journal-text text-success me-2"></i> Subjects
-                </button>
-            </li>
-            {% endif %}
-        </ul>
-    </div>
-
-    <!-- Tab Content -->
-    <div class="tab-content px-0 px-md-0 mt-3" id="settingsTabsContent">
+    <div class="row g-4">
         
         <!-- ============================================== -->
-        <!-- TAB 1: GLOBAL NGO PROGRAMS                     -->
+        <!-- NAVIGATION (Sidebar on PC / Top-bar on Mobile) -->
         <!-- ============================================== -->
-        <div class="tab-pane fade show active" id="programs" role="tabpanel">
-            
-            <div class="card shadow-sm border-0 native-card mb-4">
-                <div class="card-header bg-white text-dark fw-bold py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-plus-circle text-primary me-1"></i> Add Program</span>
+        <div class="col-12 col-lg-3">
+            <div class="settings-nav-wrapper sticky-top" style="top: 60px; z-index: 1020;">
+                <div class="card shadow-sm border-0 rounded-4 bg-white overflow-hidden native-card p-2 p-lg-3 mb-2 mb-lg-0">
+                    
+                    <div class="d-flex flex-row flex-lg-column gap-2 gap-lg-1 overflow-auto custom-scrollbar align-items-center align-items-lg-stretch nav-pills-container w-100" role="tablist">
+                        
+                        {% if session.get('program_id') == 1 %}
+                        <!-- CORE SETTINGS (Standard Admin) -->
+                        <h6 class="fw-bold text-muted text-uppercase mb-0 mb-lg-2 ms-lg-2 mt-lg-2 tracking-wide d-none d-lg-block" style="font-size: 0.65rem;">Core Settings</h6>
+                        
+                        <button class="nav-link active text-nowrap text-lg-start fw-bold rounded-pill rounded-lg-3 transition-hover flex-shrink-0 py-2 px-3 px-lg-3" id="system-tab" data-bs-toggle="pill" data-bs-target="#system" type="button" role="tab">
+                            <i class="bi bi-sliders me-1 me-lg-2"></i> Preferences
+                        </button>
+                        <button class="nav-link text-nowrap text-lg-start fw-bold rounded-pill rounded-lg-3 transition-hover flex-shrink-0 py-2 px-3 px-lg-3" id="subjects-tab" data-bs-toggle="pill" data-bs-target="#subjects" type="button" role="tab">
+                            <i class="bi bi-journal-text me-1 me-lg-2"></i> Subjects
+                        </button>
+                        
+                        <!-- Divider for mobile -->
+                        <div class="vr d-lg-none mx-1 text-muted opacity-25"></div>
+                        {% endif %}
+
+                        <!-- ADVANCED SETTINGS (Technical / IT) -->
+                        <h6 class="fw-bold text-danger text-uppercase mb-0 mb-lg-2 ms-lg-2 mt-lg-3 tracking-wide d-none d-lg-block" style="font-size: 0.65rem;"><i class="bi bi-cone-striped me-1"></i> Advanced</h6>
+                        
+                        <button class="nav-link text-nowrap text-lg-start fw-bold rounded-pill rounded-lg-3 transition-hover flex-shrink-0 py-2 px-3 px-lg-3 {% if session.get('program_id') != 1 %}active{% endif %}" id="programs-tab" data-bs-toggle="pill" data-bs-target="#programs" type="button" role="tab">
+                            <i class="bi bi-diagram-3 me-1 me-lg-2"></i> Workspaces
+                        </button>
+                        <button class="nav-link text-danger-hover text-nowrap text-lg-start fw-bold rounded-pill rounded-lg-3 transition-hover flex-shrink-0 py-2 px-3 px-lg-3" id="permissions-tab" data-bs-toggle="pill" data-bs-target="#permissions" type="button" role="tab">
+                            <i class="bi bi-shield-lock-fill me-1 me-lg-2"></i> Security Matrix
+                        </button>
+                        <button class="nav-link text-warning-hover text-nowrap text-lg-start fw-bold rounded-pill rounded-lg-3 transition-hover flex-shrink-0 py-2 px-3 px-lg-3" id="localization-tab" data-bs-toggle="pill" data-bs-target="#localization" type="button" role="tab">
+                            <i class="bi bi-translate me-1 me-lg-2"></i> Dictionary
+                        </button>
+
+                    </div>
                 </div>
-                <div class="card-body p-3 bg-light">
-                    <form action="/settings" method="post" class="row g-2 align-items-center">
-                        <input type="hidden" name="action" value="add_program">
-                        <div class="col-12 col-md-5">
-                            <input type="text" class="form-control" name="program_name" placeholder="Program Name (e.g. Medical)" required>
+            </div>
+        </div>
+
+        <!-- ============================================== -->
+        <!-- RIGHT COLUMN: TAB CONTENT                      -->
+        <!-- ============================================== -->
+        <div class="col-12 col-lg-9 pt-2 pt-lg-0">
+            <div class="tab-content" id="settingsTabContent">
+                
+                {% if session.get('program_id') == 1 %}
+                <!-- ============================================== -->
+                <!-- TAB: SYSTEM PREFERENCES                        -->
+                <!-- ============================================== -->
+                <div class="tab-pane fade show active" id="system" role="tabpanel">
+                    
+                    <div class="mb-4">
+                        <h4 class="fw-bold text-dark mb-1">System Preferences</h4>
+                        <p class="text-muted small fw-bold">Update global variables that apply to the current active workspace.</p>
+                    </div>
+
+                    <form action="/settings" method="post">
+                        <input type="hidden" name="action" value="update_system">
+                        
+                        <div class="list-group shadow-sm rounded-4 border-0 mb-4 native-card bg-white overflow-hidden">
+                            
+                            <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 px-4 border-bottom border-light">
+                                <div class="flex-grow-1 pe-md-4 mb-2 mb-md-0">
+                                    <h6 class="fw-bold mb-1 text-dark">Default Academic Year</h6>
+                                    <small class="text-muted d-block lh-sm" style="font-size: 0.75rem;">Set the primary school year. This automatically populates when adding new report cards.</small>
+                                </div>
+                                <div class="flex-shrink-0" style="width: 100%; max-width: 250px;">
+                                    <input type="text" class="form-control text-start text-md-end border-primary border-opacity-25 shadow-sm bg-primary bg-opacity-10 fw-bold text-primary w-100 p-2 rounded-3" name="current_academic_year" value="{{ sys_settings.current_academic_year }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 px-4 border-bottom border-light">
+                                <div class="flex-grow-1 pe-md-4 mb-2 mb-md-0">
+                                    <h6 class="fw-bold mb-1 text-dark">Organization Name</h6>
+                                    <small class="text-muted d-block lh-sm" style="font-size: 0.75rem;">Official brand name used on Excel exports and printed reports.</small>
+                                </div>
+                                <div class="flex-shrink-0" style="width: 100%; max-width: 250px;">
+                                    <input type="text" class="form-control text-start text-md-end border-0 shadow-sm bg-light fw-bold text-dark w-100 p-2 rounded-3" name="organization_name" value="{{ sys_settings.organization_name | default('ELM Program', true) }}">
+                                </div>
+                            </div>
+                            
+                            <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 px-4 border-bottom border-light">
+                                <div class="flex-grow-1 pe-md-4 mb-2 mb-md-0">
+                                    <h6 class="fw-bold mb-1 text-dark">Currency Symbol</h6>
+                                    <small class="text-muted d-block lh-sm" style="font-size: 0.75rem;">Used across financial ledgers and expense tracking.</small>
+                                </div>
+                                <div class="flex-shrink-0" style="width: 100%; max-width: 250px;">
+                                    <input type="text" class="form-control text-start text-md-end border-0 shadow-sm bg-light fw-bold text-dark w-100 p-2 rounded-3 font-monospace" name="currency_symbol" value="{{ sys_settings.currency_symbol | default('$', true) }}">
+                                </div>
+                            </div>
+
+                            <div class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 px-4 border-0">
+                                <div class="flex-grow-1 pe-md-4 mb-2 mb-md-0">
+                                    <h6 class="fw-bold mb-1 text-dark">System Timezone</h6>
+                                    <small class="text-muted d-block lh-sm" style="font-size: 0.75rem;">Ensures audit logs match your local operational time.</small>
+                                </div>
+                                <div class="flex-shrink-0" style="width: 100%; max-width: 250px;">
+                                    <input type="text" class="form-control text-start text-md-end border-0 shadow-sm bg-light fw-bold text-dark w-100 p-2 rounded-3" name="timezone" value="{{ sys_settings.timezone | default('Asia/Phnom_Penh', true) }}">
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-12 col-md-4">
-                            <input type="text" class="form-control" name="program_icon" placeholder="Icon (e.g. bi-heart-fill)">
+                        
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-3 shadow-sm rounded-pill transition-hover fs-5"><i class="bi bi-save me-2"></i> Save Preferences</button>
+                    </form>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- TAB: ACADEMIC SUBJECTS                         -->
+                <!-- ============================================== -->
+                <div class="tab-pane fade" id="subjects" role="tabpanel">
+                    
+                    <div class="mb-4">
+                        <h4 class="fw-bold text-dark mb-1">Academic Curriculum</h4>
+                        <p class="text-muted small fw-bold">Manage the subjects that appear on report cards. Reorder them using the numeric weight.</p>
+                    </div>
+
+                    <!-- Add Subject Card -->
+                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white">
+                        <div class="card-header bg-white text-dark fw-bold pt-3 pb-2 px-4 border-bottom-0">
+                            <span class="text-uppercase tracking-wide small"><i class="bi bi-plus-circle text-success me-2"></i> Add New Subject</span>
                         </div>
-                        <div class="col-12 col-md-3">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm rounded-pill">Add</button>
+                        <div class="card-body p-4 pt-2">
+                            <form action="/settings" method="post" class="row g-3 align-items-end">
+                                <input type="hidden" name="action" value="add_subject">
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Subject Name</label>
+                                    <input type="text" class="form-control bg-light border-0 shadow-sm py-2 fw-bold" name="new_subject" placeholder="e.g. Advanced Physics" required>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Education Tier</label>
+                                    <select class="form-select bg-light border-0 shadow-sm py-2 fw-bold" name="category" required>
+                                        <option value="Primary / Lower Grade">Primary Level</option>
+                                        <option value="High School">High School</option>
+                                        <option value="University / Vocational">University / Voc</option>
+                                        <option value="General" selected>General</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm rounded-pill py-2 transition-hover">Add Subject</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Manage Subjects Card -->
+                    <form action="/settings" method="post" id="updateSubjectsForm">
+                        <input type="hidden" name="action" value="update_subjects">
+                        <div class="list-group shadow-sm rounded-4 border-0 native-card mb-4 overflow-hidden">
+                            {% for subject in subjects %}
+                            <div class="list-group-item bg-white p-3 p-md-4 border-bottom border-light transition-hover">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                    
+                                    <!-- Sort & Name -->
+                                    <div class="d-flex align-items-center flex-grow-1 w-100">
+                                        <div class="d-flex flex-column align-items-center me-3 flex-shrink-0">
+                                            <span class="text-muted d-none d-md-block" style="font-size: 0.5rem; font-weight: 800; text-transform: uppercase;">Order</span>
+                                            <input type="number" class="form-control text-center fw-bold bg-light border-0 shadow-sm px-1 py-1" style="width: 55px;" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}">
+                                        </div>
+                                        <input type="text" class="form-control fw-bold border-0 bg-transparent px-0 text-dark fs-5 shadow-none w-100" name="name_{{ subject.id }}" value="{{ subject.name }}">
+                                    </div>
+                                    
+                                    <!-- Tier & Delete (Grouped for mobile) -->
+                                    <div class="d-flex align-items-center gap-2 w-100 w-md-auto ms-md-3">
+                                        <select class="form-select border-0 shadow-sm bg-light text-muted fw-bold flex-grow-1" style="min-width: 180px; font-size: 0.85rem;" name="category_{{ subject.id }}">
+                                            <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Tier: Primary / Lower</option>
+                                            <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>Tier: High School</option>
+                                            <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>Tier: University</option>
+                                            <option value="General" {% if subject.category == 'General' or not subject.category %}selected{% endif %}>Tier: General</option>
+                                        </select>
+                                        <button type="button" class="btn btn-light border text-danger rounded-circle shadow-xs flex-shrink-0 d-flex align-items-center justify-content-center transition-hover" style="width: 38px; height: 38px;" onclick="deleteSubject('{{ subject.id }}', '{{ subject.name|escape }}')"><i class="bi bi-trash-fill"></i></button>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="list-group-item text-center text-muted py-5 bg-light border-0">No subjects found.</div>
+                            {% endfor %}
+                            <div class="list-group-item bg-light p-3">
+                                <button type="submit" class="btn btn-dark w-100 shadow-sm fw-bold rounded-pill py-2 transition-hover"><i class="bi bi-list-check me-2"></i> Save Matrix Order</button>
+                            </div>
                         </div>
                     </form>
                 </div>
-            </div>
+                {% endif %}
 
-            <div class="card shadow-sm border-0 native-card">
-                <div class="card-header bg-white text-dark fw-bold py-3 border-bottom">
-                    <i class="bi bi-list-task me-1"></i> Manage Programs
-                </div>
-                <div class="list-group list-group-flush rounded-bottom-4">
-                    {% for p in programs %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-primary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 45px; height: 45px;">
-                                <i class="bi {{ p.icon }} fs-4 text-primary"></i>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold text-dark mb-0">{{ p.name }}</h6>
-                                <small class="text-muted">ID: {{ p.id }}</small>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-light border rounded-circle" style="width: 36px; height: 36px;" data-bs-toggle="modal" data-bs-target="#editProgramModal" onclick="document.getElementById('edit_prog_id').value='{{ p.id }}'; document.getElementById('edit_prog_name').value='{{ p.name }}'; document.getElementById('edit_prog_icon').value='{{ p.icon }}';">
-                                <i class="bi bi-pencil-fill text-primary"></i>
-                            </button>
-                            {% if p.id in [0, 1] %}
-                                <button type="button" class="btn btn-sm btn-light border rounded-circle disabled" style="width: 36px; height: 36px;"><i class="bi bi-lock-fill text-secondary"></i></button>
-                            {% else %}
-                                <form action="/settings" method="post" class="m-0" onsubmit="return confirm('Delete this program?');">
-                                    <input type="hidden" name="action" value="delete_program">
-                                    <input type="hidden" name="program_id" value="{{ p.id }}">
-                                    <button type="submit" class="btn btn-sm btn-light border rounded-circle" style="width: 36px; height: 36px;"><i class="bi bi-trash-fill text-danger"></i></button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- TAB 2: SECURITY (RBAC CRUD PERMISSIONS)        -->
-        <!-- ============================================== -->
-        <div class="tab-pane fade" id="permissions" role="tabpanel">
-            <form action="/settings" method="post">
-                <input type="hidden" name="action" value="update_permissions">
-                
-                <!-- Native App Style Accordion -->
-                <div class="accordion" id="rbacAccordion">
-                    {% for p in role_permissions %}
-                    <div class="accordion-item border-0 mb-3 shadow-sm native-card rounded-4 overflow-hidden">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} bg-white fw-bold fs-6 py-3" type="button" data-bs-toggle="collapse" data-bs-target="#role-{{ loop.index }}">
-                                <i class="bi bi-person-badge-fill text-secondary me-3 fs-5"></i> 
-                                {{ p.role }} 
-                                {% if p.role == 'Admin' %}<span class="badge bg-danger ms-2 px-2 py-1 rounded-pill" style="font-size: 0.65rem;">Locked System Master</span>{% endif %}
-                            </button>
-                        </h2>
-                        
-                        <div id="role-{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#rbacAccordion">
-                            <div class="accordion-body p-0 bg-light">
-                                
-                                {% if p.role != 'Admin' %}
-                                <div class="px-3 py-2 text-end border-bottom bg-white d-flex justify-content-between align-items-center">
-                                    <span class="small text-muted fw-bold">Role Permissions</span>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1" onclick="toggleRoleRow('{{ p.role }}')" style="font-size: 0.75rem;">Toggle All</button>
-                                </div>
-                                {% endif %}
-                                
-                                <div class="list-group list-group-flush">
-                                    
-                                    <!-- PROFILES -->
-                                    <div class="list-group-item bg-transparent text-muted fw-bold small text-uppercase py-2 border-bottom-0 mt-2">Profiles</div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_cp">Add Student Profiles</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cp" name="{{ p.role }}_create_profiles" value="1" {% if p.can_create_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_up">Edit Existing Profiles</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_up" name="{{ p.role }}_update_profiles" value="1" {% if p.can_update_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-
-                                    <!-- ACADEMICS -->
-                                    <div class="list-group-item bg-transparent text-muted fw-bold small text-uppercase py-2 border-bottom-0 mt-2">Academics</div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_ca">Enter New Grades</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_ca" name="{{ p.role }}_create_academics" value="1" {% if p.can_create_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_ua">Edit Grade History</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_ua" name="{{ p.role }}_update_academics" value="1" {% if p.can_update_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-danger w-75" for="cb_{{ p.role }}_da">Delete Grade Records</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 border-danger role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_da" name="{{ p.role }}_delete_academics" value="1" {% if p.can_delete_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-
-                                    <!-- FOLLOW-UPS -->
-                                    <div class="list-group-item bg-transparent text-muted fw-bold small text-uppercase py-2 border-bottom-0 mt-2">Social Work & Notes</div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_cf">Log New Notes</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cf" name="{{ p.role }}_create_followups" value="1" {% if p.can_create_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_uf">Edit Past Notes</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_uf" name="{{ p.role }}_update_followups" value="1" {% if p.can_update_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-
-                                    <!-- FILES & FUNDS -->
-                                    <div class="list-group-item bg-transparent text-muted fw-bold small text-uppercase py-2 border-bottom-0 mt-2">Files & Finance</div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_cfile">Upload Documents</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cfile" name="{{ p.role }}_create_files" value="1" {% if p.can_create_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-danger w-75" for="cb_{{ p.role }}_dfile">Delete Documents</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 border-danger role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_dfile" name="{{ p.role }}_delete_files" value="1" {% if p.can_delete_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-success w-75" for="cb_{{ p.role }}_cexp">Log Financial Expenses</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 border-success role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cexp" name="{{ p.role }}_create_expenses" value="1" {% if p.can_create_expenses %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-
-                                    <!-- EXPORTS -->
-                                    <div class="list-group-item bg-transparent text-muted fw-bold small text-uppercase py-2 border-bottom-0 mt-2">Data Integrity</div>
-                                    <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-2 px-4">
-                                        <label class="fw-bold mb-0 text-dark w-75" for="cb_{{ p.role }}_exp">Export CSV Reports</label>
-                                        <div class="form-check form-switch m-0 p-0 fs-4">
-                                            <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_exp" name="{{ p.role }}_export_data" value="1" {% if p.can_export_data %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Sticky Bottom Save Button -->
-                <div class="position-sticky bottom-0 p-3 bg-white border-top shadow-lg native-card" style="z-index: 100;">
-                    <button type="submit" class="btn btn-danger w-100 text-white shadow-sm fw-bold rounded-pill py-2 fs-5">
-                        <i class="bi bi-shield-check me-2"></i> Save Matrix
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- TAB 3: GLOBAL LOCALIZATION (Phase 6)           -->
-        <!-- ============================================== -->
-        <div class="tab-pane fade" id="localization" role="tabpanel">
-            <div class="card shadow-sm border-0 native-card mb-4">
-                <div class="card-header bg-white text-dark fw-bold py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <div class="input-group input-group-sm w-100">
-                        <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" id="langSearch" class="form-control border-0 bg-light rounded-end-pill" placeholder="Search dictionary...">
-                    </div>
-                </div>
-                
-                <form action="/settings" method="post">
-                    <input type="hidden" name="action" value="update_translations">
+                <!-- ============================================== -->
+                <!-- TAB: WORKSPACES (PROGRAMS)                     -->
+                <!-- ============================================== -->
+                <div class="tab-pane fade {% if session.get('program_id') != 1 %}show active{% endif %}" id="programs" role="tabpanel">
                     
-                    <div class="list-group list-group-flush" id="langTableBody">
-                        {% if translations %}
-                            {% for key, langs in translations.items() %}
-                            <div class="list-group-item bg-white py-3 lang-item">
-                                <!-- Top Row: Key & Delete -->
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <input type="text" class="form-control form-control-sm border-0 bg-transparent text-primary fw-bold font-monospace p-0 shadow-none" name="key_{{ loop.index }}" value="{{ key }}" readonly style="font-size: 0.8rem;">
-                                    <button type="button" class="btn btn-sm text-danger p-0" onclick="deleteTranslation('{{ key }}')"><i class="bi bi-trash-fill fs-5"></i></button>
+                    <div class="mb-4">
+                        <h4 class="fw-bold text-dark mb-1">Global Workspaces</h4>
+                        <p class="text-muted small fw-bold">Separate instances of your database for different projects or branches.</p>
+                    </div>
+
+                    <!-- Add Workspace -->
+                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white">
+                        <div class="card-header bg-white text-dark fw-bold pt-3 pb-2 px-4 border-bottom-0">
+                            <span class="text-uppercase tracking-wide small"><i class="bi bi-plus-circle text-primary me-2"></i> Register Workspace</span>
+                        </div>
+                        <div class="card-body p-4 pt-2">
+                            <form action="/settings" method="post" class="row g-3 align-items-end">
+                                <input type="hidden" name="action" value="add_program">
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Program Name</label>
+                                    <input type="text" class="form-control bg-light border-0 shadow-sm py-2 fw-bold" name="program_name" placeholder="e.g. Medical, EEP" required>
                                 </div>
-                                <!-- Bottom Row: EN & KH Inline Inputs -->
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light border-0 fw-bold text-muted" style="font-size: 0.7rem;">EN</span>
-                                            <input type="text" class="form-control border-0 bg-light fw-bold" name="en_{{ loop.index }}" value="{{ langs.en }}">
-                                        </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Bootstrap Icon</label>
+                                    <input type="text" class="form-control bg-light border-0 shadow-sm py-2 fw-bold font-monospace text-primary" name="program_icon" placeholder="e.g. bi-heart-fill">
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm rounded-pill py-2 transition-hover">Add Program</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Active Workspaces -->
+                    <div class="card shadow-sm border-0 rounded-4 native-card overflow-hidden border-top border-primary border-4">
+                        <div class="list-group list-group-flush">
+                            {% for p in programs %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 bg-white border-bottom transition-hover">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-3 flex-shrink-0" style="width: 45px; height: 45px;">
+                                        <i class="bi {{ p.icon }} fs-4 text-primary"></i>
                                     </div>
-                                    <div class="col-6">
-                                        <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light border-0 fw-bold text-muted" style="font-size: 0.7rem;">KH</span>
-                                            <input type="text" class="form-control border-0 bg-light khmer-font" name="kh_{{ loop.index }}" value="{{ langs.kh }}">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0 fs-5">{{ p.name }}</h6>
+                                        <span class="badge bg-light text-muted border rounded-pill px-2 mt-1" style="font-size: 0.65rem;">System ID: {{ p.id }}</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 ms-2">
+                                    <button type="button" class="btn btn-light border rounded-circle shadow-xs transition-hover d-flex justify-content-center align-items-center text-primary flex-shrink-0" style="width: 38px; height: 38px;" data-bs-toggle="modal" data-bs-target="#editProgramModal" onclick="document.getElementById('edit_prog_id').value='{{ p.id }}'; document.getElementById('edit_prog_name').value='{{ p.name }}'; document.getElementById('edit_prog_icon').value='{{ p.icon }}';">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </button>
+                                    {% if p.id in [0, 1] %}
+                                        <button type="button" class="btn btn-light border rounded-circle disabled d-flex justify-content-center align-items-center flex-shrink-0" style="width: 38px; height: 38px;"><i class="bi bi-lock-fill text-secondary"></i></button>
+                                    {% else %}
+                                        <form action="/settings" method="post" class="m-0 flex-shrink-0" onsubmit="return confirm('Permanently delete this program?');">
+                                            <input type="hidden" name="action" value="delete_program">
+                                            <input type="hidden" name="program_id" value="{{ p.id }}">
+                                            <button type="submit" class="btn btn-outline-danger rounded-circle shadow-xs transition-hover d-flex justify-content-center align-items-center" style="width: 38px; height: 38px;"><i class="bi bi-trash-fill"></i></button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================== -->
+                <!-- TAB: SECURITY (RBAC CRUD PERMISSIONS)          -->
+                <!-- ============================================== -->
+                <div class="tab-pane fade" id="permissions" role="tabpanel">
+                    
+                    <div class="mb-3">
+                        <h4 class="fw-bold text-dark mb-1">Security Matrix</h4>
+                        <p class="text-muted small fw-bold">Granular control over system permissions based on staff roles.</p>
+                    </div>
+
+                    <!-- Developer Warning -->
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-danger border-opacity-25 rounded-4 d-flex align-items-start shadow-sm mb-4 p-4">
+                        <i class="bi bi-shield-exclamation-fill text-danger fs-3 me-3 mt-n1"></i>
+                        <div>
+                            <h6 class="fw-bold text-danger mb-1">Developer Zone: Impact Warning</h6>
+                            <p class="small text-danger-emphasis mb-0 lh-sm">Modifying these toggles actively restricts or grants access to application tools. Removing access to "Profiles" will hide the Roster. Proceed with caution.</p>
+                        </div>
+                    </div>
+
+                    <form action="/settings" method="post">
+                        <input type="hidden" name="action" value="update_permissions">
+                        
+                        <!-- Native App Style Accordion -->
+                        <div class="accordion" id="rbacAccordion">
+                            {% for p in role_permissions %}
+                            <div class="accordion-item border-0 mb-3 shadow-sm native-card rounded-4 overflow-hidden bg-white">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button {% if not loop.first %}collapsed{% endif %} bg-white fw-bold fs-5 py-4 px-4" type="button" data-bs-toggle="collapse" data-bs-target="#role-{{ loop.index }}">
+                                        <i class="bi bi-person-badge-fill text-secondary me-3 fs-4 opacity-50"></i> 
+                                        {{ p.role }} 
+                                        {% if p.role == 'Admin' %}<span class="badge bg-danger ms-2 px-2 py-1 rounded-pill fw-bold shadow-sm" style="font-size: 0.65rem;">Locked Master</span>{% endif %}
+                                    </button>
+                                </h2>
+                                
+                                <div id="role-{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#rbacAccordion">
+                                    <div class="accordion-body p-0 bg-light border-top">
+                                        
+                                        {% if p.role != 'Admin' %}
+                                        <div class="px-4 py-3 text-end border-bottom bg-white d-flex justify-content-between align-items-center">
+                                            <span class="small text-muted fw-bold text-uppercase tracking-wide" style="font-size: 0.65rem;">Matrix Controls</span>
+                                            <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 py-1 fw-bold shadow-xs transition-hover text-primary" onclick="toggleRoleRow('{{ p.role }}')" style="font-size: 0.75rem;"><i class="bi bi-toggle-on me-1"></i> Toggle All</button>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="list-group list-group-flush px-2 px-md-3 pb-3 pt-2">
+                                            
+                                            <!-- PROFILES -->
+                                            <div class="list-group-item bg-transparent text-primary fw-bold small text-uppercase py-2 border-bottom-0 mt-2 tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-people-fill me-2"></i>Profiles</div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_cp">Add Student Profiles</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cp" name="{{ p.role }}_create_profiles" value="1" {% if p.can_create_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_up">Edit Existing Profiles</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_up" name="{{ p.role }}_update_profiles" value="1" {% if p.can_update_profiles %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+
+                                            <!-- ACADEMICS -->
+                                            <div class="list-group-item bg-transparent text-success fw-bold small text-uppercase py-2 border-bottom-0 mt-3 tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-mortarboard-fill me-2"></i>Academics</div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_ca">Enter New Grades</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_ca" name="{{ p.role }}_create_academics" value="1" {% if p.can_create_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_ua">Edit Grade History</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_ua" name="{{ p.role }}_update_academics" value="1" {% if p.can_update_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-danger cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_da">Delete Grade Records</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 border-danger role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_da" name="{{ p.role }}_delete_academics" value="1" {% if p.can_delete_academics %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+
+                                            <!-- FOLLOW-UPS -->
+                                            <div class="list-group-item bg-transparent text-danger fw-bold small text-uppercase py-2 border-bottom-0 mt-3 tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-clipboard2-heart-fill me-2"></i>Social Work & Notes</div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_cf">Log New Notes</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cf" name="{{ p.role }}_create_followups" value="1" {% if p.can_create_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_uf">Edit Past Notes</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_uf" name="{{ p.role }}_update_followups" value="1" {% if p.can_update_followups %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+
+                                            <!-- FILES & FUNDS -->
+                                            <div class="list-group-item bg-transparent text-warning text-darken fw-bold small text-uppercase py-2 border-bottom-0 mt-3 tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-wallet2 me-2"></i>Files & Finance</div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_cfile">Upload Documents</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cfile" name="{{ p.role }}_create_files" value="1" {% if p.can_create_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-danger cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_dfile">Delete Documents</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 border-danger role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_dfile" name="{{ p.role }}_delete_files" value="1" {% if p.can_delete_files %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_cexp">Log Financial Expenses</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 border-success role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_cexp" name="{{ p.role }}_create_expenses" value="1" {% if p.can_create_expenses %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
+
+                                            <!-- EXPORTS -->
+                                            <div class="list-group-item bg-transparent text-info fw-bold small text-uppercase py-2 border-bottom-0 mt-3 tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-cloud-download-fill me-2"></i>Data Control</div>
+                                            <div class="list-group-item bg-white d-flex justify-content-between align-items-center py-3 px-3 px-md-4 rounded-4 mb-2 shadow-xs border">
+                                                <label class="fw-bold mb-0 text-dark cursor-pointer pe-3 lh-sm" style="font-size: 0.9rem;" for="cb_{{ p.role }}_exp">Export CSV Reports</label>
+                                                <div class="form-check form-switch m-0 p-0 fs-4 flex-shrink-0">
+                                                    <input class="form-check-input float-none ms-0 role-cb-{{ p.role|replace(' ', '') }}" type="checkbox" id="cb_{{ p.role }}_exp" name="{{ p.role }}_export_data" value="1" {% if p.can_export_data %}checked{% endif %} {% if p.role == 'Admin' %}onclick="return false;"{% endif %}>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             {% endfor %}
-                        {% else %}
-                            <div class="list-group-item text-center text-muted py-5 border-0 bg-light">No translations found.</div>
-                        {% endif %}
-                    </div>
+                        </div>
 
-                    <!-- Bottom Nav Actions -->
-                    <div class="position-sticky bottom-0 p-3 bg-white border-top shadow-lg native-card d-flex gap-2" style="z-index: 100;">
-                        <button type="button" class="btn btn-light border fw-bold rounded-pill w-50 py-2 text-info-emphasis" data-bs-toggle="modal" data-bs-target="#addTranslationModal">
-                            <i class="bi bi-plus-lg me-1"></i> New Phrase
+                        <button type="submit" class="btn btn-danger w-100 text-white shadow-sm fw-bold rounded-pill py-3 mt-3 fs-5 transition-hover">
+                            <i class="bi bi-shield-check me-2"></i> Update Security Matrix
                         </button>
-                        <button type="submit" class="btn btn-info text-white shadow-sm fw-bold rounded-pill w-50 py-2">
-                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Deploy
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        {% if session.get('program_id') == 1 %}
-        <!-- ============================================== -->
-        <!-- TAB 4: SYSTEM PREFERENCES (DYNAMIC KEY-VALUE)  -->
-        <!-- ============================================== -->
-        <div class="tab-pane fade" id="system" role="tabpanel">
-            <form action="/settings" method="post">
-                <input type="hidden" name="action" value="update_system">
-                
-                <div class="list-group shadow-sm rounded-4 border-0 mb-4 native-card">
-                    
-                    <!-- App-Style Inline Input Row -->
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
-                        <div class="w-50">
-                            <h6 class="fw-bold mb-0 text-dark">Academic Year</h6>
-                            <small class="text-muted d-block text-truncate" style="font-size: 0.7rem;">Default for reports</small>
-                        </div>
-                        <input type="text" class="form-control text-end border-0 bg-light fw-bold text-success w-50 px-2" name="current_academic_year" value="{{ sys_settings.current_academic_year }}" required>
-                    </div>
-                    
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
-                        <div class="w-50">
-                            <h6 class="fw-bold mb-0 text-dark">Org Name</h6>
-                            <small class="text-muted d-block text-truncate" style="font-size: 0.7rem;">Brand used on exports</small>
-                        </div>
-                        <input type="text" class="form-control text-end border-0 bg-light fw-bold text-dark w-50 px-2" name="organization_name" value="{{ sys_settings.organization_name | default('ELM Program', true) }}">
-                    </div>
-                    
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
-                        <div class="w-50">
-                            <h6 class="fw-bold mb-0 text-dark">Currency Symbol</h6>
-                        </div>
-                        <input type="text" class="form-control text-end border-0 bg-light fw-bold text-dark w-50 px-2" name="currency_symbol" value="{{ sys_settings.currency_symbol | default('$', true) }}">
-                    </div>
-
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
-                        <div class="w-50">
-                            <h6 class="fw-bold mb-0 text-dark">Timezone</h6>
-                        </div>
-                        <input type="text" class="form-control text-end border-0 bg-light fw-bold text-dark w-50 px-2" name="timezone" value="{{ sys_settings.timezone | default('Asia/Phnom_Penh', true) }}">
-                    </div>
-                </div>
-                
-                <button type="submit" class="btn btn-success w-100 fw-bold py-3 shadow-sm rounded-pill transition-hover fs-5"><i class="bi bi-save me-1"></i> Save Preferences</button>
-            </form>
-        </div>
-
-        <!-- ============================================== -->
-        <!-- TAB 5: EEP ACADEMIC SUBJECTS                   -->
-        <!-- ============================================== -->
-        <div class="tab-pane fade" id="subjects" role="tabpanel">
-            
-            <div class="card shadow-sm border-0 native-card mb-4">
-                <div class="card-header bg-white text-dark fw-bold py-3 border-bottom d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-plus-circle text-success me-1"></i> Add Subject</span>
-                </div>
-                <div class="card-body p-3 bg-light">
-                    <form action="/settings" method="post" class="row g-2 align-items-center">
-                        <input type="hidden" name="action" value="add_subject">
-                        <div class="col-12 col-md-5">
-                            <input type="text" class="form-control" name="new_subject" placeholder="Subject (e.g. Physics)" required>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <select class="form-select" name="category" required>
-                                <option value="Primary / Lower Grade">Primary Level</option>
-                                <option value="High School">High School</option>
-                                <option value="University / Vocational">University</option>
-                                <option value="General" selected>General</option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm rounded-pill">Add</button>
-                        </div>
                     </form>
                 </div>
-            </div>
 
-            <form action="/settings" method="post" id="updateSubjectsForm">
-                <input type="hidden" name="action" value="update_subjects">
-                
-                <div class="list-group shadow-sm rounded-4 border-0 native-card pb-5">
-                    {% for subject in subjects %}
-                    <div class="list-group-item bg-white py-3 border-bottom">
-                        <!-- Top Row: Sort Order, Name, Delete -->
-                        <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
-                            <div class="d-flex align-items-center w-100">
-                                <input type="number" class="form-control form-control-sm text-center fw-bold bg-light border-0 me-2" style="width: 50px;" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}">
-                                <input type="text" class="form-control form-control-sm fw-bold border-0 bg-transparent px-0 text-dark fs-6" name="name_{{ subject.id }}" value="{{ subject.name }}">
-                            </div>
-                            <button type="button" class="btn btn-sm text-danger p-0" onclick="deleteSubject('{{ subject.id }}', '{{ subject.name|escape }}')"><i class="bi bi-trash-fill fs-5"></i></button>
-                        </div>
-                        <!-- Bottom Row: Tier Dropdown -->
-                        <select class="form-select form-select-sm border-0 bg-light text-muted fw-bold ms-auto" name="category_{{ subject.id }}" style="width: 80%;">
-                            <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Tier: Primary / Lower Grade</option>
-                            <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>Tier: High School</option>
-                            <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>Tier: University</option>
-                            <option value="General" {% if subject.category == 'General' or not subject.category %}selected{% endif %}>Tier: General</option>
-                        </select>
+                <!-- ============================================== -->
+                <!-- TAB: GLOBAL LOCALIZATION                       -->
+                <!-- ============================================== -->
+                <div class="tab-pane fade" id="localization" role="tabpanel">
+                    
+                    <div class="mb-4">
+                        <h4 class="fw-bold text-dark mb-1">Translation Dictionary</h4>
+                        <p class="text-muted small fw-bold">Map system codes to exact English and Khmer strings for the UI.</p>
                     </div>
-                    {% else %}
-                    <div class="list-group-item text-center text-muted py-4 bg-light border-0">No subjects found.</div>
-                    {% endfor %}
+
+                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white">
+                        <div class="card-header bg-white text-dark fw-bold py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
+                            <div class="input-group w-100 shadow-sm rounded-pill overflow-hidden border border-secondary border-opacity-10 bg-light">
+                                <span class="input-group-text bg-transparent border-0 px-3"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="langSearch" class="form-control border-0 bg-transparent fw-bold shadow-none py-2" placeholder="Search vocabulary...">
+                            </div>
+                        </div>
+                        
+                        <form action="/settings" method="post">
+                            <input type="hidden" name="action" value="update_translations">
+                            
+                            <div class="list-group list-group-flush" id="langTableBody">
+                                {% if translations %}
+                                    {% for key, langs in translations.items() %}
+                                    <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom border-light lang-item transition-hover">
+                                        <!-- Top Row: Key & Delete -->
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-braces text-warning text-darken me-2 small"></i>
+                                                <input type="text" class="form-control border-0 bg-transparent text-muted fw-bold font-monospace p-0 shadow-none" name="key_{{ loop.index }}" value="{{ key }}" readonly style="font-size: 0.8rem;">
+                                            </div>
+                                            <button type="button" class="btn btn-sm text-danger p-0 opacity-50 transition-hover" onclick="deleteTranslation('{{ key }}')" title="Delete Phrase"><i class="bi bi-trash-fill fs-5"></i></button>
+                                        </div>
+                                        <!-- Bottom Row: EN & KH Stacked Inputs -->
+                                        <div class="row g-2">
+                                            <div class="col-12 col-md-6">
+                                                <div class="input-group rounded-3 overflow-hidden bg-light border border-secondary border-opacity-10">
+                                                    <span class="input-group-text bg-transparent border-0 fw-bold text-primary" style="font-size: 0.75rem;">EN</span>
+                                                    <input type="text" class="form-control border-0 bg-transparent fw-bold py-2 text-dark shadow-none" name="en_{{ loop.index }}" value="{{ langs.en }}">
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <div class="input-group rounded-3 overflow-hidden bg-light border border-secondary border-opacity-10">
+                                                    <span class="input-group-text bg-transparent border-0 fw-bold text-danger" style="font-size: 0.75rem;">KH</span>
+                                                    <input type="text" class="form-control border-0 bg-transparent khmer-font py-2 text-dark shadow-none" name="kh_{{ loop.index }}" value="{{ langs.kh }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="list-group-item text-center text-muted py-5 border-0 bg-light">
+                                        <i class="bi bi-translate fs-1 d-block mb-2 opacity-25"></i>
+                                        No vocabulary items found in dictionary.
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="card-footer bg-white border-top p-3 p-md-4 d-flex flex-column flex-md-row gap-3">
+                                <button type="button" class="btn btn-light border fw-bold rounded-pill flex-fill py-3 text-dark shadow-sm transition-hover" data-bs-toggle="modal" data-bs-target="#addTranslationModal">
+                                    <i class="bi bi-plus-lg me-1"></i> Add Phrase
+                                </button>
+                                <button type="submit" class="btn btn-dark text-white shadow-sm fw-bold rounded-pill flex-fill py-3 transition-hover fs-6">
+                                    <i class="bi bi-save me-1"></i> Save Dictionary
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                
-                <div class="position-sticky bottom-0 p-3 bg-white border-top shadow-lg native-card" style="z-index: 100;">
-                    <button type="submit" class="btn btn-warning w-100 text-dark shadow-sm fw-bold rounded-pill py-2 fs-5"><i class="bi bi-save me-1"></i> Save Order & Tiers</button>
-                </div>
-            </form>
+
+            </div>
         </div>
-        {% endif %} 
     </div>
 </div>
 
@@ -416,28 +495,28 @@
 
 <div class="modal fade" id="editProgramModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-primary text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2"></i>Edit Program</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-primary text-white border-bottom-0 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold" style="font-family: 'Poppins', sans-serif;"><i class="bi bi-pencil-square me-2"></i>Edit Workspace</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form action="/settings" method="post">
-                <div class="modal-body p-4 text-start">
+                <div class="modal-body p-4 text-start bg-light">
                     <input type="hidden" name="action" value="edit_program">
                     <input type="hidden" name="program_id" id="edit_prog_id">
                     
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Program Name</label>
-                        <input type="text" class="form-control bg-light fw-bold" name="program_name" id="edit_prog_name" required>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Program Name</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold py-2" name="program_name" id="edit_prog_name" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Bootstrap Icon Class</label>
-                        <input type="text" class="form-control bg-light" name="program_icon" id="edit_prog_icon">
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Bootstrap Icon Class</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm py-2 text-primary font-monospace" name="program_icon" id="edit_prog_icon">
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
-                    <button type="button" class="btn btn-white border fw-bold text-dark rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4">Save</button>
+                <div class="modal-footer bg-white border-top-0 px-4 py-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-5 shadow-sm transition-hover">Save</button>
                 </div>
             </form>
         </div>
@@ -446,30 +525,30 @@
 
 <div class="modal fade" id="addTranslationModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-info text-white border-bottom-0 rounded-top-4 pt-4 pb-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-translate me-2"></i>Add New Phrase</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white border-bottom-0 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold" style="font-family: 'Poppins', sans-serif;"><i class="bi bi-translate me-2 text-warning"></i>Add New Phrase</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form action="/settings" method="post">
-                <div class="modal-body p-4 text-start">
+                <div class="modal-body p-4 text-start bg-light">
                     <input type="hidden" name="action" value="add_translation">
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Key Name (snake_case)</label>
-                        <input type="text" class="form-control bg-light font-monospace" name="new_key" placeholder="e.g. btn_save" required>
+                        <label class="form-label fw-bold small text-muted text-uppercase">System Code (No Spaces)</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm font-monospace py-2 text-muted" name="new_key" placeholder="e.g. menu_dashboard" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">English Text (en)</label>
-                        <input type="text" class="form-control fw-bold" name="new_en" required>
+                        <label class="form-label fw-bold small text-primary text-uppercase">English Phrase</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm fw-bold py-2" name="new_en" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold small text-muted">Khmer Text (kh)</label>
-                        <input type="text" class="form-control khmer-font" name="new_kh" required>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-danger text-uppercase">Khmer Translation</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm khmer-font py-2" name="new_kh" required>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0 rounded-bottom-4 px-4 py-3">
-                    <button type="button" class="btn btn-white border fw-bold text-dark rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-info text-white fw-bold rounded-pill px-4 shadow-sm">Save</button>
+                <div class="modal-footer bg-white border-top-0 px-4 py-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-dark text-white fw-bold rounded-pill px-5 shadow-sm transition-hover">Save Phrase</button>
                 </div>
             </form>
         </div>
@@ -487,22 +566,50 @@
 </form>
 
 <style>
-    /* Desktop Hover Effects */
-    .transition-hover { transition: transform 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-1px); }
+    /* Premium Nav Pill Styling (Desktop) */
+    .nav-pills-container .nav-link { color: #6c757d; border: 1px solid transparent; background: transparent; }
+    .nav-pills-container .nav-link.active { 
+        background-color: #f0f7ff; 
+        color: #005a9c !important; 
+        border-color: rgba(0, 90, 156, 0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .nav-pills-container .text-danger-hover:hover, .nav-pills-container .text-danger-hover.active { color: #dc3545 !important; background-color: rgba(220, 53, 69, 0.05); }
+    .nav-pills-container .text-warning-hover:hover, .nav-pills-container .text-warning-hover.active { color: #b48600 !important; background-color: rgba(255, 193, 7, 0.05); }
     
-    /* Native App Styling for Mobile Edge-to-Edge */
-    @media (max-width: 767.98px) {
-        .native-card {
-            border-radius: 0 !important;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            margin-left: -1rem;
-            margin-right: -1rem;
+    .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05) !important; }
+    .cursor-pointer { cursor: pointer; }
+    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .text-darken { color: #b48600 !important; }
+    
+    .form-control:focus, .form-select:focus { border-color: #86b7fe !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
+    
+    /* Mobile-Specific Refinements (The Fluid "App Chip" Navigation) */
+    @media (max-width: 991.98px) {
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Transform sidebar to sticky glass header */
+        .settings-nav-wrapper { margin-left: -1rem; margin-right: -1rem; }
+        .settings-nav-wrapper .card { 
+            border-radius: 0 !important; 
+            background: rgba(255,255,255,0.85) !important; 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            border-bottom: 1px solid rgba(0,0,0,0.05) !important; 
+            padding: 0.75rem 1rem !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
         }
         
-        /* Clean up form switch for native look */
-        .form-check-input { margin-top: 0 !important; }
+        .nav-pills-container .nav-link { 
+            background-color: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            font-size: 0.85rem; 
+        }
+        .nav-pills-container .nav-link.active { background-color: #005a9c !important; color: white !important; border-color: #005a9c !important; }
+        .nav-pills-container .text-danger-hover.active { background-color: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
+        .nav-pills-container .text-warning-hover.active { background-color: #b48600 !important; color: white !important; border-color: #b48600 !important; }
     }
 </style>
 {% endblock %}
@@ -515,13 +622,9 @@
     function toggleRoleRow(roleName) {
         const safeRole = roleName.replace(/\s+/g, '');
         const checkboxes = document.querySelectorAll(`.role-cb-${safeRole}`);
-        
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        
         checkboxes.forEach(cb => {
-            if (!cb.disabled) {
-                cb.checked = !allChecked;
-            }
+            if (!cb.disabled) cb.checked = !allChecked;
         });
     }
 
@@ -531,22 +634,13 @@
     document.getElementById('langSearch')?.addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
         let items = document.querySelectorAll('.lang-item');
-        
         items.forEach(item => {
             let inputs = item.querySelectorAll('input[type="text"]');
             let match = false;
-            
             inputs.forEach(input => {
-                if (input.value.toLowerCase().includes(filter)) {
-                    match = true;
-                }
+                if (input.value.toLowerCase().includes(filter)) match = true;
             });
-            
-            if (match) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
+            item.style.display = match ? '' : 'none';
         });
     });
 
@@ -561,7 +655,7 @@
     }
 
     function deleteTranslation(keyName) {
-        if(confirm(`Remove translation key '${keyName}' from the dictionary?`)) {
+        if(confirm(`Remove vocabulary term '${keyName}' from the dictionary?`)) {
             document.getElementById('delete_translation_key').value = keyName;
             document.getElementById('deleteTranslationForm').submit();
         }

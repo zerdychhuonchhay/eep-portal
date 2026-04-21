@@ -3,90 +3,112 @@
 {% block title %}{{ title if title else 'Student Roster' }}{% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-4 mb-5 text-start px-0 px-md-3" style="max-width: 1100px;">
-    
-    <!-- Header Section & Actions -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
-        <div>
-            <h2 class="mb-0 fw-bold"><i class="bi bi-people-fill text-primary me-2"></i>{{ title if title else 'Student Roster' }}</h2>
-            <p class="text-muted small mb-0 d-none d-md-block">Manage your students, select profiles for bulk updates, and log quick actions.</p>
-        </div>
+<div class="container-fluid px-lg-4 mt-3 mt-lg-4 mb-5">
+
+    <!-- ========================================== -->
+    <!-- 1. PREMIUM HEADER SECTION                  -->
+    <!-- ========================================== -->
+    <div class="card border-0 rounded-4 shadow-sm mb-4 position-relative overflow-hidden bg-white native-card">
+        <!-- Subtle background accent -->
+        <div class="position-absolute top-0 end-0 opacity-10" style="width: 300px; height: 300px; background: radial-gradient(circle, var(--primary) 0%, transparent 70%); transform: translate(30%, -30%); border-radius: 50%;"></div>
         
-        <!-- Native App Action Bar -->
-        <div class="d-flex align-items-center justify-content-between gap-2 w-100 w-md-auto">
-            
-            <!-- iOS Style Segmented Control for Views -->
-            <div class="bg-white border rounded-pill p-1 shadow-sm d-flex flex-fill flex-md-grow-0" style="max-width: 220px;">
-                <a href="/roster" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if request.path == '/' or request.path == '/roster' %}btn-primary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem;">
-                    Active
-                </a>
-                <a href="/archive" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if request.path == '/archive' %}btn-secondary text-white shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}" style="font-size: 0.8rem;">
-                    Archive
-                </a>
+        <div class="card-body p-4 position-relative z-1 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h3 class="fw-bold text-dark mb-1"><i class="bi bi-people-fill text-primary me-2"></i>{{ title if title else 'Student Directory' }}</h3>
+                <p class="text-muted small fw-bold mb-0">Manage profiles, execute bulk actions, and jump to specific records.</p>
             </div>
             
-            <div class="d-flex gap-2 ms-auto">
-                <!-- Toggle Bulk Mode (Desktop) -->
-                <button id="btnToggleBulk" type="button" class="btn btn-sm btn-outline-danger shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover d-none d-md-flex align-items-center" onclick="toggleBulkMode()">
-                    <i class="bi bi-ui-checks-grid me-1"></i> <span>Bulk Actions</span>
-                </button>
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                
+                <!-- iOS Style Segmented Control for Views -->
+                <div class="bg-light border rounded-pill p-1 shadow-sm d-flex flex-fill flex-md-grow-0" style="min-width: 200px;">
+                    <a href="/roster" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if request.path == '/' or request.path == '/roster' %}bg-white text-dark shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}">
+                        Active
+                    </a>
+                    <a href="/archive" class="btn btn-sm rounded-pill fw-bold flex-fill transition-hover {% if request.path == '/archive' %}bg-white text-dark shadow-sm{% else %}btn-transparent text-muted border-0{% endif %}">
+                        Archive
+                    </a>
+                </div>
 
-                <!-- 🛡️ SECURITY CONTROL: Add New Student (Desktop) -->
-                {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
-                <a href="/add_student" class="btn btn-sm btn-info text-white shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover d-none d-md-flex align-items-center">
-                    <i class="bi bi-person-plus-fill me-1"></i> Add Kid
-                </a>
-                {% endif %}
+                <div class="d-flex gap-2">
+                    <!-- Toggle Bulk Mode -->
+                    <button id="btnToggleBulk" type="button" class="btn btn-light text-danger border fw-bold rounded-pill px-3 shadow-sm transition-hover d-none d-md-flex align-items-center" onclick="toggleBulkMode()">
+                        <i class="bi bi-ui-checks-grid me-2"></i> Bulk Select
+                    </button>
+
+                    <!-- Add New Student -->
+                    {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
+                    <a href="/add_student" class="btn btn-primary text-white shadow-sm fw-bold rounded-pill px-4 transition-hover d-none d-md-flex align-items-center">
+                        <i class="bi bi-person-plus-fill me-2"></i> Add Kid
+                    </a>
+                    {% endif %}
+                    
+                    <!-- Export Data -->
+                    {% if session.get('can_export_data') %}
+                    <a href="/export_students" class="btn btn-success shadow-sm fw-bold d-none d-lg-flex align-items-center rounded-pill px-3 transition-hover">
+                        <i class="bi bi-file-earmark-excel-fill me-1"></i> Export
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Active Roster List (Native App Style) -->
-    <div class="card shadow-sm border-0 native-card rounded-4 border-top border-primary border-4 mb-5">
-        
-        <!-- Live Search & Filter Header -->
-        <div class="card-header bg-white border-bottom pt-4 pb-2 px-3 px-md-4 rounded-top-4">
+    <!-- ========================================== -->
+    <!-- 2. STICKY SEARCH & FILTER BAR (Glass)      -->
+    <!-- ========================================== -->
+    <div class="sticky-top pt-2 pb-3 mx-n3 mx-md-0 px-3 px-md-0" style="top: 65px; z-index: 10; background: linear-gradient(180deg, var(--app-bg) 85%, transparent 100%);">
+        <div class="d-flex flex-column gap-2">
             
-            <!-- Search & Bulk Select Tools -->
-            <div class="d-flex gap-2 mb-3">
-                <div class="input-group input-group-sm w-100 shadow-sm rounded-pill overflow-hidden border">
-                    <span class="input-group-text bg-white border-0 px-3"><i class="bi bi-search text-primary fs-6"></i></span>
-                    <input type="text" id="rosterSearch" class="form-control border-0 bg-white py-2 fw-bold text-dark shadow-none" placeholder="Search by name, ID, or Parent/Guardian...">
+            <!-- Row 1: Search and Primary Filters -->
+            <div class="d-flex flex-column flex-lg-row gap-2">
+                <div class="d-flex gap-2" style="flex: 1;">
+                    <!-- Search Bar -->
+                    <div class="input-group shadow-sm rounded-pill overflow-hidden border-0 bg-white" style="flex: 1;">
+                        <span class="input-group-text bg-transparent border-0 px-4"><i class="bi bi-search text-primary"></i></span>
+                        <input type="text" id="rosterSearch" class="form-control border-0 bg-transparent py-2 py-md-3 fw-bold text-dark shadow-none" placeholder="Search by name, ID, or location...">
+                    </div>
+                    
+                    <!-- Bulk "Select Visible" Button (Revealed in Bulk Mode) -->
+                    <button type="button" id="btnSelectVisible" class="btn btn-white border rounded-pill fw-bold text-dark shadow-sm transition-hover d-none align-items-center px-3 flex-shrink-0" onclick="toggleSelectAll()" title="Select All Visible Students">
+                        <i class="bi bi-check2-all fs-5 me-md-1 text-primary"></i> <span class="d-none d-md-inline">Select Visible</span>
+                    </button>
                 </div>
                 
-                <button type="button" id="btnSelectVisible" class="btn btn-sm btn-light border rounded-pill fw-bold text-dark shadow-sm transition-hover d-flex align-items-center px-3 flex-shrink-0 d-none" onclick="toggleSelectAll()" title="Select All Visible Students">
-                    <i class="bi bi-check2-all fs-5 me-md-1"></i> <span class="d-none d-md-inline">Select Visible</span>
-                </button>
-            </div>
-            
-            <!-- Standard Category Filters -->
-            <div id="standardFilters" class="d-flex gap-2 overflow-auto custom-scrollbar pb-2 mb-2" style="white-space: nowrap;">
-                <button class="btn btn-sm btn-dark rounded-pill px-3 fw-bold filter-btn active" data-filter="all">All</button>
-                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="primary">Primary</button>
-                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="high">High School</button>
-                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="male">Boys</button>
-                <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="female">Girls</button>
+                <!-- Filters (Scrollable on mobile) -->
+                <div class="d-flex gap-1 overflow-auto custom-scrollbar align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 flex-shrink-0" style="white-space: nowrap;">
+                    <button class="btn btn-sm bg-primary text-white shadow-sm rounded-pill px-3 fw-bold filter-btn active" data-filter="all">All</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="primary">Primary</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="high">High School</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="uni">Uni/Voc</button>
+                    <div class="vr my-2 text-muted opacity-25"></div>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="male">Boys</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="female">Girls</button>
+                </div>
             </div>
 
-            <!-- NEW: Contextual Program Filters (Visible when Bulk Mode is On) -->
-            <div id="programFilters" class="d-none gap-2 overflow-auto custom-scrollbar pb-2" style="white-space: nowrap;">
-                <span class="small fw-bold text-muted me-2 align-self-center"><i class="bi bi-funnel-fill text-danger me-1"></i> Action Filter:</span>
-                <button class="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold filter-btn transition-hover" data-filter="daily_lunch">🍱 Daily Hot Lunch</button>
-                <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold filter-btn transition-hover text-darken" data-filter="groceries">🌾 Monthly Groceries</button>
-                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold filter-btn transition-hover" data-filter="orphans">🏠 Individual Support</button>
+            <!-- Row 2: Contextual Program Filters (Revealed in Bulk Mode) -->
+            <div id="programFilters" class="d-none gap-1 overflow-auto custom-scrollbar align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 ms-lg-auto" style="white-space: nowrap; width: fit-content;">
+                <span class="small fw-bold text-danger mx-2"><i class="bi bi-funnel-fill me-1"></i> Bulk Action Filter:</span>
+                <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="daily_lunch">🍱 Hot Lunch</button>
+                <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover text-darken" data-filter="groceries">🌾 Groceries</button>
+                <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="orphans">🏠 No Plan</button>
             </div>
+
         </div>
+    </div>
 
-        <!-- FORM WRAPPER: Passes selected IDs to the Bulk Action tools via GET parameters -->
+    <!-- ========================================== -->
+    <!-- 3. ROSTER LIST                             -->
+    <!-- ========================================== -->
+    <div class="card shadow-sm border-0 native-card rounded-4 mb-5 bg-white border-top border-primary border-4">
+        
+        <!-- FORM WRAPPER: Passes selected IDs to the Bulk Action tools via GET -->
         <form id="rosterForm" method="GET">
             <div class="card-body p-0">
                 <div class="list-group list-group-flush rounded-bottom-4 pb-5 pb-md-0" id="rosterList">
                     {% for student in students %}
-                    <label class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom student-item transition-hover cursor-pointer" 
-                           data-grade="{{ student.grade_level|lower }}" 
-                           data-gender="{{ student.gender|lower }}" 
-                           data-guardian="{{ student.guardian_name|lower if student.guardian_name else '' }}"
-                           data-meal-plan="{{ student.meal_plan|lower if student.meal_plan else 'none' }}">
+                    <label class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom student-item transition-hover cursor-pointer" data-grade="{{ student.grade_level|lower }}" data-gender="{{ student.gender|lower }}" data-guardian="{{ student.guardian_name|lower if student.guardian_name else '' }}" data-meal-plan="{{ student.meal_plan|lower if student.meal_plan else 'none' }}">
                         <div class="row gx-3 gy-2 align-items-center">
 
                             <!-- Identity (Checkbox, Avatar, Name, ID, Grade) -->
@@ -111,62 +133,87 @@
                                         {{ student.first_name }} {{ student.last_name }}
                                     </a>
                                     {% if student.khmer_name %}
-                                        <span class="student-khmer khmer-font text-muted fw-normal d-block mb-1" style="font-size: 0.85rem;">{{ student.khmer_name }}</span>
+                                        <span class="student-khmer khmer-font text-muted fw-normal d-block mb-2" style="font-size: 0.85rem;">{{ student.khmer_name }}</span>
                                     {% endif %}
-                                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                                        <span class="student-id badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1 rounded-pill"><i class="bi bi-person-badge-fill me-1"></i>{{ student.ngo_id }}</span>
+                                    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                        <span class="student-id badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill"><i class="bi bi-person-badge-fill me-1"></i>{{ student.ngo_id }}</span>
                                         <span class="badge bg-light text-dark border px-2 py-1 rounded-pill text-truncate" style="max-width: 120px;">{{ student.grade_level }}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Meta Info (Guardian, Location, Phone) -->
+                            <!-- Meta Info (Location, Phone, School) -->
                             <div class="col-12 col-md-4 mb-2 mb-md-0">
-                                <div class="d-flex flex-column gap-1 ms-4 ms-md-0" style="font-size: 0.8rem;">
-                                    <div class="student-guardian fw-bold text-primary"><i class="bi bi-house-heart me-2"></i>{{ student.guardian_name if student.guardian_name else 'No Guardian' }}</div>
-                                    <div class="student-slum text-muted khmer-font text-truncate"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
-                                    <div class="student-meal text-muted text-truncate fw-bold">
-                                        <i class="bi bi-basket2-fill me-2 text-warning"></i>
-                                        {{ student.meal_plan if student.meal_plan else 'No Support Plan' }}
+                                <div class="d-flex flex-column gap-1 ms-5 ms-md-0 ps-2 ps-md-0" style="font-size: 0.8rem;">
+                                    <div class="student-slum fw-bold text-dark khmer-font text-truncate"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ student.slum_area if student.slum_area else 'Unknown Area' }}</div>
+                                    <div class="student-phone text-muted text-truncate fw-bold">
+                                        <i class="bi bi-telephone-fill me-2 text-primary opacity-50"></i>
+                                        {% if student.phone_number %}
+                                            <a href="tel:{{ student.phone_number }}" class="text-decoration-none text-secondary">{{ student.phone_number }}</a>
+                                        {% else %}
+                                            <span class="fst-italic opacity-50">No Phone</span>
+                                        {% endif %}
                                     </div>
+                                    <div class="student-school text-muted khmer-font text-truncate fw-bold"><i class="bi bi-building-fill me-2 text-info opacity-50"></i>{{ student.current_school if student.current_school else '-' }}</div>
                                 </div>
                             </div>
 
-                            <!-- Action Buttons -->
-                            <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-2 mt-md-0 pt-3 pt-md-0 border-top border-md-0 border-light border-opacity-50">
-                                <a href="/student/{{ student.id }}" class="btn btn-sm btn-light border text-dark fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-eye-fill me-1"></i> View
+                            <!-- Semantic Action Buttons -->
+                            <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-3 mt-md-0">
+                                {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
+                                <a href="/edit_student/{{ student.id }}" class="btn btn-sm bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Edit Profile">
+                                    <i class="bi bi-pencil-square fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Edit</span>
                                 </a>
+                                {% else %}
+                                <a href="/student/{{ student.id }}" class="btn btn-sm bg-light border text-dark fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="View Profile">
+                                    <i class="bi bi-eye-fill fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">View</span>
+                                </a>
+                                {% endif %}
+                                
+                                {% if session.get('can_manage_academics') or session.get('can_create_academics') %}
+                                <a href="/add_report/{{ student.id }}" class="btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Add Report">
+                                    <i class="bi bi-journal-plus fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Grades</span>
+                                </a>
+                                {% endif %}
+                                
                                 {% if session.get('can_manage_followups') or session.get('can_create_followups') %}
-                                <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-light border text-primary fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-sm transition-hover d-flex align-items-center justify-content-center" title="Add Follow-Up">
-                                    <i class="bi bi-clipboard2-heart-fill me-1"></i> Notes
+                                <a href="/add_followup/{{ student.id }}" class="btn btn-sm bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Add Follow-Up">
+                                    <i class="bi bi-clipboard2-heart-fill fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Notes</span>
                                 </a>
                                 {% endif %}
                             </div>
 
                         </div>
                     </label>
+                    {% else %}
+                    <div class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="bi bi-people fs-1"></i>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-1">No students found.</h5>
+                        <p class="small mb-0">Use the "Add Kid" button to start building your roster.</p>
+                    </div>
                     {% endfor %}
                     
                     <div id="noResultsMessage" class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4 d-none">
-                        <i class="bi bi-search fs-1 opacity-25 mb-2 d-block"></i>
+                        <i class="bi bi-search fs-1 opacity-25 mb-3 d-block"></i>
                         <h6 class="fw-bold text-dark mb-1">No students match your search.</h6>
-                        <p class="small mb-0">Try clearing the filters or typing a parent's name.</p>
+                        <p class="small mb-0">Try clearing the filters or typing a different name.</p>
                     </div>
                 </div>
             </div>
 
             <!-- ========================================== -->
-            <!-- FLOATING BULK ACTION BAR                   -->
+            <!-- FLOATING BULK ACTION BAR (Glassmorphism)   -->
             <!-- ========================================== -->
-            <div id="bulkActionBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 mb-md-5 bg-dark rounded-4 rounded-md-pill shadow-lg p-3 d-none align-items-center justify-content-between gap-3 transition-hover" style="z-index: 1060; width: 95%; max-width: 600px; border: 2px solid rgba(255,255,255,0.1);">
-                <div class="text-white fw-bold d-flex align-items-center">
-                    <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2 border border-2 border-white" style="width: 35px; height: 35px; font-size: 1.1rem;" id="selectedCountDisplay">0</div>
-                    <span class="d-none d-sm-inline">Selected</span>
+            <div id="bulkActionBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-4 mb-md-5 rounded-pill shadow-lg p-2 px-3 d-none align-items-center justify-content-between gap-3 transition-hover" style="z-index: 1060; width: 95%; max-width: 650px; background: rgba(33, 37, 41, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.15);">
+                <div class="text-white fw-bold d-flex align-items-center ms-1">
+                    <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2 border border-2 border-white shadow-sm" style="width: 35px; height: 35px; font-size: 1.1rem;" id="selectedCountDisplay">0</div>
+                    <span class="d-none d-sm-inline tracking-wide">Selected</span>
                 </div>
                 
                 <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-dark border border-secondary text-white rounded-pill fw-bold btn-sm px-3 shadow-sm transition-hover" onclick="clearSelection()">Clear</button>
+                    <button type="button" class="btn btn-outline-light border-secondary border-opacity-50 text-white rounded-pill fw-bold btn-sm px-3 shadow-sm transition-hover" onclick="clearSelection()">Clear</button>
                     
                     {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
                     <button type="submit" formaction="/bulk_followup" class="btn btn-danger rounded-pill fw-bold btn-sm px-3 shadow-sm transition-hover">
@@ -174,21 +221,25 @@
                     </button>
                     {% endif %}
                     
+                    <!-- Nutrition / Services Extension -->
                     <button type="submit" formaction="/log_services" class="btn btn-warning rounded-pill fw-bold btn-sm px-3 shadow-sm transition-hover text-darken">
-                        <i class="bi bi-basket2-fill me-1 d-none d-sm-inline"></i> Log Meals
+                        <i class="bi bi-basket2-fill me-1 d-none d-sm-inline"></i> Meals / Items
                     </button>
                 </div>
             </div>
         </form>
     </div>
 
-    <!-- MOBILE FLOATING ACTION BUTTONS (FABs) -->
+    <!-- ========================================== -->
+    <!-- MOBILE FLOATING ACTION BUTTONS (FABs)      -->
+    <!-- ========================================== -->
     <div class="d-md-none position-fixed d-flex flex-column gap-2" style="bottom: 90px; right: 20px; z-index: 1040;">
         <button type="button" id="fabToggleBulk" class="btn btn-light text-danger fw-bold shadow-lg rounded-circle border border-2 border-white d-flex align-items-center justify-content-center transition-hover" style="width: 55px; height: 55px;" onclick="toggleBulkMode()" title="Bulk Actions">
             <i class="bi bi-ui-checks-grid fs-4"></i>
         </button>
-        {% if session.get('can_create_profiles') %}
-        <a href="/add_student" class="btn btn-info text-white fw-bold shadow-lg rounded-circle border border-2 border-white d-flex align-items-center justify-content-center transition-hover" style="width: 55px; height: 55px;" title="Add Kid">
+        
+        {% if session.get('can_edit_profiles') or session.get('can_create_profiles') %}
+        <a href="/add_student" class="btn btn-primary text-white fw-bold shadow-lg rounded-circle border border-2 border-white d-flex align-items-center justify-content-center transition-hover" style="width: 55px; height: 55px;" title="Add Kid">
             <i class="bi bi-person-plus-fill fs-4"></i>
         </a>
         {% endif %}
@@ -197,8 +248,16 @@
 </div>
 
 <style>
+    /* UX Adjustments */
     .cursor-pointer { cursor: pointer; }
-    .student-item.selected-row { background-color: rgba(13, 110, 253, 0.05) !important; border-left: 4px solid #0d6efd !important; }
+    
+    /* Highlight row when checkbox is active */
+    .student-item.selected-row {
+        background-color: rgba(13, 110, 253, 0.05) !important;
+        border-left: 4px solid #0d6efd !important;
+    }
+
+    /* Prevent form-check-input clicks from double-firing the label click */
     .form-check-input { z-index: 2; position: relative; }
     .text-darken { color: #b48600 !important; }
 </style>
@@ -212,13 +271,19 @@
         
         // --- 1. FILTER & SEARCH ENGINE ---
         document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Reset all to unselected iOS pill style
+                // FIX: Use btn-transparent consistently to prevent "invisible white button" bug
                 document.querySelectorAll('.filter-btn').forEach(b => {
-                    b.classList.remove('btn-dark', 'active');
-                    b.classList.add('btn-light', 'text-muted', 'border');
+                    b.classList.remove('bg-primary', 'text-white', 'shadow-sm', 'active');
+                    b.classList.add('btn-transparent', 'text-muted');
                 });
-                this.classList.remove('btn-light', 'text-muted', 'border');
-                this.classList.add('btn-dark', 'active');
+                
+                // Activate clicked pill
+                this.classList.remove('btn-transparent', 'text-muted');
+                this.classList.add('bg-primary', 'text-white', 'shadow-sm', 'active');
+                
                 currentFilter = this.getAttribute('data-filter');
                 applyFilters();
             });
@@ -242,8 +307,9 @@
                 let matchesSearch = textContent.includes(query) || guardian.includes(query);
                 let matchesFilter = true;
 
-                if (currentFilter === 'primary') matchesFilter = grade.match(/grade\s*[1-6]\b/) || grade.includes('kindergarten');
+                if (currentFilter === 'primary') matchesFilter = grade.includes('kindergarten') || grade.includes('kg') || grade.match(/grade\s*[1-6]\b/);
                 else if (currentFilter === 'high') matchesFilter = grade.match(/grade\s*([7-9]|1[0-2])\b/);
+                else if (currentFilter === 'uni') matchesFilter = grade.includes('university') || grade.includes('vocational') || grade.includes('year');
                 else if (currentFilter === 'male') matchesFilter = gender === 'male';
                 else if (currentFilter === 'female') matchesFilter = gender === 'female';
                 else if (currentFilter === 'daily_lunch') matchesFilter = mealPlan.includes('daily hot lunch');
@@ -258,11 +324,12 @@
                 }
             });
 
-            noResults.classList.toggle('d-none', visibleCount === 0 && items.length > 0);
+            // FIX: Hide message if there are results (> 0), Show message if no results (=== 0)
+            noResults.classList.toggle('d-none', visibleCount > 0);
             updateBulkActionBar(); 
         }
 
-        // --- 2. MULTI-SELECT ENGINE ---
+        // --- 2. MULTI-SELECT & ACTION BAR ENGINE ---
         const actionBar = document.getElementById('bulkActionBar');
         const countDisplay = document.getElementById('selectedCountDisplay');
         const allCheckboxes = document.querySelectorAll('.roster-checkbox');
@@ -275,6 +342,7 @@
                 actionBar.classList.add('d-flex');
             } else {
                 actionBar.classList.add('d-none');
+                actionBar.classList.remove('d-flex');
             }
         };
 
@@ -288,23 +356,33 @@
         });
 
         window.toggleSelectAll = function() {
-            const visibleCBs = Array.from(allCheckboxes).filter(cb => cb.closest('.student-item').style.display !== 'none');
-            const allChecked = visibleCBs.every(cb => cb.checked);
-            visibleCBs.forEach(cb => {
+            const visibleCheckboxes = Array.from(allCheckboxes).filter(cb => {
+                return cb.closest('.student-item').style.display !== 'none';
+            });
+            const allChecked = visibleCheckboxes.every(cb => cb.checked);
+            visibleCheckboxes.forEach(cb => {
                 cb.checked = !allChecked;
-                cb.closest('.student-item').classList.toggle('selected-row', !allChecked);
+                const row = cb.closest('.student-item');
+                if (!allChecked) row.classList.add('selected-row');
+                else row.classList.remove('selected-row');
             });
             updateBulkActionBar();
         };
 
         window.clearSelection = function() {
-            allCheckboxes.forEach(cb => { cb.checked = false; cb.closest('.student-item').classList.remove('selected-row'); });
+            allCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.closest('.student-item').classList.remove('selected-row');
+            });
             updateBulkActionBar();
         };
 
         window.toggleBulkMode = function(forceEnable = null) {
-            if (forceEnable !== null) isBulkMode = forceEnable;
-            else isBulkMode = !isBulkMode;
+            if (forceEnable !== null) {
+                isBulkMode = forceEnable;
+            } else {
+                isBulkMode = !isBulkMode;
+            }
             
             const btnToggle = document.getElementById('btnToggleBulk');
             const fabToggle = document.getElementById('fabToggleBulk');
@@ -313,22 +391,27 @@
             const checkboxes = document.querySelectorAll('.bulk-checkbox-wrapper');
             
             if (isBulkMode) {
-                if(btnToggle) { btnToggle.classList.replace('btn-outline-danger', 'btn-danger'); btnToggle.classList.add('text-white'); }
-                if(fabToggle) { fabToggle.classList.replace('btn-light', 'btn-danger'); fabToggle.classList.add('text-white'); }
-                if(btnSelectVisible) btnSelectVisible.classList.remove('d-none');
-                if(progFilters) progFilters.classList.replace('d-none', 'd-flex');
+                if(btnToggle) { btnToggle.classList.remove('btn-light', 'text-danger', 'border'); btnToggle.classList.add('btn-danger', 'text-white'); }
+                if(fabToggle) { fabToggle.classList.remove('btn-light', 'text-danger'); fabToggle.classList.add('btn-danger', 'text-white'); }
+                if(btnSelectVisible) { btnSelectVisible.classList.remove('d-none'); btnSelectVisible.classList.add('d-flex'); }
+                if(progFilters) { progFilters.classList.remove('d-none'); progFilters.classList.add('d-flex'); }
                 checkboxes.forEach(cb => cb.classList.remove('d-none'));
             } else {
-                if(btnToggle) { btnToggle.classList.replace('btn-danger', 'btn-outline-danger'); btnToggle.classList.remove('text-white'); }
-                if(fabToggle) { fabToggle.classList.replace('btn-danger', 'btn-light'); fabToggle.classList.remove('text-white'); }
-                if(btnSelectVisible) btnSelectVisible.classList.add('d-none');
-                if(progFilters) progFilters.classList.replace('d-flex', 'd-none');
+                if(btnToggle) { btnToggle.classList.remove('btn-danger', 'text-white'); btnToggle.classList.add('btn-light', 'text-danger', 'border'); }
+                if(fabToggle) { fabToggle.classList.remove('btn-danger', 'text-white'); fabToggle.classList.add('btn-light', 'text-danger'); }
+                if(btnSelectVisible) { btnSelectVisible.classList.add('d-none'); btnSelectVisible.classList.remove('d-flex'); }
+                if(progFilters) { progFilters.classList.add('d-none'); progFilters.classList.remove('d-flex'); }
                 checkboxes.forEach(cb => cb.classList.add('d-none'));
+                
+                // Clear active bulk filters and return to "all" when closing bulk mode
+                const allBtn = document.querySelector('[data-filter="all"]');
+                if (allBtn) allBtn.click();
+                
                 clearSelection();
             }
         };
 
-        // --- 3. AUTO-LAUNCH LOGIC ---
+        // Auto-enable bulk mode if URL has ?mode=bulk (Fixes the Dashboard Index bug)
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'bulk') {
             setTimeout(() => { 

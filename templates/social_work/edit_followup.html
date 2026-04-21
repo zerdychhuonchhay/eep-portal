@@ -2,83 +2,84 @@
 
 {% block title %}Edit Report: {{ student.first_name }}{% endblock %}
 
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+{% endblock %}
+
 {% block main %}
-<div class="container-fluid mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 900px;">
+<div class="container-fluid container-xl mt-3 mt-md-4 mb-5 pb-5 px-3 px-md-4 mx-auto" style="max-width: 1000px;">
 
     <!-- NATIVE iOS/ANDROID STYLE HEADER -->
-    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
-        <a href="/student/{{ student.id }}/timeline" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 1.05rem;">
-            <i class="bi bi-chevron-left fs-5 me-1" style="margin-left: -5px; margin-top: -2px;"></i> Back to Timeline
+    <div class="mb-4 px-1 d-flex justify-content-between align-items-center">
+        <a href="/student/{{ student.id }}/timeline" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem; letter-spacing: -0.2px;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Back to Timeline
         </a>
     </div>
 
     <!-- PAGE TITLE -->
-    <div class="d-flex align-items-center mb-4 px-3 px-md-0">
-        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Monthly Report</h3>
+    <div class="d-flex align-items-center mb-4 px-1">
+        <div>
+            <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Monthly Report</h2>
+            <p class="text-muted small mb-0 fw-bold">Updating a field visit record for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
+        </div>
     </div>
 
     <form action="/edit_followup/{{ followup.id }}" method="post" id="editFollowupForm" class="needs-validation" novalidate>
         
-        <!-- SECTION 1: LOGISTICS -->
-        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">1. Logistics</h6>
+        <!-- ========================================== -->
+        <!-- SECTION 1: CLIENT INFORMATION & LOGISTICS  -->
+        <!-- ========================================== -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 1: Logistics</h6>
         <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
             <div class="card-body p-4">
+                
+                <!-- Reference Card -->
+                <div class="bg-light p-3 rounded-4 mb-4 border border-secondary border-opacity-10 d-flex justify-content-between align-items-center shadow-xs">
+                    <div>
+                        <span class="d-block text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Student / ID</span>
+                        <span class="fw-bold text-dark fs-6">{{ student.first_name }} {{ student.last_name }} <span class="badge bg-white border text-muted ms-1 font-monospace">{{ student.ngo_id }}</span></span>
+                    </div>
+                    <div class="text-end">
+                        <span class="d-block text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Guardian</span>
+                        <span class="fw-bold text-dark small"><i class="bi bi-person-badge-fill text-info me-1"></i>{{ student.guardian_name if student.guardian_name else 'Not Listed' }}</span>
+                    </div>
+                </div>
+
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Date of Visit *</label>
-                        <input type="date" class="form-control bg-light border-0 fw-bold" name="followup_date" value="{{ followup.followup_date }}" required>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Date of Follow-up *</label>
+                        <input type="date" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2" name="followup_date" value="{{ followup.followup_date }}" required>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Method/Location *</label>
-                        <select name="location" id="locationSelect" class="form-select bg-light border-0 fw-bold" required>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Location / Method *</label>
+                        <select name="location" id="locationSelect" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2" required>
                             <option value="Home Visit" {% if followup.location == 'Home Visit' %}selected{% endif %}>🏠 Home Visit</option>
                             <option value="School Visit" {% if followup.location == 'School Visit' %}selected{% endif %}>🏫 School Visit</option>
                             <option value="Office Visit" {% if followup.location == 'Office Visit' %}selected{% endif %}>🏢 Office Visit</option>
                             <option value="Phone Call" {% if followup.location == 'Phone Call' %}selected{% endif %}>📱 Phone Call</option>
                             <option value="Sponsor Letter Update" {% if followup.location == 'Sponsor Letter Update' %}selected{% endif %}>✉️ Sponsor Letter Update</option>
+                            <option value="Other" {% if followup.location not in ['Home Visit', 'School Visit', 'Office Visit', 'Phone Call', 'Sponsor Letter Update'] %}selected{% endif %}>Other</option>
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Completed By *</label>
-                        <input type="text" class="form-control bg-light border-0 fw-bold" name="completed_by" value="{{ followup.completed_by }}" required>
+                        <input type="text" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2 text-primary" name="completed_by" value="{{ followup.completed_by }}" required>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- ========================================== -->
-        <!-- TASK SELECTOR (The Bridge Logic)           -->
+        <!-- SPONSOR LETTER WORKFLOW (Toggleable)       -->
         <!-- ========================================== -->
-        <div class="row g-3 mb-4 px-3 px-md-0">
-            <div class="col-6">
-                <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-success border-4">
-                    <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
-                        <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="sponsorLetterToggle" name="is_sponsor_update" 
-                        {% if followup.letter_quarter or followup.location == 'Sponsor Letter Update' %}checked{% endif %}>
-                        <label class="form-check-label fw-bold text-success" for="sponsorLetterToggle">Sponsor Letter</label>
-                    </div>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="card shadow-sm border-0 rounded-4 h-100 transition-hover bg-white p-3 text-center border-bottom border-primary border-4">
-                    <div class="form-check form-switch d-flex flex-column align-items-center gap-2">
-                        <input class="form-check-input ms-0 fs-3" type="checkbox" role="switch" id="statusUpdateToggle" name="is_master_update"
-                        {% if followup.home_condition or followup.risk_factors or followup.parent_working_notes %}checked{% endif %}>
-                        <label class="form-check-label fw-bold text-primary" for="statusUpdateToggle">Significant Change</label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TASK: SPONSOR LETTER CYCLE -->
         <div id="sponsorLetterSection" style="display: none;">
-            <h6 class="fw-bold text-success text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Sponsor Letter Cycle</h6>
+            <h6 class="fw-bold text-success text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-envelope-paper-heart me-1"></i>Sponsor Letter Cycle</h6>
             <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-success bg-opacity-10 border border-success border-opacity-25">
                 <div class="card-body p-4">
                     <div class="row g-3 mb-4">
                         <div class="col-6">
-                            <label class="form-label small fw-bold text-success-emphasis">Quarter</label>
-                            <select name="letter_quarter" class="form-select border-0 shadow-sm fw-bold">
+                            <label class="form-label small fw-bold text-success-emphasis text-uppercase">Quarter</label>
+                            <select name="letter_quarter" class="form-select border-0 shadow-sm fw-bold px-3 py-2 bg-white">
                                 <option value="">N/A</option>
                                 <option value="Q1" {% if followup.letter_quarter == 'Q1' %}selected{% endif %}>Q1 (Jan-Mar)</option>
                                 <option value="Q2" {% if followup.letter_quarter == 'Q2' %}selected{% endif %}>Q2 (Apr-Jun)</option>
@@ -87,207 +88,299 @@
                             </select>
                         </div>
                         <div class="col-6">
-                            <label class="form-label small fw-bold text-success-emphasis">Year</label>
-                            <input type="number" class="form-control border-0 shadow-sm fw-bold" name="letter_year" value="{{ followup.letter_year if followup.letter_year else '2025' }}">
+                            <label class="form-label small fw-bold text-success-emphasis text-uppercase">Year</label>
+                            <input type="number" class="form-control border-0 shadow-sm fw-bold px-3 py-2 bg-white" name="letter_year" value="{{ followup.letter_year if followup.letter_year else '2025' }}">
                         </div>
                     </div>
-                    <div class="bg-white rounded-4 shadow-sm p-3 mb-3">
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_given" value="Yes" id="lg" {% if followup.letter_given == 'Yes' %}checked{% endif %}><label class="ms-2 fw-bold" for="lg">1. Given to Student</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_translated" value="Yes" id="lt" {% if followup.letter_translated == 'Yes' %}checked{% endif %}><label class="ms-2 fw-bold" for="lt">2. Translated</label></div>
-                        <div class="form-check form-switch mb-2"><input class="form-check-input" type="checkbox" name="letter_scanned" value="Yes" id="lsc" {% if followup.letter_scanned == 'Yes' %}checked{% endif %}><label class="ms-2 fw-bold" for="lsc">3. Scanned to PDF</label></div>
-                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="letter_sent" value="Yes" id="lsn" {% if followup.letter_sent == 'Yes' %}checked{% endif %}><label class="ms-2 fw-bold" for="lsn">4. Sent to Sponsor</label></div>
+                    <div class="bg-white rounded-4 shadow-sm p-3 mb-3 border border-success border-opacity-10">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="lgiven" name="letter_given" value="Yes" {% if followup.letter_given == 'Yes' %}checked{% endif %}>
+                            <label class="form-check-label fw-bold text-dark ms-2" for="lgiven">1. Given to Student</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="ltrans" name="letter_translated" value="Yes" {% if followup.letter_translated == 'Yes' %}checked{% endif %}>
+                            <label class="form-check-label fw-bold text-dark ms-2" for="ltrans">2. Translated to English</label>
+                        </div>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="lscan" name="letter_scanned" value="Yes" {% if followup.letter_scanned == 'Yes' %}checked{% endif %}>
+                            <label class="form-check-label fw-bold text-dark ms-2" for="lscan">3. Scanned to PDF</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="lsent" name="letter_sent" value="Yes" {% if followup.letter_sent == 'Yes' %}checked{% endif %}>
+                            <label class="form-check-label fw-bold text-dark ms-2" for="lsent">4. Sent to Sponsor</label>
+                        </div>
                     </div>
-                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="letter_notes" rows="2" placeholder="Letter notes (delays, missing drawings, etc.)...">{{ followup.letter_notes if followup.letter_notes else '' }}</textarea>
+                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="letter_notes" rows="2" placeholder="Letter notes...">{{ followup.letter_notes if followup.letter_notes else '' }}</textarea>
                 </div>
             </div>
         </div>
 
-        <!-- TASK: MASTER DATA UPDATES (Significant Changes) -->
-        <div id="permanentStatusSection" style="display: none;">
-            <h6 class="fw-bold text-primary text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Task: Master Data Significant Changes</h6>
-            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4">
-                <div class="card-body p-4">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
-                            <select name="home_condition" class="form-select bg-light border-0 fw-bold">
-                                <option value="Excellent" {% if followup.home_condition == 'Excellent' %}selected{% endif %}>Excellent</option>
-                                <option value="Good" {% if followup.home_condition == 'Good' or not followup.home_condition %}selected{% endif %}>Good</option>
-                                <option value="Average" {% if followup.home_condition == 'Average' %}selected{% endif %}>Average</option>
-                                <option value="Poor" {% if followup.home_condition == 'Poor' %}selected{% endif %}>Poor (Slum Rental)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Church / Prayer Attendance</label>
-                            <select name="church_attendance" class="form-select bg-light border-0 fw-bold">
-                                <option value="Yes" {% if followup.church_attendance == 'Yes' %}selected{% endif %}>Yes (Regularly)</option>
-                                <option value="No" {% if followup.church_attendance == 'No' %}selected{% endif %}>No (Never)</option>
-                                <option value="Occasionally" {% if followup.church_attendance == 'Occasionally' %}selected{% endif %}>Occasionally</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Work Status (Mother / Father)</label>
-                            <div class="p-2 border rounded bg-light">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="small fw-bold">Mother:</span>
-                                    <select name="mother_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none">
-                                        <option>Select...</option><option {% if followup.mother_working == 'Yes' %}selected{% endif %}>Yes</option><option {% if followup.mother_working == 'No' %}selected{% endif %}>No</option><option {% if followup.mother_working == 'Searching' %}selected{% endif %}>Searching</option>
-                                    </select>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold">Father:</span>
-                                    <select name="father_working" class="form-select form-select-sm border-0 bg-transparent w-auto py-0 shadow-none">
-                                        <option>Select...</option><option {% if followup.father_working == 'Yes' %}selected{% endif %}>Yes</option><option {% if followup.father_working == 'No' %}selected{% endif %}>No</option><option {% if followup.father_working == 'Searching' %}selected{% endif %}>Searching</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Income Narrative / Jobs</label>
-                            <textarea class="form-control bg-light border-0 khmer-font" name="parent_working_notes" rows="2" placeholder="Detail any job losses or new income sources...">{{ followup.parent_working_notes if followup.parent_working_notes else '' }}</textarea>
-                        </div>
-                    </div>
-                    <div class="mb-0 p-3 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
-                        <label class="form-label fw-bold text-danger mb-3 text-uppercase small">Update Risk Factors (Permanent Records)</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% set risks = ['Abandonment', 'Abuse', 'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 'Housing Insecurity', 'Mental Health', 'Neglect', 'Orphan', 'Marital Crisis', 'Drug use/selling', 'Single Parent'] %}
-                            {% for r in risks %}
-                            <input type="checkbox" class="btn-check" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}" {% if followup.risk_factors and r in followup.risk_factors %}checked{% endif %}>
-                            <label class="btn btn-white border rounded-pill fw-bold py-1 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ loop.index }}">{{ r }}</label>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION 2: MONTHLY PULSE -->
         <div id="standardFollowupSections">
-            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">2. Thorough Monthly Progress</h6>
+            <!-- ========================================== -->
+            <!-- SECTION 2: WELL-BEING PROGRESS             -->
+            <!-- ========================================== -->
+            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 2: Well-being Progress</h6>
             <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
                 <div class="card-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Physical Health</label>
-                            <select name="physical_health" class="form-select bg-light border-0 fw-bold">
+                            <select name="physical_health" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
                                 <option value="Good" {% if followup.physical_health == 'Good' %}selected{% endif %}>Good</option>
                                 <option value="Average" {% if followup.physical_health == 'Average' %}selected{% endif %}>Average</option>
-                                <option value="Poor" {% if followup.physical_health in ['Poor', 'Requires Medical Attention'] %}selected{% endif %}>Poor / Needs Attention</option>
+                                <option value="Poor" {% if followup.physical_health in ['Poor', 'Requires Medical Attention'] %}selected{% endif %}>Poor</option>
                             </select>
-                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="physical_health_detail" rows="2" placeholder="If average/poor, share problem and how we can help...">{{ followup.physical_health_detail if followup.physical_health_detail else '' }}</textarea>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Social Interaction</label>
-                            <select name="social_interaction" class="form-select bg-light border-0 fw-bold">
+                            <select name="social_interaction" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
                                 <option value="Good" {% if followup.social_interaction == 'Good' %}selected{% endif %}>Good</option>
                                 <option value="Average" {% if followup.social_interaction == 'Average' %}selected{% endif %}>Average</option>
-                                <option value="Isolated" {% if followup.social_interaction in ['Isolated', 'Withdrawn', 'Isolated/Withdrawn'] %}selected{% endif %}>Isolated / Withdrawn</option>
+                                <option value="Isolated" {% if followup.social_interaction in ['Isolated', 'Withdrawn'] %}selected{% endif %}>Isolated</option>
+                                <option value="Aggressive" {% if followup.social_interaction == 'Aggressive' %}selected{% endif %}>Aggressive</option>
                             </select>
-                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="social_interaction_detail" rows="2" placeholder="Notes on friends, mood, or behavior...">{{ followup.social_interaction_detail if followup.social_interaction_detail else '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Health & Social Details</label>
+                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="physical_health_detail" rows="2" placeholder="If average or poor, share main problem...">{{ followup.physical_health_detail if followup.physical_health_detail else '' }}</textarea>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <label class="form-label small fw-bold text-danger text-uppercase"><i class="bi bi-exclamation-octagon-fill me-1"></i> Evidence of Drugs, Alcohol, or Violence?</label>
+                            <select name="evidence_drugs_violence" class="form-select bg-danger bg-opacity-10 border-0 shadow-sm fw-bold text-danger px-3 py-2">
+                                <option value="No" {% if followup.evidence_drugs_violence == 'No' or not followup.evidence_drugs_violence %}selected{% endif %}>No signs observed</option>
+                                <option value="Yes" {% if followup.evidence_drugs_violence == 'Yes' %}selected{% endif %}>Yes (Details required below)</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="drugs_violence_detail" rows="2">{{ followup.substance_abuse_evidence if followup.substance_abuse_evidence else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- SECTION 2a: RISK FACTORS & HOME LIFE       -->
+            <!-- ========================================== -->
+            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 2a: Risk Factors & Home</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
+                <div class="card-body p-4">
+                    <div class="mb-4 p-4 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
+                        <label class="form-label fw-bold text-danger mb-3 text-uppercase small"><i class="bi bi-shield-exclamation-fill me-1"></i> Current Risk Factors (Select ALL apply)</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% set risks = ['Abandonment', 'Emotional Abuse', 'Physical Abuse', 'Sexual Abuse', 'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 'Forced Begging', 'Garbage Collection', 'Gang Involvement', 'Sexual Grooming', 'Housing Insecurity', 'Mental Health Challenges', 'Neglect', 'Orphan', 'Parent Marital Status Change', 'Parent in Jail', 'Physical Health Challenges', 'Drug use/selling (Family)', 'Drug use/selling (Child)', 'Single Parent'] %}
+                            {% for r in risks %}
+                            <input type="checkbox" class="btn-check" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}" {% if followup.risk_factors and r in followup.risk_factors %}checked{% endif %}>
+                            <label class="btn btn-white border rounded-pill fw-bold py-2 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ loop.index }}">{{ r }}</label>
+                            {% endfor %}
+                        </div>
+                        <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3 mt-3" name="risk_details" rows="3" placeholder="Details for selected risks...">{{ followup.risk_details if followup.risk_details else '' }}</textarea>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
+                            <select name="home_condition" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="Excellent" {% if followup.home_condition == 'Excellent' %}selected{% endif %}>Excellent</option>
+                                <option value="Good" {% if followup.home_condition == 'Good' or not followup.home_condition %}selected{% endif %}>Good</option>
+                                <option value="Average" {% if followup.home_condition == 'Average' %}selected{% endif %}>Average</option>
+                                <option value="Poor" {% if followup.home_condition == 'Poor' %}selected{% endif %}>Poor</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Home Life Stability</label>
-                            <select name="home_life" class="form-select bg-light border-0 fw-bold">
-                                <option value="Stable" {% if followup.home_life in ['Stable', 'Good'] %}selected{% endif %}>Stable</option>
-                                <option value="Strained" {% if followup.home_life in ['Strained', 'Average'] %}selected{% endif %}>Financial Strain</option>
-                                <option value="Unstable" {% if followup.home_life in ['Unstable', 'Poor', 'High Conflict/Unstable'] %}selected{% endif %}>High Conflict / Unstable</option>
+                            <label class="form-label small fw-bold text-muted text-uppercase">Attending Church / Prayer?</label>
+                            <select name="church_attendance" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="Yes" {% if followup.church_attendance == 'Yes' %}selected{% endif %}>Regularly</option>
+                                <option value="Occasionally" {% if followup.church_attendance == 'Occasionally' %}selected{% endif %}>Occasionally</option>
+                                <option value="No" {% if followup.church_attendance == 'No' or not followup.church_attendance %}selected{% endif %}>No / Never</option>
                             </select>
-                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="home_life_detail" rows="2" placeholder="Describe current living conditions...">{{ followup.home_life_detail if followup.home_life_detail else '' }}</textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">School Behavior / Challenges</label>
-                            <select name="behavior_in_class" class="form-select bg-light border-0 fw-bold">
-                                <option value="Good" {% if followup.behavior_in_class == 'Good' %}selected{% endif %}>Good</option>
-                                <option value="Average" {% if followup.behavior_in_class == 'Average' %}selected{% endif %}>Average</option>
-                                <option value="Disruptive" {% if followup.behavior_in_class in ['Disruptive', 'Poor'] %}selected{% endif %}>Poor / Disruptive</option>
-                            </select>
-                            <textarea class="form-control bg-light border-0 khmer-font mt-2" name="behavior_in_class_detail" rows="2" placeholder="Learning difficulties or disorders details...">{{ followup.behavior_in_class_detail if followup.behavior_in_class_detail else '' }}</textarea>
                         </div>
                     </div>
 
-                    <div class="row g-3 mt-1">
+                    <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Attendance & Days Missed</label>
-                            <input type="text" class="form-control bg-light border-0 fw-bold" name="attendance_notes" value="{{ followup.attendance_notes if followup.attendance_notes else '' }}" placeholder="e.g. Stop going since Aug, Missed 4 days...">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Parents/Guardians Working?</label>
+                            <div class="p-3 border rounded-4 bg-light shadow-xs border-secondary border-opacity-10">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small fw-bold text-dark"><i class="bi bi-person-fill text-danger me-1"></i>Mother:</span>
+                                    <select name="mother_working" class="form-select form-select-sm border-0 bg-white shadow-sm w-auto py-1 fw-bold">
+                                        <option>Select One</option>
+                                        <option {% if followup.mother_working == 'Yes' %}selected{% endif %}>Yes</option>
+                                        <option {% if followup.mother_working == 'No' %}selected{% endif %}>No</option>
+                                        <option {% if followup.mother_working == 'Searching' %}selected{% endif %}>Searching</option>
+                                    </select>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="small fw-bold text-dark"><i class="bi bi-person-fill text-primary me-1"></i>Father:</span>
+                                    <select name="father_working" class="form-select form-select-sm border-0 bg-white shadow-sm w-auto py-1 fw-bold">
+                                        <option>Select One</option>
+                                        <option {% if followup.father_working == 'Yes' %}selected{% endif %}>Yes</option>
+                                        <option {% if followup.father_working == 'No' %}selected{% endif %}>No</option>
+                                        <option {% if followup.father_working == 'Searching' %}selected{% endif %}>Searching</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-danger text-uppercase">Evidence of Drugs, Alcohol, or Violence?</label>
-                            <select name="evidence_drugs_violence" class="form-select bg-light border-0 fw-bold text-danger">
-                                <option value="No" {% if followup.evidence_drugs_violence == 'No' %}selected{% endif %}>No signs or reports</option>
-                                <option value="Yes" {% if followup.evidence_drugs_violence == 'Yes' %}selected{% endif %}>Yes (Provide detail below)</option>
+                            <label class="form-label small fw-bold text-muted text-uppercase">Current Work / Income Notes</label>
+                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 h-100" name="parent_working_notes" placeholder="Write each family member's current work...">{{ followup.parent_working_notes if followup.parent_working_notes else '' }}</textarea>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Home Life / Condition Narrative</label>
+                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="home_life_detail" rows="2" placeholder="Describe living conditions, slum safety, rent concerns...">{{ followup.home_life_detail if followup.home_life_detail else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- SECTION 3: EDUCATIONAL PROGRESS            -->
+            <!-- ========================================== -->
+            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 3: Educational Progress</h6>
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Learning Difficulties or Disorders?</label>
+                            <select name="learning_difficulties" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="No" {% if followup.learning_difficulties == 'No' or not followup.learning_difficulties %}selected{% endif %}>No</option>
+                                <option value="Suspected" {% if followup.learning_difficulties == 'Suspected' %}selected{% endif %}>Suspected</option>
+                                <option value="Confirmed" {% if followup.learning_difficulties == 'Confirmed' %}selected{% endif %}>Confirmed Diagnosis</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Behavior in Class</label>
+                            <select name="behavior_in_class" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="Good" {% if followup.behavior_in_class == 'Good' %}selected{% endif %}>Good</option>
+                                <option value="Average" {% if followup.behavior_in_class == 'Average' %}selected{% endif %}>Average</option>
+                                <option value="Poor" {% if followup.behavior_in_class in ['Disruptive', 'Poor'] %}selected{% endif %}>Poor / Disruptive</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="learning_difficulties_detail" rows="2" placeholder="If yes, please explain how we are helping...">{{ followup.learning_difficulties_detail if followup.learning_difficulties_detail else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Peer Issues?</label>
+                            <select name="peer_issues" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="None" {% if followup.peer_issues == 'None' or not followup.peer_issues %}selected{% endif %}>None</option>
+                                <option value="Victim" {% if followup.peer_issues == 'Victim' %}selected{% endif %}>Victim</option>
+                                <option value="Instigator" {% if followup.peer_issues == 'Instigator' %}selected{% endif %}>Instigator</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Peer Issues Detail</label>
+                            <input type="text" class="form-control bg-light border-0 shadow-sm khmer-font px-3 py-2" name="peer_issues_detail" value="{{ followup.peer_issues_detail if followup.peer_issues_detail else '' }}" placeholder="If selected, explain what we are doing to help...">
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Teacher Involvement</label>
+                            <input type="text" class="form-control bg-light border-0 shadow-sm khmer-font px-3 py-2" name="teacher_detail" value="{{ followup.teacher_involvement_detail if followup.teacher_involvement_detail else '' }}" placeholder="Comments or concerns from the child's teacher...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Transportation</label>
+                            <select name="transportation" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="Good" {% if followup.transportation == 'Good' %}selected{% endif %}>Good</option>
+                                <option value="Needs Repair" {% if followup.transportation == 'Needs Repair' %}selected{% endif %}>Needs Repair</option>
+                                <option value="Walking" {% if followup.transportation == 'Walking' %}selected{% endif %}>Walking (Far)</option>
+                                <option value="None" {% if followup.transportation == 'None' %}selected{% endif %}>None</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Tutoring</label>
+                            <select name="tutoring_participation" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="Good" {% if followup.tutoring_participation == 'Good' %}selected{% endif %}>Good</option>
+                                <option value="Average" {% if followup.tutoring_participation == 'Average' %}selected{% endif %}>Average</option>
+                                <option value="Poor" {% if followup.tutoring_participation == 'Poor' %}selected{% endif %}>Poor</option>
+                                <option value="N/A" {% if followup.tutoring_participation == 'N/A' %}selected{% endif %}>N/A</option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION 3: RISK TRACKER -->
-            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">3. Current Risk Level</h6>
+            <!-- ========================================== -->
+            <!-- SECTION 5: PROTECTION & RISK ASSESSMENT   -->
+            <!-- ========================================== -->
+            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 5: Final Assessment</h6>
             <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
-                <div class="card-body p-4 text-center">
-                    <label class="form-label fw-bold small text-danger text-uppercase d-block mb-3">Rate the overall situation right now</label>
-                    <div class="d-flex justify-content-between gap-2">
-                        {% set risk_ratings = [
-                            {'val': 1, 'label': 'Safe', 'color': 'success'},
-                            {'val': 2, 'label': 'Stable', 'color': 'info'},
-                            {'val': 3, 'label': 'Concern', 'color': 'warning'},
-                            {'val': 4, 'label': 'Urgent', 'color': 'danger'},
-                            {'val': 5, 'label': 'Crisis', 'color': 'danger'}
-                        ] %}
-                        {% for rr in risk_ratings %}
-                        <div class="flex-fill">
-                            <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}" {% if followup.risk_level|int == rr.val %}checked{% endif %} required>
-                            <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}">{{ rr.val }}<br><small>{{ rr.label }}</small></label>
+                <div class="card-body p-4">
+                    <div class="mb-4 text-center">
+                        <label class="form-label fw-bold small text-danger text-uppercase d-block mb-3">Overall Risk Rating (Visual Scale)</label>
+                        <div class="d-flex justify-content-between gap-2">
+                            {% set risk_ratings = [
+                                {'val': 1, 'label': 'Safe', 'color': 'success'},
+                                {'val': 2, 'label': 'Stable', 'color': 'info'},
+                                {'val': 3, 'label': 'Concern', 'color': 'warning'},
+                                {'val': 4, 'label': 'Urgent', 'color': 'danger'},
+                                {'val': 5, 'label': 'Crisis', 'color': 'danger'}
+                            ] %}
+                            {% for rr in risk_ratings %}
+                            <div class="flex-fill">
+                                <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}" {% if followup.risk_level|int == rr.val %}checked{% endif %} required>
+                                <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}"><span class="fs-5">{{ rr.val }}</span><br><small style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">{{ rr.label }}</small></label>
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
+                    </div>
+
+                    <!-- RED ZONE: Child Protection -->
+                    <div class="p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
+                        <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between align-items-center mb-3">
+                            <span><i class="bi bi-shield-exclamation-fill me-2 fs-5"></i>Child Protection Concerns?</span>
+                            <span class="badge bg-danger text-white px-2 py-1 shadow-sm">RED ZONE</span>
+                        </label>
+                        <select name="has_protection_concerns" class="form-select bg-white border-danger border-opacity-50 fw-bold text-danger mb-3 shadow-sm px-3 py-2">
+                            <option value="No" {% if not followup.child_protection_concerns %}selected{% endif %}>No Concerns Identified</option>
+                            <option value="Yes" {% if followup.child_protection_concerns %}selected{% endif %}>YES - REPORT IMMEDIATELY</option>
+                        </select>
+                        <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="child_protection_concerns" rows="3" placeholder="If yes, please explain concerns...">{{ followup.child_protection_concerns if followup.child_protection_concerns else '' }}</textarea>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Increased risk of Trafficking, Exploitation, Abuse?</label>
+                        <select name="trafficking_risk" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                            <option value="No" {% if followup.trafficking_risk == 'No' or not followup.trafficking_risk %}selected{% endif %}>No</option>
+                            <option value="Yes" {% if followup.trafficking_risk == 'Yes' %}selected{% endif %}>Yes (Notify Protection Team)</option>
+                        </select>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SECTION 4: NARRATIVE -->
-        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">4. Narrative & Action</h6>
+        <!-- ========================================== -->
+        <!-- FINAL NARRATIVE & STAFF NOTES              -->
+        <!-- ========================================== -->
+        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 4: Staff Notes</h6>
         <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
             <div class="card-body p-4">
                 <div class="mb-4">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Visit Narrative (Detailed Report) *</label>
-                    <textarea class="form-control bg-light border-0 khmer-font p-3" name="general_notes" id="general_notes" rows="6" placeholder="Describe the visit, child's story, and observations..." required>{{ followup.general_notes if followup.general_notes else '' }}</textarea>
+                    <label class="form-label small fw-bold text-muted text-uppercase">General Visit Notes / Information Learned *</label>
+                    <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="general_notes" id="general_notes" rows="6" placeholder="Describe the visit, child's story, and observations..." required>{{ followup.general_notes if followup.general_notes else '' }}</textarea>
                 </div>
                 
-                <!-- RED ZONE -->
-                <div class="p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
-                    <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between">
-                        <span><i class="bi bi-shield-exclamation-fill me-1"></i>Urgent Protection Concerns?</span>
-                        <span class="badge bg-danger text-white">RED ZONE</span>
-                    </label>
-                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3 mt-1" name="child_protection_concerns" rows="2" placeholder="Only if immediate danger detected (abuse, trafficking, exploitation)...">{{ followup.child_protection_concerns if followup.child_protection_concerns else '' }}</textarea>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Trafficking Risk?</label>
-                        <select name="trafficking_risk" class="form-select bg-light border-0 fw-bold">
-                            <option value="No" {% if followup.trafficking_risk == 'No' %}selected{% endif %}>No</option>
-                            <option value="Yes" {% if followup.trafficking_risk == 'Yes' %}selected{% endif %}>Yes (Notify Team)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold text-primary text-uppercase">Staff Recommendations</label>
-                        <input type="text" class="form-control bg-light border-0 khmer-font p-2" name="staff_notes" value="{{ followup.staff_notes if followup.staff_notes else '' }}" placeholder="Next steps or support required...">
-                    </div>
+                <div class="mb-0">
+                    <label class="form-label small fw-bold text-primary text-uppercase">Changes / Recommendations</label>
+                    <textarea class="form-control bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm khmer-font p-3 text-dark" name="staff_notes" rows="3" placeholder="Share any changes you believe may be helpful for the child...">{{ followup.staff_notes if followup.staff_notes else '' }}</textarea>
                 </div>
             </div>
         </div>
 
+        <!-- Desktop Action Buttons -->
         <div class="d-none d-md-flex justify-content-between gap-3 mb-5">
-            <a href="/student/{{ student.id }}/timeline" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 w-50 shadow-sm transition-hover">Cancel</a>
-            <button type="submit" class="btn btn-primary fw-bold rounded-pill py-3 w-50 shadow-sm transition-hover fs-5">Update Report</button>
+            <a href="/student/{{ student.id }}/timeline" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 px-5 shadow-sm transition-hover">Cancel</a>
+            <button type="submit" class="btn btn-primary fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Update Report
+            </button>
         </div>
-
     </form>
 
-    <button type="submit" form="editFollowupForm" class="btn btn-primary text-white fw-bold shadow-lg position-fixed d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040;">
-        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Update Report</span>
+    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <button type="submit" form="editFollowupForm" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Update</span>
     </button>
 
 </div>
@@ -296,14 +389,26 @@
     .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
     
+    /* Risk Scale Color Logic */
     .btn-check:checked + label.btn-outline-success { background-color: #198754 !important; color: white !important; }
     .btn-check:checked + label.btn-outline-info { background-color: #0dcaf0 !important; color: white !important; }
     .btn-check:checked + label.btn-outline-warning { background-color: #ffc107 !important; color: black !important; }
     .btn-check:checked + label.btn-outline-danger { background-color: #dc3545 !important; color: white !important; }
-    .btn-check:checked + label.btn-white { background-color: #dc3545 !important; color: #fff !important; border-color: #dc3545 !important; }
+
+    /* Risk Pill Checkbox Logic */
+    .btn-check:checked + label.btn-white { 
+        background-color: #dc3545 !important; 
+        color: #fff !important; 
+        border-color: #dc3545 !important; 
+    }
     
     .text-darken { color: #b48600 !important; }
-    .form-control:focus, .form-select:focus { border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); background-color: #fff !important; }
+    
+    .form-control:focus, .form-select:focus { 
+        border-color: #86b7fe; 
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); 
+        background-color: #fff !important; 
+    }
 
     @media (max-width: 767.98px) {
         .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; }
@@ -314,7 +419,6 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // --- 1. DRAFT AUTO-SAVE (Prevents data loss) ---
         const draftKey = `eep_draft_edit_followup_{{ followup.id }}`;
         const form = document.getElementById('editFollowupForm');
 
@@ -325,83 +429,49 @@
                     const data = JSON.parse(saved);
                     Object.keys(data).forEach(key => {
                         const el = form.elements[key];
-                        if (el) {
+                        if (el && key !== 'completed_by') { 
                             if (el.type === 'checkbox' || el.type === 'radio') {
-                                if (Array.isArray(data[key])) {
-                                    if (data[key].includes(el.value)) el.checked = true;
-                                } else {
-                                    if (el.value === data[key]) el.checked = true;
-                                }
-                            } else {
-                                el.value = data[key];
-                            }
+                                if (Array.isArray(data[key])) { if (data[key].includes(el.value)) el.checked = true; }
+                                else { if (el.value === data[key]) el.checked = true; }
+                            } else { el.value = data[key]; }
                         }
                     });
-                    triggerToggles(); // Re-sync the hidden sections
-                    
-                    const toast = document.createElement('div');
-                    toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3';
-                    toast.style.zIndex = '9999';
-                    toast.innerHTML = `<div class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-lg border border-secondary"><i class="bi bi-cloud-check text-success me-2"></i>Draft Restored</div>`;
-                    document.body.appendChild(toast);
-                    setTimeout(() => toast.remove(), 3000);
-                } catch(e) { console.error("Draft restore failed", e); }
+                    toggleSections();
+                } catch(e) { console.error("Draft failed", e); }
             }
         }
 
-        function saveDraft() {
+        form.addEventListener('input', () => {
             const formData = new FormData(form);
             const data = {};
             for (let [key, value] of formData.entries()) {
-                if (key === 'risk_factors') {
-                    if (!data[key]) data[key] = [];
-                    data[key].push(value);
-                } else {
-                    data[key] = value;
-                }
+                if (key === 'risk_factors') { if (!data[key]) data[key] = []; data[key].push(value); }
+                else { data[key] = value; }
             }
             localStorage.setItem(draftKey, JSON.stringify(data));
-        }
+        });
 
-        form.addEventListener('input', saveDraft);
-        form.addEventListener('submit', () => localStorage.removeItem(draftKey));
-        
-        // Restore slightly after load
+        form.addEventListener('submit', () => { if (form.checkValidity()) localStorage.removeItem(draftKey); });
         setTimeout(loadDraft, 100);
 
-        // --- 2. DYNAMIC UI TOGGLES ---
         const locationSelect = document.getElementById('locationSelect');
-        const statusToggle = document.getElementById('statusUpdateToggle');
-        const statusSection = document.getElementById('permanentStatusSection');
-        const sponsorToggle = document.getElementById('sponsorLetterToggle');
         const letterSection = document.getElementById('sponsorLetterSection');
         const standardSections = document.getElementById('standardFollowupSections');
 
-        function triggerToggles() {
-            // FIX: If location is Sponsor Letter Update, auto-check the toggle to avoid redundant clicks
+        function toggleSections() {
             if (locationSelect.value === 'Sponsor Letter Update') {
-                sponsorToggle.checked = true;
-            }
-
-            // Show/Hide sections based on switches
-            statusSection.style.display = statusToggle.checked ? 'block' : 'none';
-            letterSection.style.display = sponsorToggle.checked ? 'block' : 'none';
-
-            // TASK FOCUS MODE: If specifically doing a Sponsor Letter update via dropdown, 
-            // hide the routine pulse to reduce friction.
-            if (locationSelect.value === 'Sponsor Letter Update') {
+                letterSection.style.display = 'block';
                 standardSections.style.display = 'none';
             } else {
+                letterSection.style.display = 'none';
                 standardSections.style.display = 'block';
             }
         }
 
-        locationSelect.addEventListener('change', triggerToggles);
-        statusToggle.addEventListener('change', triggerToggles);
-        sponsorToggle.addEventListener('change', triggerToggles);
-        triggerToggles(); // Initial load sync
+        locationSelect.addEventListener('change', toggleSections);
+        toggleSections(); // Init
 
-        // Bootstrap Validation
+        // Form Validation
         var forms = document.querySelectorAll('.needs-validation');
         Array.prototype.slice.call(forms).forEach(function (form) {
             form.addEventListener('submit', function (event) {
