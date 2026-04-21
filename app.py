@@ -14,6 +14,7 @@ import csv
 import os
 import time
 import json
+import calendar
 from datetime import datetime, timedelta
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory, jsonify
@@ -458,22 +459,97 @@ def index():
     
     if program_id == 0:
         staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
+        # Restored the correct subfolder path: "directory/hr_roster.html"
         return render_template("directory/hr_roster.html", staff_members=staff_members, title="Global HR Directory")
         
     elif program_id > 0:
         staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
         username = staff[0]["username"] if staff else "Staff"
 
-        recent_students = db.execute("""
-            SELECT id, first_name, last_name, khmer_name, ngo_id, profile_picture 
-            FROM students 
-            WHERE status = 'Active' AND program_id = ?
-            ORDER BY COALESCE(updated_at, joined_date, id) DESC LIMIT 5
-        """, program_id)
-        
+        # Fetch all active students for search and demographic calculations
         all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' AND program_id = ? ORDER BY first_name", program_id)
         
-        return render_template("dashboard/index.html", username=username, recent_students=recent_students, students=all_active_students)
+        # --- DYNAMIC ALERTS ENGINE ---
+        alerts = []
+        today = datetime.now()
+        today_str = today.strftime('%Y-%m-%d')
+        next_week_str = (today + timedelta(days=7)).strftime('%Y-%m-%d')
+
+        # 1. Calendar Alerts (Holidays & High Priority Tasks)
+        upcoming_events = db.execute("""
+            SELECT title, due_date, status 
+            FROM tasks 
+            WHERE due_date BETWEEN ? AND ? 
+            AND (status = 'Holiday' OR (priority = 'High' AND is_team_task = 1))
+            AND program_id = ?
+            ORDER BY due_date ASC
+        """, today_str, next_week_str, program_id)
+
+        for event in upcoming_events:
+            is_holiday = event['status'] == 'Holiday'
+            alerts.append({
+                "title": f"Upcoming: {event['title']}",
+                "message": f"Scheduled for {event['due_date'].split('T')[0]}. Check calendar for details.",
+                "icon": "bi-sun-fill" if is_holiday else "bi-calendar-event-fill",
+                "color": "warning" if is_holiday else "danger",
+                "category": "SYSTEM ALERT",
+                "link": "/calendar"
+            })
+
+        # 2. Academic Deadlines (Last 7 days of the month)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        if today.day >= (last_day - 7):
+            alerts.append({
+                "title": "Monthly Reports Due Soon",
+                "message": f"Academic grades and comments for {today.strftime('%B')} are due.",
+                "icon": "bi-journal-check",
+                "color": "success",
+                "category": "ACADEMICS",
+                "link": "/roster"
+            })
+
+        # 3. Child Protection & Risk Alerts (Recent High Risk)
+        thirty_days_ago = (today - timedelta(days=30)).strftime('%Y-%m-%d')
+        critical_risks = db.execute("""
+            SELECT f.id, f.student_id, f.risk_level, f.child_protection_concerns, s.first_name, s.last_name 
+            FROM followups f
+            JOIN students s ON f.student_id = s.id
+            WHERE f.followup_date >= ?
+            AND (f.risk_level >= 4 OR (f.child_protection_concerns IS NOT NULL AND f.child_protection_concerns != ''))
+            AND s.program_id = ?
+            ORDER BY f.followup_date DESC LIMIT 3
+        """, thirty_days_ago, program_id)
+
+        for risk in critical_risks:
+            alerts.append({
+                "title": f"Protection Alert: {risk['first_name']} {risk['last_name']}",
+                "message": "Critical risk or child protection concern logged recently.",
+                "icon": "bi-shield-exclamation-fill",
+                "color": "danger",
+                "category": "SOCIAL WORK",
+                "link": f"/student/{risk['student_id']}/timeline"
+            })
+            
+        # 4. Pending Staff Approvals (If Admin)
+        if session.get("role") == "Admin":
+            pending_staff = db.execute("SELECT COUNT(*) as count FROM staff WHERE role = 'Pending'")
+            if pending_staff and pending_staff[0]['count'] > 0:
+                count = pending_staff[0]['count']
+                alerts.append({
+                    "title": "Action Required: Pending Staff",
+                    "message": f"{count} staff member(s) waiting for access approval.",
+                    "icon": "bi-person-fill-exclamation",
+                    "color": "warning text-darken",
+                    "category": "ADMIN TASKS",
+                    "link": "/manage_staff"
+                })
+
+        # Restored the correct subfolder path: "dashboard/index.html"
+        return render_template("dashboard/index.html", 
+                               username=username, 
+                               students=all_active_students,
+                               alerts=alerts)
+
 
 
 @app.route("/dashboard")
@@ -1762,43 +1838,78 @@ def setup_calendar():
 @app.route("/calendar")
 @login_required
 def field_calendar():
+    """Main view for the Field Calendar"""
     pid = session.get("program_id", 0)
-    students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name ASC", pid, pid)
+    
+    # 1. Fetch active students for the 'Relate to Student' dropdown
+    students = db.execute("""
+        SELECT id, first_name, last_name, ngo_id 
+        FROM students 
+        WHERE status = 'Active' AND (program_id = ? OR ? = 0) 
+        ORDER BY first_name ASC
+    """, pid, pid)
+    
+    # 2. Fetch Pending Tasks for the Sidebar
+    # LOGIC: Show (My Personal Tasks) OR (Any Team Tasks in my Program)
+    # Join with staff to get the 'creator_name'
     pending_tasks = db.execute("""
-        SELECT t.*, s.first_name, s.last_name 
+        SELECT t.*, s.first_name, s.last_name, st.username AS creator_name
         FROM tasks t 
         LEFT JOIN students s ON t.student_id = s.id 
-        WHERE t.status = 'Pending' AND t.staff_id = ? AND (t.program_id = ? OR ? = 0)
-        ORDER BY t.due_date ASC LIMIT 15
-    """, session["user_id"], pid, pid)
+        LEFT JOIN staff st ON t.staff_id = st.id
+        WHERE t.status = 'Pending' 
+        AND (t.program_id = ? OR ? = 0)
+        AND (t.staff_id = ? OR t.is_team_task = 1)
+        ORDER BY t.due_date ASC LIMIT 20
+    """, pid, pid, session["user_id"])
+    
     return render_template("operations/calendar.html", students=students, pending_tasks=pending_tasks)
 
 @app.route("/api/tasks")
 @login_required
 def api_tasks():
+    """JSON Feed for FullCalendar grid"""
     view_mode = request.args.get("view", "my")
     pid = session.get("program_id", 0)
+    
+    # Filter query based on 'My Schedule' vs 'Team View' toggle
     if view_mode == "team":
-        tasks = db.execute("SELECT * FROM tasks WHERE (program_id = ? OR ? = 0)", pid, pid)
+        tasks = db.execute("""
+            SELECT t.*, st.username AS creator_name 
+            FROM tasks t 
+            LEFT JOIN staff st ON t.staff_id = st.id
+            WHERE (t.program_id = ? OR ? = 0)
+        """, pid, pid)
     else:
-        tasks = db.execute("SELECT * FROM tasks WHERE staff_id = ? AND (program_id = ? OR ? = 0)", session["user_id"], pid, pid)
+        tasks = db.execute("""
+            SELECT t.*, st.username AS creator_name 
+            FROM tasks t 
+            LEFT JOIN staff st ON t.staff_id = st.id
+            WHERE (t.program_id = ? OR ? = 0)
+            AND (t.staff_id = ? OR t.is_team_task = 1)
+        """, pid, pid, session["user_id"])
         
     events = []
     for t in tasks:
-        color = "#0d6efd" 
-        if t["status"] == "Completed": color = "#198754" 
-        elif t["priority"] == "High": color = "#dc3545" 
-        elif t["priority"] == "Low": color = "#6c757d" 
+        # Determine Color Logic
+        color = "#0d6efd" # Default Blue
+        if t["status"] == "Holiday": color = "#ffc107" # Yellow
+        elif t["status"] == "Completed": color = "#198754" # Green
+        elif t["priority"] == "High": color = "#dc3545" # Red
+        elif t["priority"] == "Low": color = "#6c757d" # Gray
 
         events.append({
             "id": t["id"],
             "title": t["title"],
             "start": t["due_date"],
             "color": color,
+            "textColor": "#000" if t["status"] == "Holiday" else "#fff",
             "extendedProps": {
                 "description": t["description"],
                 "status": t["status"],
-                "priority": t["priority"]
+                "priority": t["priority"],
+                "creator_name": t["creator_name"],
+                "is_team_task": t["is_team_task"]
             }
         })
     return jsonify(events)
@@ -1806,74 +1917,60 @@ def api_tasks():
 @app.route("/add_task", methods=["POST"])
 @login_required
 def add_task():
-    """Handles both single tasks and multi-day holiday ranges"""
+    """Handles both single tasks and holiday date ranges"""
     title = request.form.get("title")
-    due_date = request.form.get("due_date")     # Start Date (or Task Date)
-    end_date = request.form.get("end_date")     # End Date (Holidays only)
+    due_date = request.form.get("due_date") # This is Start Date
+    end_date = request.form.get("end_date") # For holidays
     description = request.form.get("description")
     priority = request.form.get("priority")
     student_id = request.form.get("student_id")
     
-    # Scope & Type
+    # 1. Clean data
+    if not student_id or student_id == "None": student_id = None
     is_team_task = 1 if request.form.get("is_team_task") == "1" else 0
     is_holiday = request.form.get("is_holiday") == "1"
     
-    # 1. Validations
-    if not student_id or student_id == "None": student_id = None
     if not title or not due_date:
-        flash("Task Title and Date are required.", "danger")
+        flash("Title and Date are required.", "danger")
         return redirect("/calendar")
         
     pid = session.get("program_id", 1)
     if pid == 0: pid = 1 
     
-    # 2. HOLIDAY RANGE LOGIC
-    if is_holiday:
+    # Holidays do not appear in to-do lists
+    status = 'Holiday' if is_holiday else 'Pending'
+    
+    # 2. HOLIDAY RANGE LOGIC: Loop through dates
+    if is_holiday and end_date and end_date != due_date:
         try:
-            # Normalize dates (Strip 'T' if coming from datetime-local)
+            # Strip time if present to get pure dates
             start_str = due_date.split('T')[0]
-            # If no end_date provided, treat as a single day
-            end_str = end_date.split('T')[0] if (end_date and end_date.strip()) else start_str
+            end_str = end_date.split('T')[0]
             
-            # --- THE FIX: PREVENT OVERLAPS ---
-            # Delete any existing holidays in this specific window to allow a "Clean Overwrite"
-            db.execute("""
-                DELETE FROM tasks 
-                WHERE status = 'Holiday' 
-                AND due_date >= ? AND due_date <= ? 
-                AND program_id = ?
-            """, start_str, end_str, pid)
-
-            # Insert new entries day-by-day
             start_dt = datetime.strptime(start_str, '%Y-%m-%d')
             end_dt = datetime.strptime(end_str, '%Y-%m-%d')
-            current_dt = start_dt
             
+            current_dt = start_dt
             while current_dt <= end_dt:
                 db.execute("""
-                    INSERT INTO tasks (
-                        title, description, due_date, priority, status, 
-                        student_id, staff_id, program_id, is_team_task
-                    ) VALUES (?, ?, ?, 'High', 'Holiday', ?, ?, ?, 1)
-                """, title, description, current_dt.strftime('%Y-%m-%d'), student_id, session["user_id"], pid)
+                    INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id, program_id, is_team_task) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, title, description, current_dt.strftime('%Y-%m-%d'), priority, status, student_id, session["user_id"], pid, 1)
                 current_dt += timedelta(days=1)
             
-            log_action(f"Logged Holiday range: {title} ({start_str} to {end_str})")
-            flash(f"Holiday '{title}' saved successfully.", "success")
+            log_action(f"Logged Holiday Range: {title}")
+            flash(f"Holiday '{title}' marked for the selected week.", "success")
         except Exception as e:
-            flash(f"Error processing holiday range: {e}", "danger")
-    
-    # 3. STANDARD TASK LOGIC
+            flash(f"Error processing range: {e}", "danger")
     else:
+        # 3. SINGLE TASK LOGIC
         db.execute("""
-            INSERT INTO tasks (
-                title, description, due_date, priority, status, 
-                student_id, staff_id, program_id, is_team_task
-            ) VALUES (?, ?, ?, ?, 'Pending', ?, ?, ?, ?)
-        """, title, description, due_date, priority, student_id, session["user_id"], pid, is_team_task)
+            INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id, program_id, is_team_task) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, title, description, due_date, priority, status, student_id, session["user_id"], pid, is_team_task)
         
-        log_action(f"Created new task: {title}")
-        flash("Task successfully added to your calendar!", "success")
+        log_action(f"Created task: {title}")
+        flash("Added to calendar!", "success")
         
     return redirect("/calendar")
 
