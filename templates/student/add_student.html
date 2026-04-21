@@ -94,16 +94,17 @@
                     </div>
                 </div>
 
-                <!-- 2. FAMILY & HOUSEHOLD LINK -->
+                <!-- 2. FAMILY & HOUSEHOLD LINK (STRICT WORKFLOW) -->
                 <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-start border-info border-4">
                     <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                         <h5 class="fw-bold text-dark mb-0"><i class="bi bi-house-heart-fill me-2 text-info"></i>Household & Kinship</h5>
                     </div>
                     <div class="card-body p-4">
+                        
                         <div class="p-3 bg-info bg-opacity-10 border border-info border-opacity-25 rounded-4 mb-4">
-                            <label class="form-label fw-bold small text-info-emphasis text-uppercase" for="householdSelect"><i class="bi bi-link-45deg me-1"></i>Link to Existing Family File</label>
-                            <select class="form-select border-info border-opacity-50 fw-bold shadow-sm" name="household_id" id="householdSelect" onchange="syncHouseholdData()">
-                                <option value="" selected>➕ CREATE NEW (Type individual family data below)</option>
+                            <label class="form-label fw-bold small text-info-emphasis text-uppercase" for="householdSelect"><i class="bi bi-link-45deg me-1"></i>Official Family File *</label>
+                            <select class="form-select border-info border-opacity-50 fw-bold shadow-sm mb-2" name="household_id" id="householdSelect" onchange="syncHouseholdData()" required>
+                                <option value="" disabled selected>Search & Select Family File...</option>
                                 {% for hh in households %}
                                     <option value="{{ hh.id }}" 
                                             data-guardian="{{ hh.guardian_name }}"
@@ -113,6 +114,10 @@
                                     </option>
                                 {% endfor %}
                             </select>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="small text-muted fw-bold"><i class="bi bi-shield-lock-fill me-1"></i> Required for enrollment.</span>
+                                <a href="/manage_households" class="btn btn-sm btn-info text-white fw-bold shadow-sm rounded-pill px-3 transition-hover"><i class="bi bi-plus-circle me-1"></i>Register New Family</a>
+                            </div>
                         </div>
 
                         <div class="row g-3">
@@ -130,19 +135,20 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Address / Village</label>
-                                <input class="form-control bg-light border-0 khmer-font p-2" id="slum_area" name="slum_area" type="text">
+                                <!-- Locked via JS once family selected -->
+                                <input class="form-control bg-light border-0 khmer-font p-2" id="slum_area" name="slum_area" type="text" readonly>
                             </div>
                         </div>
 
-                        <!-- Sync/Legacy Fields -->
+                        <!-- Read-Only Sync/Legacy Fields -->
                         <div class="row g-3 mt-1">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Guardian Name</label>
-                                <input class="form-control border-0 p-2 text-muted fw-bold" id="guardian_name" name="guardian_name" type="text">
+                                <label class="form-label fw-bold small text-muted text-uppercase">Head of House (Guardian)</label>
+                                <input class="form-control bg-light border-0 p-2 text-muted fw-bold" id="guardian_name" name="guardian_name" type="text" readonly>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Contact Phone</label>
-                                <input class="form-control border-0 p-2 text-muted fw-bold" id="phone_number" name="phone_number" type="text">
+                                <input class="form-control bg-light border-0 p-2 text-muted fw-bold" id="phone_number" name="phone_number" type="text" readonly>
                             </div>
                         </div>
                     </div>
@@ -213,25 +219,23 @@
     function syncHouseholdData() {
         const select = document.getElementById("householdSelect");
         const selected = select.options[select.selectedIndex];
+        
         const gName = document.getElementById("guardian_name");
         const pNum = document.getElementById("phone_number");
         const sArea = document.getElementById("slum_area");
 
-        if (select.value === "") {
-            gName.readOnly = false; pNum.readOnly = false; sArea.readOnly = false;
-            gName.classList.remove("bg-light", "text-muted");
-            pNum.classList.remove("bg-light", "text-muted");
-            sArea.classList.remove("bg-light", "text-muted");
+        if (!select.value) {
+            gName.value = ""; 
+            pNum.value = ""; 
+            sArea.value = "";
         } else {
             gName.value = selected.getAttribute("data-guardian") || "";
             pNum.value = selected.getAttribute("data-phone") || "";
             sArea.value = selected.getAttribute("data-slum") || "";
-            gName.readOnly = true; pNum.readOnly = true; sArea.readOnly = true;
-            gName.classList.add("bg-light", "text-muted");
-            pNum.classList.add("bg-light", "text-muted");
-            sArea.classList.add("bg-light", "text-muted");
         }
     }
+    
+    // Run once on load to ensure fields are correct if browser auto-fills
     document.addEventListener("DOMContentLoaded", syncHouseholdData);
 </script>
 {% endblock %}

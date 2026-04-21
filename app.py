@@ -686,10 +686,19 @@ def add_student():
             return render_template("_layouts/apology.html", message="NGO ID, First Name, and Last Name are required.")
 
         if not household_id:
-            household_id = None 
+            if guardian_name:
+                # Auto-create the household to prevent orphaned students!
+                db.execute("""
+                    INSERT INTO households (guardian_name, phone_number, slum_area)
+                    VALUES (?, ?, ?)
+                """, guardian_name, phone, slum)
+                # Grab the newly created ID
+                household_id = db.execute("SELECT id FROM households ORDER BY id DESC LIMIT 1")[0]['id']
+            else:
+                household_id = None 
 
         pid = session.get("program_id", 1)
-        if pid == 0: pid = 1 # Fallback to default if central admin adds a student
+        if pid == 0: pid = 1
 
         try:
             db.execute("""
@@ -821,14 +830,23 @@ def manage_households():
             guardian = request.form.get("guardian_name")
             phone = request.form.get("phone_number")
             slum = request.form.get("slum_area")
+            income = request.form.get("household_income")
+            headcount = request.form.get("total_headcount")
+            adults = request.form.get("adults_in_home")
+            living = request.form.get("living_conditions")
+            notes = request.form.get("notes")
             
             if not guardian:
                 flash("Guardian Name is required.", "danger")
             else:
-                db.execute("INSERT INTO households (guardian_name, phone_number, slum_area) VALUES (?, ?, ?)",
-                           guardian, phone, slum)
+                db.execute("""
+                    INSERT INTO households (
+                        guardian_name, phone_number, slum_area, household_income, 
+                        total_headcount, adults_in_home, living_conditions, notes
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, guardian, phone, slum, income, headcount, adults, living, notes)
                 log_action(f"Created new household: {guardian}")
-                flash(f"Household for {guardian} created successfully!", "success")
+                flash(f"Family file for {guardian} created successfully!", "success")
         
         elif action == "edit":
             hh_id = request.form.get("household_id")
@@ -883,12 +901,20 @@ def household_profile(id):
             phone = request.form.get("phone_number")
             slum = request.form.get("slum_area")
             income = request.form.get("household_income")
+            headcount = request.form.get("total_headcount")
             ledger = request.form.get("adults_in_home")
+            living = request.form.get("living_conditions")
             notes = request.form.get("notes")
-            db.execute("UPDATE households SET guardian_name = ?, phone_number = ?, slum_area = ?, household_income = ?, adults_in_home = ?, notes = ? WHERE id = ?", 
-                       guardian, phone, slum, income, ledger, notes, id)
+            
+            db.execute("""
+                UPDATE households 
+                SET guardian_name = ?, phone_number = ?, slum_area = ?, household_income = ?, 
+                    total_headcount = ?, adults_in_home = ?, living_conditions = ?, notes = ? 
+                WHERE id = ?
+            """, guardian, phone, slum, income, headcount, ledger, living, notes, id)
+            
             log_action(f"Updated Household ID {id} profile")
-            flash("Caregiver details updated successfully.", "success")
+            flash("Family details updated successfully.", "success")
 
         elif action == "edit_kinship":
             student_id = request.form.get("student_id")
