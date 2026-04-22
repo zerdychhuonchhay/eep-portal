@@ -124,12 +124,13 @@ def register():
 
         hash_pass = generate_password_hash(password)
         try:
-            # 🚨 Hardcoded to 'Pending' so they can't see any data yet!
+            # Hardcoded to 'Pending' so they can't see any data yet!
             db.execute("INSERT INTO staff (username, hash, role, program_id) VALUES (?, ?, 'Pending', 1)", 
                        username, hash_pass)
             
             log_action(f"New public account request submitted: {username}")
-            flash("Account requested! Please wait for an Administrator to approve your access.", "success")
+            # ✅ UPDATED CUSTOM MESSAGE
+            flash("Your request has been submitted! Please wait for approval, or contact an Admin for faster processing.", "success")
             return redirect("/login")
         except ValueError:
             flash("That username already exists.", "danger")
@@ -249,43 +250,74 @@ def login():
     return render_template("auth/login.html")
 
 
-@app.route("/change_password", methods=["GET", "POST"])
+@app.route("/account", methods=["GET", "POST"])
 @login_required
-def change_password():
-    """Allow users to securely change their own password"""
+def account():
+    """Allow users to manage their profile, picture, and password"""
     if request.method == "POST":
-        old_password = request.form.get("old_password")
-        new_password = request.form.get("new_password")
-        confirmation = request.form.get("confirmation")
-
-        if not old_password or not new_password or not confirmation:
-            flash("Error: All fields are required.", "danger")
-            return redirect("/change_password")
-
-        if new_password != confirmation:
-            flash("Error: New passwords do not match.", "danger")
-            return redirect("/change_password")
-
-        user = db.execute("SELECT hash FROM staff WHERE id = ?", session["user_id"])
-        if not check_password_hash(user[0]["hash"], old_password):
-            flash("Error: Incorrect current password.", "danger")
-            return redirect("/change_password")
-
-        new_hash = generate_password_hash(new_password)
-        db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, session["user_id"])
+        action = request.form.get("action")
         
-        log_action("Changed their account password")
-        flash("Success! Your password has been securely updated.", "success")
-        return redirect("/")
+        if action == "update_profile":
+            new_username = request.form.get("username")
+            
+            # Handle picture upload
+            profile_picture = request.files.get("profile_picture")
+            if profile_picture and profile_picture.filename != '':
+                # Assuming you have your handle_file_upload helper from students
+                saved_name, _ = handle_file_upload(profile_picture, session["user_id"], "staff", app.config['UPLOAD_FOLDER'])
+                if saved_name:
+                    db.execute("UPDATE staff SET profile_picture = ? WHERE id = ?", saved_name, session["user_id"])
+            
+            # Handle username change
+            if new_username and new_username != session["username"]:
+                existing = db.execute("SELECT id FROM staff WHERE username = ? AND id != ?", new_username, session["user_id"])
+                if existing:
+                    flash("Username already taken.", "danger")
+                else:
+                    db.execute("UPDATE staff SET username = ? WHERE id = ?", new_username, session["user_id"])
+                    session["username"] = new_username
+            
+            flash("Profile updated successfully.", "success")
+            return redirect("/account")
+
+        elif action == "change_password":
+            old_password = request.form.get("old_password")
+            new_password = request.form.get("new_password")
+            confirmation = request.form.get("confirmation")
+
+            if not old_password or not new_password or not confirmation:
+                flash("Error: All fields are required.", "danger")
+                return redirect("/account")
+
+            if new_password != confirmation:
+                flash("Error: New passwords do not match.", "danger")
+                return redirect("/account")
+
+            user = db.execute("SELECT hash FROM staff WHERE id = ?", session["user_id"])
+            if not check_password_hash(user[0]["hash"], old_password):
+                flash("Error: Incorrect current password.", "danger")
+                return redirect("/account")
+
+            new_hash = generate_password_hash(new_password)
+            db.execute("UPDATE staff SET hash = ? WHERE id = ?", new_hash, session["user_id"])
+            
+            log_action("Changed their account password")
+            flash("Success! Your password has been securely updated.", "success")
+            return redirect("/")
+
     else:
-        return render_template("auth/change_password.html")
+        # Load user info
+        user_info = db.execute("SELECT * FROM staff WHERE id = ?", session["user_id"])[0]
+        return render_template("auth/account.html", user_info=user_info)
+    
+
 
 
 @app.route("/manage_staff", methods=["GET", "POST"])
 @login_required
 @admin_required
 def manage_staff():
-    """Enterprise dashboard to add, edit, and reset staff accounts."""
+    """Enterprise dashboard to add, edit, reset, and delete staff accounts."""
     if request.method == "POST":
         action = request.form.get("action")
         
@@ -318,7 +350,7 @@ def manage_staff():
             else:
                 db.execute("UPDATE staff SET role = ?, program_id = ? WHERE id = ?", new_role, new_pid, staff_id)
                 log_action(f"Updated permissions for Staff ID {staff_id} to {new_role}/Program {new_pid}")
-                flash("Staff permissions updated successfully. Takes effect on their next login.", "success")
+                flash("Staff permissions updated successfully.", "success")
                 
         elif action == "reset_password":
             staff_id = request.form.get("staff_id")
@@ -327,12 +359,28 @@ def manage_staff():
             
             staff_name = db.execute("SELECT username FROM staff WHERE id = ?", staff_id)[0]['username']
             log_action(f"Forced password reset for {staff_name}")
-            flash(f"Password for {staff_name} has been reset to '123456'. Tell them to log in and change it immediately.", "info")
+            flash(f"Password for {staff_name} has been reset to '123456'.", "info")
+
+        # ✅ NEW: DELETE / REJECT LOGIC
+        elif action == "delete":
+            staff_id = request.form.get("staff_id")
+            if int(staff_id) == session["user_id"]:
+                flash("Security Warning: You cannot delete your own account.", "danger")
+            else:
+                staff_info = db.execute("SELECT username, role FROM staff WHERE id = ?", staff_id)[0]
+                db.execute("DELETE FROM staff WHERE id = ?", staff_id)
+                if staff_info['role'] == 'Pending':
+                    log_action(f"Rejected and deleted access request for {staff_info['username']}")
+                    flash(f"Access request for {staff_info['username']} was rejected.", "success")
+                else:
+                    log_action(f"Deleted staff account: {staff_info['username']}")
+                    flash(f"Staff account for {staff_info['username']} was permanently deleted.", "success")
 
         return redirect("/manage_staff")
     else:
+        # ✅ UPDATED: Now queries for profile_picture
         staff_members = db.execute("""
-            SELECT s.id, s.username, s.role, s.program_id, p.name as program_name 
+            SELECT s.id, s.username, s.role, s.program_id, s.profile_picture, p.name as program_name 
             FROM staff s 
             LEFT JOIN programs p ON s.program_id = p.id 
             ORDER BY s.role ASC, s.username ASC

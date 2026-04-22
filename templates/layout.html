@@ -256,6 +256,10 @@
     {% endif %}
 
     {% if session.get('user_id') %}
+    <!-- Generate Avatar URL Once -->
+    {% set fallback_avatar = 'https://ui-avatars.com/api/?name=' ~ session.get('username', 'User')|urlencode ~ '&background=005a9c&color=fff&bold=true' %}
+    {% set avatar_src = url_for('static', filename='uploads/profiles/' ~ session.get('profile_picture')) if session.get('profile_picture') else fallback_avatar %}
+    
     <!-- =======================================================
          MOBILE OFFCANVAS MENU (Hamburger Sidebar)
          ======================================================= -->
@@ -269,6 +273,16 @@
             <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body p-3 custom-scrollbar d-flex flex-column">
+            
+            <!-- 🚀 USER PROFILE CARD (Mobile) -->
+            <a href="/account" class="d-flex align-items-center p-3 mb-4 bg-light rounded-4 text-decoration-none transition-hover border border-secondary border-opacity-10">
+                <img src="{{ avatar_src }}" class="rounded-circle shadow-sm border border-2 border-white me-3" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ fallback_avatar }}';">
+                <div class="lh-sm min-w-0">
+                    <h6 class="fw-bold mb-1 text-dark text-truncate">{{ session.get('username') }}</h6>
+                    <small class="text-primary fw-bold d-block" style="font-size: 0.75rem;">{{ session.get('role') }}</small>
+                    <span class="text-muted small fw-bold mt-1 d-inline-block" style="font-size: 0.65rem;">Account Settings <i class="bi bi-arrow-right"></i></span>
+                </div>
+            </a>
             
             <!-- 🚀 PROGRAM / WORKSPACE SWITCHER -->
             <div class="dropdown mb-4">
@@ -553,17 +567,22 @@
                     </div>
                     {% endif %}
 
-                    <!-- User Profile Dropdown -->
-                    <div class="dropdown">
+                    <!-- 🚀 USER PROFILE DROPDOWN (Hidden on Mobile, Visible on Desktop) -->
+                    <div class="dropdown d-none d-lg-block">
                         <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle transition-hover" data-bs-toggle="dropdown">
-                            <img src="https://ui-avatars.com/api/?name={{ session.get('username', 'User') }}&background=005a9c&color=fff&bold=true" class="rounded-circle shadow-sm border border-2 border-white" style="width: 40px; height: 40px;">
+                            <img src="{{ avatar_src }}" class="rounded-circle shadow-sm border border-2 border-white" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ fallback_avatar }}';">
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-4 overflow-hidden p-2">
-                            <li class="bg-light px-3 py-2 rounded-3 mb-2">
-                                <h6 class="fw-bold mb-0 text-dark">{{ session.get('username') }}</h6>
-                                <small class="text-primary fw-bold" style="font-size: 0.7rem;">{{ session.get('role') }}</small>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-4 overflow-hidden p-2" style="min-width: 240px;">
+                            <li>
+                                <a href="/account" class="dropdown-item d-flex align-items-center py-3 px-3 rounded-3 mb-2 bg-light transition-hover border border-secondary border-opacity-10">
+                                    <img src="{{ avatar_src }}" class="rounded-circle shadow-sm border border-2 border-white me-3" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ fallback_avatar }}';">
+                                    <div class="lh-sm text-wrap">
+                                        <h6 class="fw-bold mb-1 text-dark">{{ session.get('username') }}</h6>
+                                        <small class="text-primary fw-bold d-block" style="font-size: 0.75rem;">{{ session.get('role') }}</small>
+                                        <span class="text-muted small fw-bold mt-2 d-inline-block" style="font-size: 0.65rem;">Account Settings <i class="bi bi-arrow-right"></i></span>
+                                    </div>
+                                </a>
                             </li>
-                            <li><a class="dropdown-item py-2 fw-bold rounded-3 transition-hover" href="/change_password"><i class="bi bi-key-fill me-2 text-muted"></i> Change Password</a></li>
                             
                             {% if session.get("role") == "Admin" or session.get("real_role") == "Admin" %}
                             <li><hr class="dropdown-divider opacity-10 my-2"></li>

@@ -42,9 +42,13 @@
                         
                         <!-- Staff Info -->
                         <div class="d-flex align-items-center">
-                            <!-- Circular Avatar Box -->
-                            <div class="bg-dark bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-4 flex-shrink-0 shadow-xs border border-secondary border-opacity-10" style="width: 55px; height: 55px;">
-                                <span class="fs-4 text-dark fw-bold" style="font-family: 'Poppins', sans-serif;">{{ st.username[0]|upper }}</span>
+                            <!-- Circular Avatar Box (With Real Photo Fallback) -->
+                            <div class="position-relative me-4 flex-shrink-0">
+                                {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ st.username ~ "&background=random&color=fff&size=60" %}
+                                <img src="{{ url_for('static', filename='uploads/profiles/' + st.get('profile_picture')) if st.get('profile_picture') else thumb_url }}" 
+                                     class="rounded-circle shadow-xs border border-secondary border-opacity-10" 
+                                     style="width: 55px; height: 55px; object-fit: cover;" 
+                                     onerror="this.onerror=null; this.src='{{ thumb_url }}';">
                             </div>
                             
                             <div class="lh-sm">
@@ -82,12 +86,24 @@
                         
                         <!-- Action Buttons -->
                         <div class="d-flex align-items-center justify-content-end gap-2 mt-3 mt-md-0 pt-3 pt-md-0 border-top border-md-0 border-light">
-                            <button type="button" class="btn btn-sm btn-light border fw-bold text-primary rounded-pill px-4 transition-hover flex-grow-1 flex-md-grow-0 py-2 py-md-1 shadow-xs" 
-                                    data-bs-toggle="modal" data-bs-target="#editStaffModal"
-                                    onclick="populateStaffModal('{{ st.id }}', '{{ st.username }}', '{{ st.role }}', '{{ st.program_id }}')">
-                                <i class="bi bi-sliders me-1 d-none d-md-inline"></i> Edit Access
-                            </button>
                             
+                            {% if st.role == 'Pending' %}
+                                <!-- Approve Button for Pending Requests -->
+                                <button type="button" class="btn btn-sm btn-success fw-bold rounded-pill px-4 transition-hover flex-grow-1 flex-md-grow-0 py-2 py-md-1 shadow-xs" 
+                                        data-bs-toggle="modal" data-bs-target="#editStaffModal"
+                                        onclick="populateStaffModal('{{ st.id }}', '{{ st.username }}', 'Field Officer', '1')">
+                                    <i class="bi bi-check-lg me-1"></i> Approve
+                                </button>
+                            {% else %}
+                                <!-- Normal Edit Button -->
+                                <button type="button" class="btn btn-sm btn-light border fw-bold text-primary rounded-pill px-4 transition-hover flex-grow-1 flex-md-grow-0 py-2 py-md-1 shadow-xs" 
+                                        data-bs-toggle="modal" data-bs-target="#editStaffModal"
+                                        onclick="populateStaffModal('{{ st.id }}', '{{ st.username }}', '{{ st.role }}', '{{ st.program_id }}')">
+                                    <i class="bi bi-sliders me-1 d-none d-md-inline"></i> Edit Access
+                                </button>
+                            {% endif %}
+                            
+                            <!-- Password Reset -->
                             <form action="/manage_staff" method="post" class="m-0" onsubmit="return confirm('Force password reset for {{ st.username }}? Their password will become 123456.');">
                                 <input type="hidden" name="action" value="reset_password">
                                 <input type="hidden" name="staff_id" value="{{ st.id }}">
@@ -95,6 +111,17 @@
                                     <i class="bi bi-unlock-fill fs-5"></i>
                                 </button>
                             </form>
+
+                            <!-- Delete / Reject Button -->
+                            {% if st.id != session.user_id %}
+                            <form action="/manage_staff" method="post" class="m-0" onsubmit="return confirm('{% if st.role == 'Pending' %}Reject and delete this access request?{% else %}Permanently delete this staff account?{% endif %}');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="staff_id" value="{{ st.id }}">
+                                <button type="submit" class="btn btn-sm btn-light border rounded-circle text-danger transition-hover flex-shrink-0 d-flex align-items-center justify-content-center shadow-xs" title="{% if st.role == 'Pending' %}Reject Request{% else %}Delete Account{% endif %}" style="width: 40px; height: 40px;">
+                                    <i class="bi {% if st.role == 'Pending' %}bi-x-lg{% else %}bi-trash-fill{% endif %} fs-5"></i>
+                                </button>
+                            </form>
+                            {% endif %}
                         </div>
                         
                     </div>
@@ -230,7 +257,7 @@
 {% block scripts %}
 <script>
     // ---------------------------------------------------------
-    // LIVE NATIVE SEARCH (Replaces DataTables)
+    // LIVE NATIVE SEARCH
     // ---------------------------------------------------------
     document.getElementById('staffSearch')?.addEventListener('keyup', function() {
         let filter = this.value.toLowerCase();
