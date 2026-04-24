@@ -311,8 +311,6 @@ def account():
         return render_template("auth/account.html", user_info=user_info)
     
 
-
-
 @app.route("/manage_staff", methods=["GET", "POST"])
 @login_required
 @admin_required

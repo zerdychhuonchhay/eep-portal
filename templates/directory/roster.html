@@ -32,8 +32,8 @@
 
                 <div class="d-flex gap-2">
                     <!-- Toggle Bulk Mode -->
-                    <button id="btnToggleBulk" type="button" class="btn btn-light text-danger border fw-bold rounded-pill px-3 shadow-sm transition-hover d-none d-md-flex align-items-center" onclick="toggleBulkMode()">
-                        <i class="bi bi-ui-checks-grid me-2"></i> Bulk Select
+                    <button id="btnToggleBulk" type="button" class="btn btn-sm btn-outline-danger shadow-sm fw-bold rounded-pill px-3 py-2 transition-hover d-none d-md-flex align-items-center" onclick="toggleBulkMode()">
+                        <i class="bi bi-ui-checks-grid me-1"></i> <span>Bulk Actions</span>
                     </button>
 
                     <!-- Add New Student -->
@@ -60,55 +60,129 @@
     <div class="sticky-top pt-2 pb-3 mx-n3 mx-md-0 px-3 px-md-0" style="top: 65px; z-index: 10; background: linear-gradient(180deg, var(--app-bg) 85%, transparent 100%);">
         <div class="d-flex flex-column gap-2">
             
-            <!-- Row 1: Search and Primary Filters -->
-            <div class="d-flex flex-column flex-lg-row gap-2">
-                <div class="d-flex gap-2" style="flex: 1;">
-                    <!-- Search Bar -->
-                    <div class="input-group shadow-sm rounded-pill overflow-hidden border-0 bg-white" style="flex: 1;">
-                        <span class="input-group-text bg-transparent border-0 px-4"><i class="bi bi-search text-primary"></i></span>
-                        <input type="text" id="rosterSearch" class="form-control border-0 bg-transparent py-2 py-md-3 fw-bold text-dark shadow-none" placeholder="Search by name, ID, or location...">
-                    </div>
-                    
-                    <!-- Bulk "Select Visible" Button (Revealed in Bulk Mode) -->
-                    <button type="button" id="btnSelectVisible" class="btn btn-white border rounded-pill fw-bold text-dark shadow-sm transition-hover d-none align-items-center px-3 flex-shrink-0" onclick="toggleSelectAll()" title="Select All Visible Students">
-                        <i class="bi bi-check2-all fs-5 me-md-1 text-primary"></i> <span class="d-none d-md-inline">Select Visible</span>
-                    </button>
+            <!-- ROW 1: SEARCH & SORT (Isolated to prevent squishing) -->
+            <div class="d-flex flex-row gap-2 w-100 mb-1">
+                <!-- Search Bar -->
+                <div class="input-group shadow-sm rounded-pill overflow-hidden border-0 bg-white" style="flex: 1;">
+                    <span class="input-group-text bg-transparent border-0 px-3 px-md-4"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" id="rosterSearch" class="form-control border-0 bg-transparent py-2 py-md-3 fw-bold text-dark shadow-none px-0" placeholder="Search name, ID...">
                 </div>
                 
-                <!-- Filters (Scrollable on mobile) -->
-                <div class="d-flex gap-1 overflow-auto custom-scrollbar align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 flex-shrink-0" style="white-space: nowrap;">
-                    <button class="btn btn-sm bg-primary text-white shadow-sm rounded-pill px-3 fw-bold filter-btn active" data-filter="all">All</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="primary">Primary</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="high">High School</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="uni">Uni/Voc</button>
-                    <div class="vr my-2 text-muted opacity-25"></div>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="male">Boys</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="female">Girls</button>
+                <!-- Sort Dropdown -->
+                <div class="bg-white rounded-pill shadow-sm border px-2 d-flex align-items-center flex-shrink-0">
+                    <i class="bi bi-sort-down ms-2 text-primary d-none d-sm-inline"></i>
+                    <select id="rosterSort" class="form-select border-0 bg-transparent fw-bold shadow-none py-2 pe-4 cursor-pointer text-dark" style="background-position: right 0.5rem center;">
+                        <option value="name_asc">A-Z</option>
+                        <option value="name_desc">Z-A</option>
+                        <option value="age_asc">Youngest</option>
+                        <option value="age_desc">Oldest</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- Row 2: Contextual Program Filters (Revealed in Bulk Mode) -->
-            <div id="programFilters" class="d-none gap-1 overflow-auto custom-scrollbar align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 ms-lg-auto" style="white-space: nowrap; width: fit-content;">
-                <span class="small fw-bold text-danger mx-2"><i class="bi bi-funnel-fill me-1"></i> Bulk Action Filter:</span>
-                <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="daily_lunch">🍱 Hot Lunch</button>
-                <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover text-darken" data-filter="groceries">🌾 Groceries</button>
-                <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-filter="orphans">🏠 No Plan</button>
+            <!-- ROW 2: FILTERS & BULK SELECT (Horizontally Scrollable) -->
+            <div class="d-flex gap-2 w-100 align-items-center overflow-auto custom-scrollbar pb-1" style="-webkit-overflow-scrolling: touch;">
+                
+                <!-- Bulk "Select Visible" Button (Revealed in Bulk Mode) -->
+                <button type="button" id="btnSelectVisible" class="btn btn-white border rounded-pill fw-bold text-dark shadow-sm transition-hover d-none align-items-center px-3 flex-shrink-0" onclick="toggleSelectAll()" title="Select All Visible Students">
+                    <i class="bi bi-check2-all fs-5 me-1 text-primary"></i> Select Visible
+                </button>
+                
+                <!-- Advanced Filter Pills -->
+                <div class="d-flex gap-1 align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 flex-shrink-0" style="white-space: nowrap;">
+                    <button class="btn btn-sm bg-primary text-white shadow-sm rounded-pill px-3 fw-bold filter-btn active" data-group="all" data-filter="all">All</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="edu" data-filter="primary">Primary</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="edu" data-filter="high">High School</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="edu" data-filter="uni">Uni/Voc</button>
+                    <div class="vr my-2 text-muted opacity-25"></div>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="gender" data-filter="male">Boys</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="gender" data-filter="female">Girls</button>
+                    
+                    <!-- Military Draft Age Filters -->
+                    <div class="vr my-2 text-muted opacity-25"></div>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="age" data-filter="kids">Kids (<12)</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="age" data-filter="teens">Teens (13-17)</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold filter-btn transition-hover text-warning text-darken" data-group="age" data-filter="draft_age"><i class="bi bi-exclamation-triangle-fill me-1"></i>Draft (18-25)</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="age" data-filter="adults">Adults (26+)</button>
+                </div>
+            </div>
+
+            <!-- ROW 3: CONTEXTUAL PROGRAM FILTERS (Revealed in Bulk Mode) -->
+            <div id="programFilters" class="d-none gap-2 w-100 align-items-center overflow-auto custom-scrollbar pb-1 mt-1" style="-webkit-overflow-scrolling: touch;">
+                <div class="d-flex gap-1 align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 flex-shrink-0" style="white-space: nowrap;">
+                    <span class="small fw-bold text-danger mx-2"><i class="bi bi-funnel-fill me-1"></i> Bulk Action Filter:</span>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="meal" data-filter="daily_lunch">🍱 Hot Lunch</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover text-darken" data-group="meal" data-filter="groceries">🌾 Groceries</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="meal" data-filter="orphans">🏠 No Plan</button>
+                </div>
             </div>
 
         </div>
     </div>
 
     <!-- ========================================== -->
-    <!-- 3. ROSTER LIST                             -->
+    <!-- 3. DEMOGRAPHIC INSIGHT CARDS               -->
+    <!-- ========================================== -->
+    <div class="row g-3 mb-4">
+        <div class="col-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 transition-hover">
+                <div class="card-body p-2 p-md-3 d-flex align-items-center">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3 d-none d-sm-block">
+                        <i class="bi bi-people-fill text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem;">Visible List</span>
+                        <h3 class="fw-bold text-dark mb-0 lh-1" id="stat-total" style="font-family: 'Poppins', sans-serif;">--</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 transition-hover border-top border-warning border-4">
+                <div class="card-body p-2 p-md-3 d-flex align-items-center">
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-circle me-3 d-none d-sm-block">
+                        <i class="bi bi-exclamation-triangle-fill text-warning text-darken fs-4"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem;">Draft Age (18-25)</span>
+                        <h3 class="fw-bold text-warning text-darken mb-0 lh-1" id="stat-priority" style="font-family: 'Poppins', sans-serif;">--</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 transition-hover border-top border-success border-4">
+                <div class="card-body p-2 p-md-3 d-flex align-items-center">
+                    <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3 d-none d-sm-block">
+                        <i class="bi bi-backpack-fill text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem;">Minors (< 18)</span>
+                        <h3 class="fw-bold text-success mb-0 lh-1" id="stat-minors" style="font-family: 'Poppins', sans-serif;">--</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. ROSTER LIST                             -->
     <!-- ========================================== -->
     <div class="card shadow-sm border-0 native-card rounded-4 mb-5 bg-white border-top border-primary border-4">
         
         <!-- FORM WRAPPER: Passes selected IDs to the Bulk Action tools via GET -->
         <form id="rosterForm" method="GET">
             <div class="card-body p-0">
+                <!-- Using a div instead of a label prevents invisible checkbox clicks! -->
                 <div class="list-group list-group-flush rounded-bottom-4 pb-5 pb-md-0" id="rosterList">
                     {% for student in students %}
-                    <label class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom student-item transition-hover cursor-pointer" data-grade="{{ student.grade_level|lower }}" data-gender="{{ student.gender|lower }}" data-guardian="{{ student.guardian_name|lower if student.guardian_name else '' }}" data-meal-plan="{{ student.meal_plan|lower if student.meal_plan else 'none' }}">
+                    <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom student-item transition-hover" 
+                           data-grade="{{ student.grade_level|lower }}" 
+                           data-gender="{{ student.gender|lower }}" 
+                           data-guardian="{{ student.guardian_name|lower if student.guardian_name else '' }}" 
+                           data-meal-plan="{{ student.meal_plan|lower if student.meal_plan else 'none' }}"
+                           data-dob="{{ student.dob }}"
+                           data-name="{{ student.first_name }} {{ student.last_name }}">
                         <div class="row gx-3 gy-2 align-items-center">
 
                             <!-- Identity (Checkbox, Avatar, Name, ID, Grade) -->
@@ -119,9 +193,11 @@
                                     <input class="form-check-input fs-4 roster-checkbox shadow-sm border-secondary border-opacity-25 mt-0" type="checkbox" name="student_ids" value="{{ student.id }}">
                                 </div>
 
+                                <!-- FIX: Ignored default.png to prevent 404 errors -->
+                                {% set has_custom_pic = student.profile_picture and student.profile_picture != 'default.png' %}
                                 {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=60" %}
                                 <div class="position-relative me-3 flex-shrink-0">
-                                    <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb_url }}" 
+                                    <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if has_custom_pic else thumb_url }}" 
                                             class="rounded-circle border border-3 border-white shadow-sm" 
                                             style="width: 55px; height: 55px; object-fit: cover;" 
                                             onerror="this.onerror=null; this.src='{{ thumb_url }}';">
@@ -138,6 +214,9 @@
                                     <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
                                         <span class="student-id badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-2 py-1 rounded-pill"><i class="bi bi-person-badge-fill me-1"></i>{{ student.ngo_id }}</span>
                                         <span class="badge bg-light text-dark border px-2 py-1 rounded-pill text-truncate" style="max-width: 120px;">{{ student.grade_level }}</span>
+                                        
+                                        <!-- Visual Badge for Age (Injected by JS) -->
+                                        <span class="age-badge-container"></span>
                                     </div>
                                 </div>
                             </div>
@@ -159,7 +238,7 @@
                             </div>
 
                             <!-- Semantic Action Buttons -->
-                            <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-3 mt-md-0">
+                            <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-3 mt-md-0 pt-3 pt-md-0 border-top border-md-0 border-light border-opacity-50">
                                 {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
                                 <a href="/edit_student/{{ student.id }}" class="btn btn-sm bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Edit Profile">
                                     <i class="bi bi-pencil-square fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Edit</span>
@@ -184,7 +263,7 @@
                             </div>
 
                         </div>
-                    </label>
+                    </div>
                     {% else %}
                     <div class="list-group-item text-center text-muted py-5 bg-light border-0 rounded-bottom-4">
                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex justify-content-center align-items-center mb-3" style="width: 80px; height: 80px;">
@@ -249,7 +328,7 @@
 
 <style>
     /* UX Adjustments */
-    .cursor-pointer { cursor: pointer; }
+    #rosterList.bulk-active .student-item { cursor: pointer; }
     
     /* Highlight row when checkbox is active */
     .student-item.selected-row {
@@ -266,94 +345,66 @@
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        let currentFilter = 'all';
-        let isBulkMode = false;
         
-        // --- 1. FILTER & SEARCH ENGINE ---
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                // Reset all to unselected iOS pill style
-                // FIX: Use btn-transparent consistently to prevent "invisible white button" bug
-                document.querySelectorAll('.filter-btn').forEach(b => {
-                    b.classList.remove('bg-primary', 'text-white', 'shadow-sm', 'active');
-                    b.classList.add('btn-transparent', 'text-muted');
-                });
-                
-                // Activate clicked pill
-                this.classList.remove('btn-transparent', 'text-muted');
-                this.classList.add('bg-primary', 'text-white', 'shadow-sm', 'active');
-                
-                currentFilter = this.getAttribute('data-filter');
-                applyFilters();
-            });
-        });
+        // --- 0. MULTI-SELECT FILTER STATE ---
+        let activeFilters = { edu: null, gender: null, age: null, meal: null };
+        let isBulkMode = false;
 
-        document.getElementById('rosterSearch')?.addEventListener('keyup', applyFilters);
-
-        function applyFilters() {
-            const query = (document.getElementById('rosterSearch')?.value || '').toLowerCase().trim();
-            const items = document.querySelectorAll('.student-item');
-            const noResults = document.getElementById('noResultsMessage');
-            let visibleCount = 0;
-
-            items.forEach(item => {
-                const textContent = item.innerText.toLowerCase();
-                const grade = (item.getAttribute('data-grade') || '').toLowerCase();
-                const gender = (item.getAttribute('data-gender') || '').toLowerCase();
-                const guardian = (item.getAttribute('data-guardian') || '').toLowerCase();
-                const mealPlan = (item.getAttribute('data-meal-plan') || '').toLowerCase();
-                
-                let matchesSearch = textContent.includes(query) || guardian.includes(query);
-                let matchesFilter = true;
-
-                if (currentFilter === 'primary') matchesFilter = grade.includes('kindergarten') || grade.includes('kg') || grade.match(/grade\s*[1-6]\b/);
-                else if (currentFilter === 'high') matchesFilter = grade.match(/grade\s*([7-9]|1[0-2])\b/);
-                else if (currentFilter === 'uni') matchesFilter = grade.includes('university') || grade.includes('vocational') || grade.includes('year');
-                else if (currentFilter === 'male') matchesFilter = gender === 'male';
-                else if (currentFilter === 'female') matchesFilter = gender === 'female';
-                else if (currentFilter === 'daily_lunch') matchesFilter = mealPlan.includes('daily hot lunch');
-                else if (currentFilter === 'groceries') matchesFilter = mealPlan.includes('monthly groceries');
-                else if (currentFilter === 'orphans') matchesFilter = mealPlan.includes('none');
-
-                if (matchesSearch && matchesFilter) {
-                    item.style.display = '';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-
-            // FIX: Hide message if there are results (> 0), Show message if no results (=== 0)
-            noResults.classList.toggle('d-none', visibleCount > 0);
-            updateBulkActionBar(); 
-        }
-
-        // --- 2. MULTI-SELECT & ACTION BAR ENGINE ---
+        // --- 1. DOM ELEMENTS (Loaded FIRST to prevent crashes) ---
         const actionBar = document.getElementById('bulkActionBar');
         const countDisplay = document.getElementById('selectedCountDisplay');
         const allCheckboxes = document.querySelectorAll('.roster-checkbox');
+        const btnToggleBulk = document.getElementById('btnToggleBulk');
+        const fabToggleBulk = document.getElementById('fabToggleBulk');
+        const btnSelectVisible = document.getElementById('btnSelectVisible');
+        const progFilters = document.getElementById('programFilters');
+        const rosterList = document.getElementById('rosterList');
 
+        // --- 2. DYNAMIC AGE CALCULATION ENGINE ---
+        document.querySelectorAll('.student-item').forEach(item => {
+            const dobStr = item.getAttribute('data-dob');
+            let age = 0;
+            
+            if (dobStr && dobStr !== 'None' && dobStr.trim() !== '') {
+                const dob = new Date(dobStr);
+                const today = new Date();
+                age = today.getFullYear() - dob.getFullYear();
+                const m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                    age--;
+                }
+            }
+            
+            // Store the computed age for the filter logic
+            item.setAttribute('data-computed-age', age);
+
+            // Inject the beautiful visual badge
+            const badgeContainer = item.querySelector('.age-badge-container');
+            if (badgeContainer && age > 0) {
+                if (age >= 18 && age <= 25) {
+                    badgeContainer.innerHTML = `<span class="badge bg-warning bg-opacity-10 text-dark border border-warning border-opacity-50 px-2 py-1 rounded-pill" title="Draft Age Risk"><i class="bi bi-exclamation-triangle-fill me-1 text-warning text-darken"></i>${age} yrs</span>`;
+                } else {
+                    badgeContainer.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1 rounded-pill">${age} yrs</span>`;
+                }
+            }
+        });
+        
+        // --- 3. MULTI-SELECT & ACTION BAR ENGINE (Hoisted correctly) ---
         window.updateBulkActionBar = function() {
             const checkedCount = document.querySelectorAll('.roster-checkbox:checked').length;
             if (checkedCount > 0) {
-                countDisplay.textContent = checkedCount;
-                actionBar.classList.remove('d-none');
-                actionBar.classList.add('d-flex');
+                if(countDisplay) countDisplay.textContent = checkedCount;
+                if(actionBar) {
+                    actionBar.classList.remove('d-none');
+                    actionBar.classList.add('d-flex');
+                }
             } else {
-                actionBar.classList.add('d-none');
-                actionBar.classList.remove('d-flex');
+                if(actionBar) {
+                    actionBar.classList.add('d-none');
+                    actionBar.classList.remove('d-flex');
+                }
             }
         };
-
-        document.getElementById('rosterList').addEventListener('change', function(e) {
-            if (e.target.classList.contains('roster-checkbox')) {
-                const row = e.target.closest('.student-item');
-                if (e.target.checked) row.classList.add('selected-row');
-                else row.classList.remove('selected-row');
-                updateBulkActionBar();
-            }
-        });
 
         window.toggleSelectAll = function() {
             const visibleCheckboxes = Array.from(allCheckboxes).filter(cb => {
@@ -366,7 +417,7 @@
                 if (!allChecked) row.classList.add('selected-row');
                 else row.classList.remove('selected-row');
             });
-            updateBulkActionBar();
+            window.updateBulkActionBar();
         };
 
         window.clearSelection = function() {
@@ -374,9 +425,10 @@
                 cb.checked = false;
                 cb.closest('.student-item').classList.remove('selected-row');
             });
-            updateBulkActionBar();
+            window.updateBulkActionBar();
         };
 
+        // --- BULK MODE TOGGLE SYNC ENGINE ---
         window.toggleBulkMode = function(forceEnable = null) {
             if (forceEnable !== null) {
                 isBulkMode = forceEnable;
@@ -384,38 +436,240 @@
                 isBulkMode = !isBulkMode;
             }
             
-            const btnToggle = document.getElementById('btnToggleBulk');
-            const fabToggle = document.getElementById('fabToggleBulk');
-            const btnSelectVisible = document.getElementById('btnSelectVisible');
-            const progFilters = document.getElementById('programFilters');
-            const checkboxes = document.querySelectorAll('.bulk-checkbox-wrapper');
-            
             if (isBulkMode) {
-                if(btnToggle) { btnToggle.classList.remove('btn-light', 'text-danger', 'border'); btnToggle.classList.add('btn-danger', 'text-white'); }
-                if(fabToggle) { fabToggle.classList.remove('btn-light', 'text-danger'); fabToggle.classList.add('btn-danger', 'text-white'); }
+                // Desktop Button styling swap
+                if(btnToggleBulk) { btnToggleBulk.classList.replace('btn-outline-danger', 'btn-danger'); btnToggleBulk.classList.add('text-white'); }
+                // Mobile FAB styling swap
+                if(fabToggleBulk) { fabToggleBulk.classList.replace('btn-light', 'btn-danger'); fabToggleBulk.classList.add('text-white'); }
+                
+                // Reveal bulk UI elements
                 if(btnSelectVisible) { btnSelectVisible.classList.remove('d-none'); btnSelectVisible.classList.add('d-flex'); }
                 if(progFilters) { progFilters.classList.remove('d-none'); progFilters.classList.add('d-flex'); }
-                checkboxes.forEach(cb => cb.classList.remove('d-none'));
+                allCheckboxes.forEach(cb => cb.closest('.bulk-checkbox-wrapper').classList.remove('d-none'));
+                
+                // Enable hover/pointer CSS for rows
+                if(rosterList) rosterList.classList.add('bulk-active');
+                
             } else {
-                if(btnToggle) { btnToggle.classList.remove('btn-danger', 'text-white'); btnToggle.classList.add('btn-light', 'text-danger', 'border'); }
-                if(fabToggle) { fabToggle.classList.remove('btn-danger', 'text-white'); fabToggle.classList.add('btn-light', 'text-danger'); }
+                // Revert Desktop Button
+                if(btnToggleBulk) { btnToggleBulk.classList.replace('btn-danger', 'btn-outline-danger'); btnToggleBulk.classList.remove('text-white'); }
+                // Revert Mobile FAB
+                if(fabToggleBulk) { fabToggleBulk.classList.replace('btn-danger', 'btn-light'); fabToggleBulk.classList.remove('text-white'); }
+                
+                // Hide bulk UI elements
                 if(btnSelectVisible) { btnSelectVisible.classList.add('d-none'); btnSelectVisible.classList.remove('d-flex'); }
                 if(progFilters) { progFilters.classList.add('d-none'); progFilters.classList.remove('d-flex'); }
-                checkboxes.forEach(cb => cb.classList.add('d-none'));
+                allCheckboxes.forEach(cb => cb.closest('.bulk-checkbox-wrapper').classList.add('d-none'));
+                
+                // Disable hover/pointer CSS for rows
+                if(rosterList) rosterList.classList.remove('bulk-active');
                 
                 // Clear active bulk filters and return to "all" when closing bulk mode
                 const allBtn = document.querySelector('[data-filter="all"]');
                 if (allBtn) allBtn.click();
                 
-                clearSelection();
+                window.clearSelection();
             }
         };
 
-        // Auto-enable bulk mode if URL has ?mode=bulk (Fixes the Dashboard Index bug)
+        // --- SMART ROW CLICK LISTENER ---
+        if(rosterList) {
+            rosterList.addEventListener('click', function(e) {
+                if (!isBulkMode) return; // ONLY allow row clicking when Bulk Mode is explicitly turned on
+                if (e.target.closest('a') || e.target.closest('button')) return; // Ignore actual links/buttons inside the row
+                
+                const row = e.target.closest('.student-item');
+                if (row) {
+                    const cb = row.querySelector('.roster-checkbox');
+                    
+                    // If they clicked the row (but not the actual checkbox input itself), toggle it
+                    if (e.target !== cb) {
+                        cb.checked = !cb.checked;
+                    }
+                    
+                    if (cb.checked) {
+                        row.classList.add('selected-row');
+                    } else {
+                        row.classList.remove('selected-row');
+                    }
+                    window.updateBulkActionBar();
+                }
+            });
+        }
+        
+        // --- 4. ADVANCED FACET FILTER ENGINE ---
+        
+        // CLEAN CSS HELPER FUNCTIONS (Solves the UI color-override bug)
+        function setPillInactive(btn) {
+            btn.classList.remove('bg-primary', 'text-white', 'shadow-sm', 'active', 'text-muted', 'text-warning', 'text-darken', 'text-success');
+            btn.classList.add('btn-transparent');
+            
+            const filterType = btn.getAttribute('data-filter');
+            if (filterType === 'draft_age') {
+                btn.classList.add('text-warning', 'text-darken');
+            } else {
+                btn.classList.add('text-muted');
+            }
+        }
+
+        function setPillActive(btn) {
+            btn.classList.remove('btn-transparent', 'text-muted', 'text-warning', 'text-darken', 'text-success');
+            btn.classList.add('bg-primary', 'text-white', 'shadow-sm', 'active');
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const filterValue = this.getAttribute('data-filter');
+                const filterGroup = this.getAttribute('data-group');
+
+                if (filterValue === 'all') {
+                    // Reset everything
+                    activeFilters = { edu: null, gender: null, age: null, meal: null };
+                    document.querySelectorAll('.filter-btn').forEach(setPillInactive);
+                    setPillActive(this);
+                } else {
+                    // Unselect the 'All' button safely
+                    const allBtn = document.querySelector('[data-filter="all"]');
+                    if (allBtn) setPillInactive(allBtn);
+
+                    if (activeFilters[filterGroup] === filterValue) {
+                        // Turn off current selection
+                        activeFilters[filterGroup] = null;
+                        setPillInactive(this);
+                    } else {
+                        // Turn off other selections in the SAME group safely
+                        document.querySelectorAll(`.filter-btn[data-group="${filterGroup}"]`).forEach(setPillInactive);
+                        
+                        // Turn on new selection
+                        activeFilters[filterGroup] = filterValue;
+                        setPillActive(this);
+                    }
+
+                    // If no filters are active at all, trigger "All" automatically
+                    if (!activeFilters.edu && !activeFilters.gender && !activeFilters.age && !activeFilters.meal) {
+                        if(allBtn) allBtn.click();
+                        return; // Prevent double execution
+                    }
+                }
+                
+                applyFilters();
+            });
+        });
+
+        document.getElementById('rosterSearch')?.addEventListener('keyup', applyFilters);
+        document.getElementById('rosterSort')?.addEventListener('change', applyFilters);
+
+        function applyFilters() {
+            const searchEl = document.getElementById('rosterSearch');
+            const query = (searchEl ? searchEl.value : '').toLowerCase().trim();
+            const items = document.querySelectorAll('.student-item');
+            const noResults = document.getElementById('noResultsMessage');
+            
+            let visibleCount = 0;
+            let draftCount = 0;
+            let minorCount = 0;
+
+            // 1. FILTERING
+            items.forEach(item => {
+                const textContent = item.innerText.toLowerCase();
+                const grade = (item.getAttribute('data-grade') || '').toLowerCase();
+                const gender = (item.getAttribute('data-gender') || '').toLowerCase();
+                const guardian = (item.getAttribute('data-guardian') || '').toLowerCase();
+                const mealPlan = (item.getAttribute('data-meal-plan') || '').toLowerCase();
+                const age = parseInt(item.getAttribute('data-computed-age')) || 0;
+                
+                // Search Box check
+                let matchesSearch = textContent.includes(query) || guardian.includes(query);
+                
+                // Group: Education
+                let matchesEdu = true;
+                if (activeFilters.edu === 'primary') matchesEdu = grade.includes('kindergarten') || grade.includes('kg') || grade.match(/grade\s*[1-6]\b/);
+                else if (activeFilters.edu === 'high') matchesEdu = grade.match(/grade\s*([7-9]|1[0-2])\b/);
+                else if (activeFilters.edu === 'uni') matchesEdu = grade.includes('university') || grade.includes('vocational') || grade.includes('year');
+
+                // Group: Gender
+                let matchesGender = true;
+                if (activeFilters.gender === 'male') matchesGender = gender === 'male';
+                else if (activeFilters.gender === 'female') matchesGender = gender === 'female';
+
+                // Group: Age
+                let matchesAge = true;
+                if (activeFilters.age === 'kids') matchesAge = (age > 0 && age < 13);
+                else if (activeFilters.age === 'teens') matchesAge = (age >= 13 && age <= 17);
+                else if (activeFilters.age === 'draft_age') matchesAge = (age >= 18 && age <= 25);
+                else if (activeFilters.age === 'adults') matchesAge = (age >= 26);
+
+                // Group: Meal (STRICT MATCHING)
+                let matchesMeal = true;
+                if (activeFilters.meal === 'daily_lunch') matchesMeal = (mealPlan === 'daily hot lunch');
+                else if (activeFilters.meal === 'groceries') matchesMeal = (mealPlan === 'monthly groceries');
+                else if (activeFilters.meal === 'orphans') matchesMeal = (mealPlan === 'none' || mealPlan === '');
+
+                // Final Intersection (AND logic)
+                let matchesFilter = matchesSearch && matchesEdu && matchesGender && matchesAge && matchesMeal;
+
+                if (matchesFilter) {
+                    item.style.display = '';
+                    visibleCount++;
+                    if (age >= 18 && age <= 25) draftCount++;
+                    if (age > 0 && age < 18) minorCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update Demographic Insights Cards
+            const statTotal = document.getElementById('stat-total');
+            const statPriority = document.getElementById('stat-priority');
+            const statMinors = document.getElementById('stat-minors');
+            
+            if(statTotal) statTotal.innerText = visibleCount;
+            if(statPriority) statPriority.innerText = draftCount;
+            if(statMinors) statMinors.innerText = minorCount;
+
+            if (noResults) {
+                noResults.classList.toggle('d-none', visibleCount > 0);
+            }
+
+            // 2. SORTING ENGINE
+            const sortEl = document.getElementById('rosterSort');
+            const sortVal = sortEl ? sortEl.value : 'name_asc';
+            
+            if (rosterList) {
+                const itemsArray = Array.from(items);
+                itemsArray.sort((a, b) => {
+                    if (sortVal === 'name_asc' || sortVal === 'name_desc') {
+                        const nameA = (a.getAttribute('data-name') || '').toLowerCase();
+                        const nameB = (b.getAttribute('data-name') || '').toLowerCase();
+                        if (nameA < nameB) return sortVal === 'name_asc' ? -1 : 1;
+                        if (nameA > nameB) return sortVal === 'name_asc' ? 1 : -1;
+                        return 0;
+                    } else if (sortVal === 'age_asc' || sortVal === 'age_desc') {
+                        const ageA = parseInt(a.getAttribute('data-computed-age')) || 0;
+                        const ageB = parseInt(b.getAttribute('data-computed-age')) || 0;
+                        return sortVal === 'age_asc' ? ageA - ageB : ageB - ageA;
+                    }
+                });
+
+                // Re-append sorted elements directly to the DOM to shift their physical location
+                itemsArray.forEach(item => rosterList.appendChild(item));
+                if (noResults) rosterList.appendChild(noResults); 
+            }
+
+            // After filtering/sorting, we must update the bulk selection UI to count only visible checked boxes
+            window.updateBulkActionBar(); 
+        }
+
+        // Run once on load to populate the insight numbers and sort correctly
+        applyFilters();
+
+        // Auto-enable bulk mode if URL has ?mode=bulk
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('mode') === 'bulk') {
             setTimeout(() => { 
-                toggleBulkMode(true); 
+                window.toggleBulkMode(true); 
                 // Specific Meal Plan filter for the "Meals" button hand-off
                 if(urlParams.get('action') === 'meals') {
                     const mealsBtn = document.querySelector('[data-filter="daily_lunch"]');
