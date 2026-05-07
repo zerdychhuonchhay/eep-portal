@@ -59,75 +59,109 @@
     <div class="d-flex flex-column gap-3 mb-4 px-3 px-md-0">
         
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
-            {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
-            <!-- Desktop Add Button -->
-            <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3 transition-hover d-none d-md-flex align-items-center">
-                <i class="bi bi-plus-lg me-1"></i> New Note
-            </a>
-            {% endif %}
+            <h3 class="fw-bold text-dark mb-0 text-nowrap"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+            
+            <div class="d-flex gap-2 flex-shrink-0 flex-wrap">
+                
+                <!-- Filters Toggle (Mobile Only) -->
+                <button class="btn btn-sm btn-white border fw-bold shadow-sm rounded-pill px-3 d-md-none d-flex align-items-center flex-fill justify-content-center transition-hover" type="button" data-bs-toggle="collapse" data-bs-target="#timelineFilters">
+                    <i class="bi bi-funnel-fill text-muted me-2"></i> Filters
+                </button>
+                
+                <!-- Summary Sidebar Toggle (Replaces Right Column) -->
+                <button class="btn btn-sm btn-white border fw-bold shadow-sm rounded-pill px-3 transition-hover d-flex align-items-center" type="button" data-bs-toggle="offcanvas" data-bs-target="#summaryOffcanvas">
+                    <i class="bi bi-layout-sidebar-inset-reverse text-info me-1"></i> <span class="d-none d-sm-inline">Summary</span>
+                </button>
+                
+                {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+                <!-- Desktop Add Button -->
+                <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3 transition-hover d-none d-md-flex align-items-center">
+                    <i class="bi bi-plus-lg me-1"></i> New Note
+                </a>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- 🚀 Scrollable Advanced Filter Row (Foolproof Mobile Scrolling) -->
-        <div class="w-100 position-relative custom-scrollbar" style="overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0;">
-            <div class="d-flex flex-nowrap align-items-center gap-2 pb-2" style="width: max-content;">
+        <!-- 🚀 Filter Section (Smart Dropdowns with Dynamic Width) -->
+        <div class="collapse d-md-block" id="timelineFilters">
+            <div class="row g-2 pb-2 mt-1 align-items-center">
                 
                 <!-- Type Filter Segmented Control -->
-                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
-                    <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn active bg-primary text-white shadow-sm" data-type="all" onclick="setTypeFilter('all', this)">All</button>
-                    <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn text-muted btn-transparent transition-hover" data-type="social" onclick="setTypeFilter('social', this)">Visits & Cases</button>
-                    <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn text-muted btn-transparent transition-hover" data-type="letter" onclick="setTypeFilter('letter', this)">Letters</button>
+                <div class="col-12 col-lg-auto">
+                    <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border h-100">
+                        <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn active bg-primary text-white shadow-sm flex-fill" data-type="all" onclick="setTypeFilter('all', this)">All</button>
+                        <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn text-muted btn-transparent transition-hover flex-fill" data-type="social" onclick="setTypeFilter('social', this)">Visits & Cases</button>
+                        <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn text-muted btn-transparent transition-hover flex-fill" data-type="letter" onclick="setTypeFilter('letter', this)">Letters</button>
+                    </div>
                 </div>
 
-                <div class="vr mx-1 text-muted opacity-25 flex-shrink-0"></div>
-
-                <!-- Native Year Filter Pill -->
-                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
-                    <i class="bi bi-calendar3 text-muted ms-3 me-2 small"></i>
-                    <select id="noteYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
-                        <option value="all">All Years</option>
-                    </select>
+                <div class="d-none d-lg-block col-auto px-1">
+                    <div class="vr h-100 text-muted opacity-25" style="min-height: 30px;"></div>
                 </div>
 
-                <!-- Native Month Filter Pill -->
-                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
-                    <i class="bi bi-calendar-month text-muted ms-3 me-2 small"></i>
-                    <select id="noteMonthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
-                        <option value="all">All Months</option>
-                    </select>
+                <!-- 🚀 Smart Dropdowns: Button tightly hugs the active text, menu floats below! -->
+                
+                <!-- Year Filter Pill -->
+                <div class="col-6 col-md-3 col-lg-auto">
+                    <div class="dropdown bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border h-100">
+                        <i class="bi bi-calendar3 text-muted ms-2 ms-md-3 me-1 small flex-shrink-0"></i>
+                        <button class="btn btn-sm border-0 bg-transparent fw-bold text-dark shadow-none dropdown-toggle ps-1 pe-2 d-flex align-items-center justify-content-between w-100" type="button" data-bs-toggle="dropdown">
+                            <span id="yearDropdownText" class="text-truncate text-start">All Years</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-sm border-0 rounded-4 p-2 small mt-1" id="yearDropdownMenu"></ul>
+                        <input type="hidden" id="noteYearFilter" value="all">
+                    </div>
                 </div>
 
-                <div class="vr mx-1 text-muted opacity-25 flex-shrink-0"></div>
+                <!-- Month Filter Pill -->
+                <div class="col-6 col-md-3 col-lg-auto">
+                    <div class="dropdown bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border h-100">
+                        <i class="bi bi-calendar-month text-muted ms-2 ms-md-3 me-1 small flex-shrink-0"></i>
+                        <button class="btn btn-sm border-0 bg-transparent fw-bold text-dark shadow-none dropdown-toggle ps-1 pe-2 d-flex align-items-center justify-content-between w-100" type="button" data-bs-toggle="dropdown">
+                            <span id="monthDropdownText" class="text-truncate text-start">All Months</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-sm border-0 rounded-4 p-2 small mt-1" id="monthDropdownMenu"></ul>
+                        <input type="hidden" id="noteMonthFilter" value="all">
+                    </div>
+                </div>
+
+                <div class="d-none d-lg-block col-auto px-1">
+                    <div class="vr h-100 text-muted opacity-25" style="min-height: 30px;"></div>
+                </div>
 
                 <!-- Method/Location Filter -->
-                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
-                    <i class="bi bi-geo-alt-fill text-muted ms-3 me-2 small"></i>
-                    <select id="noteMethodFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
-                        <option value="all">All Methods</option>
-                    </select>
+                <div class="col-6 col-md-3 col-lg-auto">
+                    <div class="dropdown bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border h-100">
+                        <i class="bi bi-geo-alt-fill text-muted ms-2 ms-md-3 me-1 small flex-shrink-0"></i>
+                        <button class="btn btn-sm border-0 bg-transparent fw-bold text-dark shadow-none dropdown-toggle ps-1 pe-2 d-flex align-items-center justify-content-between w-100" type="button" data-bs-toggle="dropdown">
+                            <span id="methodDropdownText" class="text-truncate text-start">All Methods</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-sm border-0 rounded-4 p-2 small mt-1" id="methodDropdownMenu"></ul>
+                        <input type="hidden" id="noteMethodFilter" value="all">
+                    </div>
                 </div>
 
                 <!-- Staff Member Filter -->
-                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
-                    <i class="bi bi-person-badge-fill text-muted ms-3 me-2 small"></i>
-                    <select id="noteStaffFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
-                        <option value="all">All Staff</option>
-                    </select>
+                <div class="col-6 col-md-3 col-lg-auto">
+                    <div class="dropdown bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border h-100">
+                        <i class="bi bi-person-badge-fill text-muted ms-2 ms-md-3 me-1 small flex-shrink-0"></i>
+                        <button class="btn btn-sm border-0 bg-transparent fw-bold text-dark shadow-none dropdown-toggle ps-1 pe-2 d-flex align-items-center justify-content-between w-100" type="button" data-bs-toggle="dropdown">
+                            <span id="staffDropdownText" class="text-truncate text-start">All Staff</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-lg-end shadow-sm border-0 rounded-4 p-2 small mt-1" id="staffDropdownMenu"></ul>
+                        <input type="hidden" id="noteStaffFilter" value="all">
+                    </div>
                 </div>
 
             </div>
         </div>
     </div>
 
-    <!-- TWO-COLUMN ADAPTIVE LAYOUT -->
+    <!-- FULL-WIDTH TIMELINE LAYOUT -->
     <div class="row g-4 px-0 px-md-0">
-        
-        <!-- ========================================== -->
-        <!-- LEFT COLUMN: The Timeline Feed             -->
-        <!-- ========================================== -->
-        <div class="col-12 col-lg-8 col-xl-9 order-2 order-lg-1">
+        <!-- 🚀 Now takes 100% width on all screens -->
+        <div class="col-12">
 
-            <!-- Native Vertical Timeline -->
             <div class="px-2 px-md-0" id="notesContainer">
                 {% if followups %}
                     <div class="timeline-container ms-2 position-relative" style="border-left: 3px solid #f8d7da;">
@@ -288,36 +322,40 @@
             </div>
         </div>
 
-        <!-- ========================================== -->
-        <!-- RIGHT COLUMN: Sticky Insights Sidebar      -->
-        <!-- ========================================== -->
-        <div class="col-12 col-lg-4 col-xl-3 order-1 order-lg-2 mb-4 mb-lg-0">
-            <div class="sticky-lg-top" style="top: 100px; z-index: 5;">
-                
-                <!-- Quick Timeline Overview -->
-                <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-none d-lg-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Timeline Summary</h6>
-                <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white overflow-hidden">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-journal-text me-2"></i>Total Notes</span>
-                            <span class="fw-bold text-dark fs-6">{{ followups|length }}</span>
-                        </div>
-                        {% if followups %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-calendar-event me-2"></i>Last Contact</span>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3">{{ followups[0].followup_date }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-start py-3 bg-white border-bottom-0">
-                            <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-geo-alt-fill me-2"></i>Location</span>
-                            <span class="fw-bold text-dark text-end ms-3 text-wrap text-break" style="font-size: 0.9rem; word-break: break-word;">{{ followups[0].location }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
+    </div>
 
-            </div>
+    <!-- 🚀 NEW: OFFCANVAS SUMMARY SIDEBAR (Replaces Fixed Right Column) -->
+    <div class="offcanvas offcanvas-end shadow-lg border-0" tabindex="-1" id="summaryOffcanvas" style="width: 340px;">
+        <div class="offcanvas-header bg-light border-bottom py-3 px-4">
+            <h6 class="offcanvas-title fw-bold text-dark text-uppercase tracking-wide mb-0" style="font-size: 0.8rem;"><i class="bi bi-layout-sidebar-inset-reverse text-info me-2"></i>Timeline Summary</h6>
+            <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas"></button>
         </div>
-
+        <div class="offcanvas-body p-4 bg-white">
+            <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white px-0 border-bottom">
+                    <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-journal-text me-2"></i>Total Notes</span>
+                    <span class="fw-bold text-dark fs-6">{{ followups|length }}</span>
+                </div>
+                {% if followups %}
+                <div class="list-group-item d-flex justify-content-between align-items-center py-3 bg-white px-0 border-bottom">
+                    <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-calendar-event me-2"></i>Last Contact</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3">{{ followups[0].followup_date }}</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between align-items-start py-3 bg-white px-0 border-bottom-0">
+                    <span class="text-muted fw-bold small flex-shrink-0 mt-1"><i class="bi bi-geo-alt-fill me-2"></i>Location</span>
+                    <span class="fw-bold text-dark text-end ms-3 text-wrap text-break" style="font-size: 0.9rem; word-break: break-word;">{{ followups[0].location }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+            <div class="mt-4 pt-4 border-top">
+                <a href="/add_followup/{{ student.id }}" class="btn btn-danger w-100 fw-bold shadow-sm rounded-pill transition-hover">
+                    <i class="bi bi-plus-lg me-1"></i> Log New Visit
+                </a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- MOBILE FLOATING ADD BUTTON (FAB) -->
@@ -334,6 +372,9 @@
         .container-fluid { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
         .glass-panel { border-radius: 0 !important; }
     }
+    
+    /* Dropdown UI Polishes */
+    .dropdown-item.active, .dropdown-item:active { background-color: #f0f7ff !important; color: #0d6efd !important; }
 </style>
 {% endblock %}
 
@@ -342,7 +383,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         const noteCards = document.querySelectorAll('.note-card');
         
-        // Filter Elements
+        // Filter Elements (Now Hidden Inputs)
         const noteYearFilter = document.getElementById('noteYearFilter');
         const noteMonthFilter = document.getElementById('noteMonthFilter');
         const noteMethodFilter = document.getElementById('noteMethodFilter');
@@ -357,7 +398,6 @@
         const noteMethods = new Set();
         const noteStaff = new Set();
 
-        // Month formatting mapping
         const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
         noteCards.forEach(card => {
@@ -367,24 +407,42 @@
             if(card.dataset.staff) noteStaff.add(card.dataset.staff);
         });
         
-        // Populate Year Dropdown (Desc)
-        Array.from(noteYears).sort().reverse().forEach(year => {
-            noteYearFilter.add(new Option(year, year));
-        });
+        // Smart Dropdown Builder
+        function populateDropdown(menuId, targetId, textId, items, defaultText) {
+            const menu = document.getElementById(menuId);
+            if(!menu) return;
+            
+            let html = `<li><a class="dropdown-item py-2 fw-bold rounded-3 transition-hover filter-option" href="#" data-target="${targetId}" data-textid="${textId}" data-text="${defaultText}" data-value="all">${defaultText}</a></li>`;
+            
+            items.forEach(item => {
+                const text = item.label || item;
+                const val = item.value || item;
+                html += `<li><a class="dropdown-item py-2 fw-bold rounded-3 transition-hover filter-option" href="#" data-target="${targetId}" data-textid="${textId}" data-text="${text}" data-value="${val}">${text}</a></li>`;
+            });
+            menu.innerHTML = html;
+        }
 
-        // Populate Month Dropdown (Desc)
-        Array.from(noteMonths).sort().reverse().forEach(month => {
-            noteMonthFilter.add(new Option(monthNames[parseInt(month)], month));
-        });
+        const monthItems = Array.from(noteMonths).sort().reverse().map(m => ({ label: monthNames[parseInt(m)], value: m }));
+        
+        populateDropdown('yearDropdownMenu', 'noteYearFilter', 'yearDropdownText', Array.from(noteYears).sort().reverse(), 'All Years');
+        populateDropdown('monthDropdownMenu', 'noteMonthFilter', 'monthDropdownText', monthItems, 'All Months');
+        populateDropdown('methodDropdownMenu', 'noteMethodFilter', 'methodDropdownText', Array.from(noteMethods).sort(), 'All Methods');
+        populateDropdown('staffDropdownMenu', 'noteStaffFilter', 'staffDropdownText', Array.from(noteStaff).sort(), 'All Staff');
 
-        // Populate Method Dropdown (Asc)
-        Array.from(noteMethods).sort().forEach(method => {
-            noteMethodFilter.add(new Option(method, method));
-        });
-
-        // Populate Staff Dropdown (Asc)
-        Array.from(noteStaff).sort().forEach(staff => {
-            noteStaffFilter.add(new Option(staff, staff));
+        // Handle Dropdown Selections
+        document.addEventListener('click', function(e) {
+            const opt = e.target.closest('.filter-option');
+            if (opt) {
+                e.preventDefault();
+                const targetInput = document.getElementById(opt.dataset.target);
+                const textSpan = document.getElementById(opt.dataset.textid);
+                
+                if(targetInput && textSpan) {
+                    targetInput.value = opt.dataset.value;
+                    textSpan.innerText = opt.dataset.text;
+                    filterNotes(); 
+                }
+            }
         });
 
         // Handle the visual Segmented Pill Buttons
