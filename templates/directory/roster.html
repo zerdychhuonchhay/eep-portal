@@ -60,7 +60,7 @@
     <div class="sticky-top pt-2 pb-3 mx-n3 mx-md-0 px-3 px-md-0" style="top: 65px; z-index: 10; background: linear-gradient(180deg, var(--app-bg) 85%, transparent 100%);">
         <div class="d-flex flex-column gap-2">
             
-            <!-- ROW 1: SEARCH & SORT (Isolated to prevent squishing) -->
+            <!-- ROW 1: SEARCH & SORT -->
             <div class="d-flex flex-row gap-2 w-100 mb-1">
                 <!-- Search Bar -->
                 <div class="input-group shadow-sm rounded-pill overflow-hidden border-0 bg-white" style="flex: 1;">
@@ -80,39 +80,77 @@
                 </div>
             </div>
 
-            <!-- ROW 2: FILTERS & BULK SELECT (Horizontally Scrollable) -->
-            <div class="d-flex gap-2 w-100 align-items-center overflow-auto custom-scrollbar pb-1" style="-webkit-overflow-scrolling: touch;">
+            <!-- ROW 1.5: GRANULAR DROPDOWNS (Grade, School, Location, Family) -->
+            <div class="d-flex flex-nowrap align-items-center gap-2 overflow-auto custom-scrollbar pb-1 w-100" style="-webkit-overflow-scrolling: touch;">
+                <!-- Grade Filter -->
+                <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm flex-shrink-0">
+                    <i class="bi bi-mortarboard-fill text-success ms-3 me-2 small"></i>
+                    <select id="gradeDropdown" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" style="cursor: pointer;">
+                        <option value="all">All Grades</option>
+                    </select>
+                </div>
+                <!-- School Filter -->
+                <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm flex-shrink-0">
+                    <i class="bi bi-building-fill text-info ms-3 me-2 small"></i>
+                    <select id="schoolFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" style="cursor: pointer;">
+                        <option value="all">All Schools</option>
+                    </select>
+                </div>
+                <!-- Location Filter -->
+                <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm flex-shrink-0">
+                    <i class="bi bi-geo-alt-fill text-danger ms-3 me-2 small"></i>
+                    <select id="locationFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" style="cursor: pointer;">
+                        <option value="all">All Locations</option>
+                    </select>
+                </div>
+                <!-- Family/Guardian Filter -->
+                <div class="d-flex align-items-center bg-white p-1 rounded-pill border shadow-sm flex-shrink-0">
+                    <i class="bi bi-house-heart-fill text-secondary ms-3 me-2 small"></i>
+                    <select id="familyFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none pe-4" style="cursor: pointer;">
+                        <option value="all">All Families</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ROW 2: FILTERS & BULK SELECT (Tag Cloud Style) -->
+            <div class="d-flex flex-column flex-md-row gap-2 w-100 align-items-start align-items-md-center pb-1 mt-1">
                 
                 <!-- Bulk "Select Visible" Button (Revealed in Bulk Mode) -->
                 <button type="button" id="btnSelectVisible" class="btn btn-white border rounded-pill fw-bold text-dark shadow-sm transition-hover d-none align-items-center px-3 flex-shrink-0" onclick="toggleSelectAll()" title="Select All Visible Students">
                     <i class="bi bi-check2-all fs-5 me-1 text-primary"></i> Select Visible
                 </button>
                 
-                <!-- Advanced Filter Pills -->
-                <div class="d-flex gap-1 align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 flex-shrink-0" style="white-space: nowrap;">
-                    <button class="btn btn-sm bg-primary text-white shadow-sm rounded-pill px-3 fw-bold filter-btn active" data-group="all" data-filter="all">All</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="edu" data-filter="primary">Primary</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="edu" data-filter="high">High School</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="edu" data-filter="uni">Uni/Voc</button>
-                    <div class="vr my-2 text-muted opacity-25"></div>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="gender" data-filter="male">Boys</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="gender" data-filter="female">Girls</button>
+                <!-- Advanced Filter Pills (Wrapped for Full Mobile Visibility) -->
+                <div class="d-flex flex-wrap gap-2 align-items-center bg-white rounded-4 px-2 px-md-3 shadow-sm border py-2 w-100">
+                    <!-- ALL (Dark) -->
+                    <button class="btn btn-sm bg-dark text-white shadow-sm rounded-pill px-3 fw-bold filter-btn active" data-group="all" data-filter="all">All</button>
                     
-                    <!-- Military Draft Age Filters -->
-                    <div class="vr my-2 text-muted opacity-25"></div>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="age" data-filter="kids">Kids (<12)</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="age" data-filter="teens">Teens (13-17)</button>
+                    <!-- EDUCATION (Info/Teal) -->
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-info filter-btn transition-hover" data-group="edu" data-filter="primary">Primary</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-info filter-btn transition-hover" data-group="edu" data-filter="high">High School</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-info filter-btn transition-hover" data-group="edu" data-filter="uni">Uni/Voc</button>
+                    <div class="vr my-2 d-none d-md-block text-muted opacity-25"></div>
+                    
+                    <!-- GENDER (Primary/Blue) -->
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-primary filter-btn transition-hover" data-group="gender" data-filter="male">Boys</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-primary filter-btn transition-hover" data-group="gender" data-filter="female">Girls</button>
+                    <div class="vr my-2 d-none d-md-block text-muted opacity-25"></div>
+                    
+                    <!-- AGE (Success/Green & Warning) -->
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-success filter-btn transition-hover" data-group="age" data-filter="kids">Kids (<12)</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-success filter-btn transition-hover" data-group="age" data-filter="teens">Teens (13-17)</button>
                     <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold filter-btn transition-hover text-warning text-darken" data-group="age" data-filter="draft_age"><i class="bi bi-exclamation-triangle-fill me-1"></i>Draft (18-25)</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="age" data-filter="adults">Adults (26+)</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-success filter-btn transition-hover" data-group="age" data-filter="adults">Adults (26+)</button>
                 </div>
             </div>
 
             <!-- ROW 3: CONTEXTUAL PROGRAM FILTERS (Revealed in Bulk Mode) -->
-            <div id="programFilters" class="d-none gap-2 w-100 align-items-center overflow-auto custom-scrollbar pb-1 mt-1" style="-webkit-overflow-scrolling: touch;">
-                <div class="d-flex gap-1 align-items-center bg-white rounded-pill px-2 shadow-sm border py-1 flex-shrink-0" style="white-space: nowrap;">
+            <div id="programFilters" class="d-none w-100 mt-1">
+                <div class="d-flex flex-wrap gap-2 align-items-center bg-white rounded-4 px-2 px-md-3 shadow-sm border py-2 w-100">
                     <span class="small fw-bold text-danger mx-2"><i class="bi bi-funnel-fill me-1"></i> Bulk Action Filter:</span>
+                    <!-- MEALS (Secondary/Warning) -->
                     <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="meal" data-filter="daily_lunch">🍱 Hot Lunch</button>
-                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover text-darken" data-group="meal" data-filter="groceries">🌾 Groceries</button>
+                    <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover text-warning text-darken" data-group="meal" data-filter="groceries">🌾 Groceries</button>
                     <button class="btn btn-sm btn-transparent rounded-pill px-3 fw-bold text-muted filter-btn transition-hover" data-group="meal" data-filter="orphans">🏠 No Plan</button>
                 </div>
             </div>
@@ -176,13 +214,17 @@
                 <!-- Using a div instead of a label prevents invisible checkbox clicks! -->
                 <div class="list-group list-group-flush rounded-bottom-4 pb-5 pb-md-0" id="rosterList">
                     {% for student in students %}
+                    <!-- FIXED DATA ATTRIBUTES: Now storing raw, correctly-cased data -->
                     <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom student-item transition-hover" 
                            data-grade="{{ student.grade_level|lower }}" 
+                           data-grade-raw="{{ student.grade_level }}"
                            data-gender="{{ student.gender|lower }}" 
-                           data-guardian="{{ student.guardian_name|lower if student.guardian_name else '' }}" 
+                           data-guardian="{{ student.guardian_name if student.guardian_name else '' }}" 
                            data-meal-plan="{{ student.meal_plan|lower if student.meal_plan else 'none' }}"
                            data-dob="{{ student.dob }}"
-                           data-name="{{ student.first_name }} {{ student.last_name }}">
+                           data-name="{{ student.first_name }} {{ student.last_name }}"
+                           data-school="{{ student.current_school if student.current_school else '' }}"
+                           data-slum="{{ student.slum_area if student.slum_area else '' }}">
                         <div class="row gx-3 gy-2 align-items-center">
 
                             <!-- Identity (Checkbox, Avatar, Name, ID, Grade) -->
@@ -193,7 +235,6 @@
                                     <input class="form-check-input fs-4 roster-checkbox shadow-sm border-secondary border-opacity-25 mt-0" type="checkbox" name="student_ids" value="{{ student.id }}">
                                 </div>
 
-                                <!-- FIX: Ignored default.png to prevent 404 errors -->
                                 {% set has_custom_pic = student.profile_picture and student.profile_picture != 'default.png' %}
                                 {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=random&color=fff&size=60" %}
                                 <div class="position-relative me-3 flex-shrink-0">
@@ -201,7 +242,8 @@
                                             class="rounded-circle border border-3 border-white shadow-sm" 
                                             style="width: 55px; height: 55px; object-fit: cover;" 
                                             onerror="this.onerror=null; this.src='{{ thumb_url }}';">
-                                    <span class="position-absolute bottom-0 end-0 p-1 border border-white border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %}" style="margin-bottom: 2px; margin-right: 2px;" title="{{ student.status }}"></span>
+                                    <!-- 🚀 BUG FIX: Added 'Paused' logic to avatar dot -->
+                                    <span class="position-absolute bottom-0 end-0 p-1 border border-white border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% elif student.status == 'Paused' %}bg-warning{% else %}bg-secondary{% endif %}" style="margin-bottom: 2px; margin-right: 2px;" title="{{ student.status }}"></span>
                                 </div>
                                 
                                 <div class="text-start w-100" style="min-width: 0;">
@@ -233,7 +275,20 @@
                                             <span class="fst-italic opacity-50">No Phone</span>
                                         {% endif %}
                                     </div>
-                                    <div class="student-school text-muted khmer-font text-truncate fw-bold"><i class="bi bi-building-fill me-2 text-info opacity-50"></i>{{ student.current_school if student.current_school else '-' }}</div>
+                                    
+                                    <!-- 🚀 BUG FIX: Smart School Display (Replaces 'Paused' with a visual badge) -->
+                                    <div class="student-school text-muted khmer-font text-truncate fw-bold">
+                                        <i class="bi bi-building-fill me-2 text-info opacity-50"></i>
+                                        {% set s_school = student.current_school|lower if student.current_school else '' %}
+                                        {% if s_school in ['paused', 'gap year', 'suspended'] %}
+                                            <span class="badge bg-warning bg-opacity-10 text-darken border border-warning border-opacity-25 rounded-pill px-2" style="font-size: 0.65rem;">Gap Year / Paused</span>
+                                        {% elif student.current_school and s_school not in ['none', 'n/a', '-', 'university', 'vocational'] %}
+                                            {{ student.current_school }}
+                                        {% else %}
+                                            <span class="fst-italic opacity-50">No School Listed</span>
+                                        {% endif %}
+                                    </div>
+                                    
                                 </div>
                             </div>
 
@@ -360,8 +415,20 @@
         const progFilters = document.getElementById('programFilters');
         const rosterList = document.getElementById('rosterList');
 
-        // --- 2. DYNAMIC AGE CALCULATION ENGINE ---
+        // Dynamic Dropdown Elements
+        const gradeDropdown = document.getElementById('gradeDropdown');
+        const locationFilter = document.getElementById('locationFilter');
+        const schoolFilter = document.getElementById('schoolFilter');
+        const familyFilter = document.getElementById('familyFilter');
+
+        // --- 2. DATA EXTRACTION ENGINE (Ages & Dropdown Values) ---
+        const gradesMap = new Map();
+        const locationsMap = new Map();
+        const schoolsMap = new Map();
+        const familiesMap = new Map();
+
         document.querySelectorAll('.student-item').forEach(item => {
+            // A. Age Calculation
             const dobStr = item.getAttribute('data-dob');
             let age = 0;
             
@@ -387,7 +454,48 @@
                     badgeContainer.innerHTML = `<span class="badge bg-light text-muted border px-2 py-1 rounded-pill">${age} yrs</span>`;
                 }
             }
+
+            // B. Extract Values for Dynamic Dropdowns (Preserving Exact Case)
+            const gradeRaw = item.getAttribute('data-grade-raw');
+            const slum = item.getAttribute('data-slum');
+            const school = item.getAttribute('data-school');
+            const guardian = item.getAttribute('data-guardian');
+            
+            if (gradeRaw && gradeRaw.trim() !== '' && gradeRaw.toLowerCase() !== 'none') {
+                if (!gradesMap.has(gradeRaw.trim().toLowerCase())) gradesMap.set(gradeRaw.trim().toLowerCase(), gradeRaw.trim());
+            }
+            if (slum && slum.trim() !== '' && slum.toLowerCase() !== 'none') {
+                if (!locationsMap.has(slum.trim().toLowerCase())) locationsMap.set(slum.trim().toLowerCase(), slum.trim());
+            }
+            
+            // 🚀 BUG FIX: Filter out generic school terms from the dropdown list
+            if (school && school.trim() !== '' && school.toLowerCase() !== 'none') {
+                const cleanSchool = school.trim();
+                const invalidSchools = ['university', 'vocational', 'high school', 'primary school', 'kindergarten', 'none', 'n/a', '-', 'paused', 'gap year', 'suspended'];
+                
+                if (!invalidSchools.includes(cleanSchool.toLowerCase())) {
+                    if (!schoolsMap.has(cleanSchool.toLowerCase())) schoolsMap.set(cleanSchool.toLowerCase(), cleanSchool);
+                }
+            }
+            
+            if (guardian && guardian.trim() !== '' && guardian.toLowerCase() !== 'none') {
+                if (!familiesMap.has(guardian.trim().toLowerCase())) familiesMap.set(guardian.trim().toLowerCase(), guardian.trim());
+            }
         });
+
+        // Populate Dropdowns dynamically without forcing TitleCase
+        const populateDropdown = (map, element) => {
+            if (!element) return;
+            Array.from(map.values()).sort().forEach(val => {
+                element.add(new Option(val, val.toLowerCase()));
+            });
+            element.addEventListener('change', applyFilters);
+        };
+
+        populateDropdown(gradesMap, gradeDropdown);
+        populateDropdown(locationsMap, locationFilter);
+        populateDropdown(schoolsMap, schoolFilter);
+        populateDropdown(familiesMap, familyFilter);
         
         // --- 3. MULTI-SELECT & ACTION BAR ENGINE (Hoisted correctly) ---
         window.updateBulkActionBar = function() {
@@ -437,34 +545,25 @@
             }
             
             if (isBulkMode) {
-                // Desktop Button styling swap
                 if(btnToggleBulk) { btnToggleBulk.classList.replace('btn-outline-danger', 'btn-danger'); btnToggleBulk.classList.add('text-white'); }
-                // Mobile FAB styling swap
                 if(fabToggleBulk) { fabToggleBulk.classList.replace('btn-light', 'btn-danger'); fabToggleBulk.classList.add('text-white'); }
                 
-                // Reveal bulk UI elements
                 if(btnSelectVisible) { btnSelectVisible.classList.remove('d-none'); btnSelectVisible.classList.add('d-flex'); }
-                if(progFilters) { progFilters.classList.remove('d-none'); progFilters.classList.add('d-flex'); }
+                if(progFilters) { progFilters.classList.remove('d-none'); progFilters.classList.add('d-block'); }
                 allCheckboxes.forEach(cb => cb.closest('.bulk-checkbox-wrapper').classList.remove('d-none'));
                 
-                // Enable hover/pointer CSS for rows
                 if(rosterList) rosterList.classList.add('bulk-active');
                 
             } else {
-                // Revert Desktop Button
                 if(btnToggleBulk) { btnToggleBulk.classList.replace('btn-danger', 'btn-outline-danger'); btnToggleBulk.classList.remove('text-white'); }
-                // Revert Mobile FAB
                 if(fabToggleBulk) { fabToggleBulk.classList.replace('btn-danger', 'btn-light'); fabToggleBulk.classList.remove('text-white'); }
                 
-                // Hide bulk UI elements
                 if(btnSelectVisible) { btnSelectVisible.classList.add('d-none'); btnSelectVisible.classList.remove('d-flex'); }
-                if(progFilters) { progFilters.classList.add('d-none'); progFilters.classList.remove('d-flex'); }
+                if(progFilters) { progFilters.classList.add('d-none'); progFilters.classList.remove('d-block'); }
                 allCheckboxes.forEach(cb => cb.closest('.bulk-checkbox-wrapper').classList.add('d-none'));
                 
-                // Disable hover/pointer CSS for rows
                 if(rosterList) rosterList.classList.remove('bulk-active');
                 
-                // Clear active bulk filters and return to "all" when closing bulk mode
                 const allBtn = document.querySelector('[data-filter="all"]');
                 if (allBtn) allBtn.click();
                 
@@ -475,18 +574,15 @@
         // --- SMART ROW CLICK LISTENER ---
         if(rosterList) {
             rosterList.addEventListener('click', function(e) {
-                if (!isBulkMode) return; // ONLY allow row clicking when Bulk Mode is explicitly turned on
-                if (e.target.closest('a') || e.target.closest('button')) return; // Ignore actual links/buttons inside the row
+                if (!isBulkMode) return; 
+                if (e.target.closest('a') || e.target.closest('button')) return; 
                 
                 const row = e.target.closest('.student-item');
                 if (row) {
                     const cb = row.querySelector('.roster-checkbox');
-                    
-                    // If they clicked the row (but not the actual checkbox input itself), toggle it
                     if (e.target !== cb) {
                         cb.checked = !cb.checked;
                     }
-                    
                     if (cb.checked) {
                         row.classList.add('selected-row');
                     } else {
@@ -499,22 +595,62 @@
         
         // --- 4. ADVANCED FACET FILTER ENGINE ---
         
-        // CLEAN CSS HELPER FUNCTIONS (Solves the UI color-override bug)
         function setPillInactive(btn) {
-            btn.classList.remove('bg-primary', 'text-white', 'shadow-sm', 'active', 'text-muted', 'text-warning', 'text-darken', 'text-success');
+            btn.classList.remove('bg-primary', 'bg-info', 'bg-success', 'bg-warning', 'bg-dark', 'bg-secondary', 'text-white', 'text-dark', 'shadow-sm', 'active', 'text-muted', 'text-warning', 'text-darken', 'text-info', 'text-primary', 'text-success');
             btn.classList.add('btn-transparent');
             
+            const filterGroup = btn.getAttribute('data-group');
             const filterType = btn.getAttribute('data-filter');
-            if (filterType === 'draft_age') {
-                btn.classList.add('text-warning', 'text-darken');
-            } else {
+            
+            if (filterType === 'all') {
                 btn.classList.add('text-muted');
+            } else if (filterGroup === 'edu') {
+                btn.classList.add('text-info');
+            } else if (filterGroup === 'gender') {
+                btn.classList.add('text-primary');
+            } else if (filterGroup === 'age') {
+                if (filterType === 'draft_age') {
+                    btn.classList.add('text-warning', 'text-darken');
+                } else {
+                    btn.classList.add('text-success');
+                }
+            } else if (filterGroup === 'meal') {
+                if (filterType === 'groceries') {
+                    btn.classList.add('text-warning', 'text-darken');
+                } else {
+                    btn.classList.add('text-muted');
+                }
             }
         }
 
         function setPillActive(btn) {
-            btn.classList.remove('btn-transparent', 'text-muted', 'text-warning', 'text-darken', 'text-success');
-            btn.classList.add('bg-primary', 'text-white', 'shadow-sm', 'active');
+            btn.classList.remove('btn-transparent', 'text-muted', 'text-info', 'text-primary', 'text-success', 'text-warning', 'text-darken');
+            btn.classList.add('text-white', 'shadow-sm', 'active');
+            
+            const filterGroup = btn.getAttribute('data-group');
+            const filterType = btn.getAttribute('data-filter');
+
+            if (filterType === 'all') {
+                btn.classList.add('bg-dark');
+            } else if (filterGroup === 'edu') {
+                btn.classList.add('bg-info');
+            } else if (filterGroup === 'gender') {
+                btn.classList.add('bg-primary');
+            } else if (filterGroup === 'age') {
+                if (filterType === 'draft_age') {
+                    btn.classList.add('bg-warning', 'text-dark');
+                    btn.classList.remove('text-white');
+                } else {
+                    btn.classList.add('bg-success');
+                }
+            } else if (filterGroup === 'meal') {
+                if (filterType === 'groceries') {
+                    btn.classList.add('bg-warning', 'text-dark');
+                    btn.classList.remove('text-white');
+                } else {
+                    btn.classList.add('bg-secondary');
+                }
+            }
         }
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -525,32 +661,33 @@
                 const filterGroup = this.getAttribute('data-group');
 
                 if (filterValue === 'all') {
-                    // Reset everything
                     activeFilters = { edu: null, gender: null, age: null, meal: null };
                     document.querySelectorAll('.filter-btn').forEach(setPillInactive);
                     setPillActive(this);
+                    
+                    // Also reset dropdowns
+                    if (gradeDropdown) gradeDropdown.value = 'all';
+                    if (locationFilter) locationFilter.value = 'all';
+                    if (schoolFilter) schoolFilter.value = 'all';
+                    if (familyFilter) familyFilter.value = 'all';
                 } else {
-                    // Unselect the 'All' button safely
                     const allBtn = document.querySelector('[data-filter="all"]');
                     if (allBtn) setPillInactive(allBtn);
 
                     if (activeFilters[filterGroup] === filterValue) {
-                        // Turn off current selection
                         activeFilters[filterGroup] = null;
                         setPillInactive(this);
                     } else {
-                        // Turn off other selections in the SAME group safely
                         document.querySelectorAll(`.filter-btn[data-group="${filterGroup}"]`).forEach(setPillInactive);
-                        
-                        // Turn on new selection
                         activeFilters[filterGroup] = filterValue;
                         setPillActive(this);
                     }
 
-                    // If no filters are active at all, trigger "All" automatically
                     if (!activeFilters.edu && !activeFilters.gender && !activeFilters.age && !activeFilters.meal) {
-                        if(allBtn) allBtn.click();
-                        return; // Prevent double execution
+                        if(allBtn && gradeDropdown.value === 'all' && locationFilter.value === 'all' && schoolFilter.value === 'all' && familyFilter.value === 'all') {
+                            if(allBtn) allBtn.click();
+                            return; 
+                        }
                     }
                 }
                 
@@ -567,6 +704,18 @@
             const items = document.querySelectorAll('.student-item');
             const noResults = document.getElementById('noResultsMessage');
             
+            // Dropdown Values
+            const grdVal = gradeDropdown ? gradeDropdown.value : 'all';
+            const locVal = locationFilter ? locationFilter.value : 'all';
+            const schVal = schoolFilter ? schoolFilter.value : 'all';
+            const famVal = familyFilter ? familyFilter.value : 'all';
+
+            // Ensure "All" pill is disabled if a dropdown is active
+            const allBtn = document.querySelector('[data-filter="all"]');
+            if (allBtn && (grdVal !== 'all' || locVal !== 'all' || schVal !== 'all' || famVal !== 'all')) {
+                setPillInactive(allBtn);
+            }
+
             let visibleCount = 0;
             let draftCount = 0;
             let minorCount = 0;
@@ -576,13 +725,23 @@
                 const textContent = item.innerText.toLowerCase();
                 const grade = (item.getAttribute('data-grade') || '').toLowerCase();
                 const gender = (item.getAttribute('data-gender') || '').toLowerCase();
-                const guardian = (item.getAttribute('data-guardian') || '').toLowerCase();
+                const guardian = (item.getAttribute('data-guardian') || '').toLowerCase().trim();
                 const mealPlan = (item.getAttribute('data-meal-plan') || '').toLowerCase();
+                const slum = (item.getAttribute('data-slum') || '').toLowerCase().trim();
+                const school = (item.getAttribute('data-school') || '').toLowerCase().trim();
+                const gradeRaw = (item.getAttribute('data-grade-raw') || '').toLowerCase().trim();
                 const age = parseInt(item.getAttribute('data-computed-age')) || 0;
                 
                 // Search Box check
                 let matchesSearch = textContent.includes(query) || guardian.includes(query);
                 
+                // Dropdown Checks
+                let matchesDropdowns = true;
+                if (grdVal !== 'all' && gradeRaw !== grdVal) matchesDropdowns = false;
+                if (locVal !== 'all' && slum !== locVal) matchesDropdowns = false;
+                if (schVal !== 'all' && school !== schVal) matchesDropdowns = false;
+                if (famVal !== 'all' && guardian !== famVal) matchesDropdowns = false;
+
                 // Group: Education
                 let matchesEdu = true;
                 if (activeFilters.edu === 'primary') matchesEdu = grade.includes('kindergarten') || grade.includes('kg') || grade.match(/grade\s*[1-6]\b/);
@@ -608,7 +767,7 @@
                 else if (activeFilters.meal === 'orphans') matchesMeal = (mealPlan === 'none' || mealPlan === '');
 
                 // Final Intersection (AND logic)
-                let matchesFilter = matchesSearch && matchesEdu && matchesGender && matchesAge && matchesMeal;
+                let matchesFilter = matchesSearch && matchesDropdowns && matchesEdu && matchesGender && matchesAge && matchesMeal;
 
                 if (matchesFilter) {
                     item.style.display = '';
@@ -658,7 +817,6 @@
                 if (noResults) rosterList.appendChild(noResults); 
             }
 
-            // After filtering/sorting, we must update the bulk selection UI to count only visible checked boxes
             window.updateBulkActionBar(); 
         }
 
@@ -670,7 +828,6 @@
         if (urlParams.get('mode') === 'bulk') {
             setTimeout(() => { 
                 window.toggleBulkMode(true); 
-                // Specific Meal Plan filter for the "Meals" button hand-off
                 if(urlParams.get('action') === 'meals') {
                     const mealsBtn = document.querySelector('[data-filter="daily_lunch"]');
                     if(mealsBtn) mealsBtn.click();

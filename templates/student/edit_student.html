@@ -30,7 +30,7 @@
                                 {% set thumb = "https://ui-avatars.com/api/?name=" ~ student.first_name ~ "+" ~ student.last_name ~ "&background=e9ecef&color=495057&bold=true&size=150" %}
                                 <img src="{{ url_for('static', filename='uploads/profiles/' + student.profile_picture) if student.profile_picture else thumb }}" alt="Avatar" class="rounded-circle border border-4 border-white shadow-sm avatar-xl">
                                 
-                                <span class="position-absolute bottom-0 end-0 p-2 border border-light border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% else %}bg-secondary{% endif %}" style="width: 25px; height: 25px;"></span>
+                                <span class="position-absolute bottom-0 end-0 p-2 border border-light border-2 rounded-circle {% if student.status == 'Active' %}bg-success{% elif student.status == 'Dropped Out' %}bg-danger{% elif student.status == 'Paused' %}bg-warning{% else %}bg-secondary{% endif %}" style="width: 25px; height: 25px;"></span>
                             </div>
 
                             <h4 class="fw-bold mb-1 text-dark">{{ student.first_name }} {{ student.last_name }}</h4>
@@ -42,6 +42,7 @@
                                 <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="font-size: 0.65rem;">Program Status</label>
                                 <select class="form-select border-primary fw-bold rounded-3 shadow-sm mb-3" name="status">
                                     <option value="Active" {% if student.status == 'Active' %}selected{% endif %}>🟢 Active</option>
+                                    <option value="Paused" {% if student.status == 'Paused' %}selected{% endif %}>🟡 Paused / Gap Year</option>
                                     <option value="Dropped Out" {% if student.status == 'Dropped Out' %}selected{% endif %}>🔴 Dropped Out</option>
                                     <option value="Graduated" {% if student.status == 'Graduated' %}selected{% endif %}>🔵 Graduated</option>
                                 </select>
@@ -179,17 +180,37 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Current School</label>
-                                <input class="form-control bg-light border-0 khmer-font p-2" name="current_school" type="text" value="{{ student.current_school if student.current_school else '' }}">
+                                <input class="form-control bg-light border-0 khmer-font p-2" name="current_school" type="text" value="{{ student.current_school if student.current_school else '' }}" placeholder="e.g. PPIU (or type 'Paused')">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase">Current Grade *</label>
                                 <select class="form-select bg-light border-0 fw-bold" name="grade_level" required>
-                                    <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
-                                    {% for i in range(1, 13) %}
-                                    <option value="Grade {{ i }}" {% if student.grade_level == 'Grade ' ~ i %}selected{% endif %}>Grade {{ i }}</option>
-                                    {% endfor %}
-                                    <option value="Vocational" {% if student.grade_level == 'Vocational' %}selected{% endif %}>Vocational</option>
-                                    <option value="University" {% if student.grade_level == 'University' %}selected{% endif %}>University</option>
+                                    <option value="" disabled>Select Grade...</option>
+                                    
+                                    <!-- Legacy Fallbacks (in case an old un-updated value exists) -->
+                                    {% if student.grade_level == 'University' %}
+                                        <option value="University" selected>University (Please update year)</option>
+                                    {% endif %}
+                                    {% if student.grade_level == 'Vocational' %}
+                                        <option value="Vocational" selected>Vocational (Please update)</option>
+                                    {% endif %}
+
+                                    <optgroup label="Early Education">
+                                        <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
+                                    </optgroup>
+                                    <optgroup label="Primary & Secondary (K-12)">
+                                        {% for i in range(1, 13) %}
+                                        <option value="Grade {{ i }}" {% if student.grade_level == 'Grade ' ~ i %}selected{% endif %}>Grade {{ i }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    <optgroup label="Higher Education">
+                                        <option value="University Year 1" {% if student.grade_level == 'University Year 1' %}selected{% endif %}>University Year 1</option>
+                                        <option value="University Year 2" {% if student.grade_level == 'University Year 2' %}selected{% endif %}>University Year 2</option>
+                                        <option value="University Year 3" {% if student.grade_level == 'University Year 3' %}selected{% endif %}>University Year 3</option>
+                                        <option value="University Year 4" {% if student.grade_level == 'University Year 4' %}selected{% endif %}>University Year 4</option>
+                                        <option value="University Year 5" {% if student.grade_level == 'University Year 5' %}selected{% endif %}>University Year 5</option>
+                                        <option value="Vocational Training" {% if student.grade_level == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
+                                    </optgroup>
                                 </select>
                             </div>
                             <div class="col-md-12">
@@ -222,9 +243,9 @@
 </div>
 
 <style>
+    .avatar-xl { width: 130px; height: 130px; object-fit: cover; }
     .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
     .transition-hover:hover { transform: translateY(-2px); }
-    .avatar-xl { width: 130px; height: 130px; object-fit: cover; }
     .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .form-control:focus, .form-select:focus { background-color: #fff !important; border-color: #007AFF !important; box-shadow: 0 0 0 0.25rem rgba(0, 122, 255, 0.1) !important; }
     @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; border-left: 0 !important; border-right: 0 !important; margin-left: -1rem; margin-right: -1rem; } }
