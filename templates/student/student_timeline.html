@@ -55,25 +55,67 @@
         </ul>
     </div>
 
-    <!-- 3. PAGE TITLE & ACTIONS -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 px-3 px-md-0 gap-3">
-        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+    <!-- 3. PAGE TITLE & DYNAMIC FILTERS -->
+    <div class="d-flex flex-column gap-3 mb-4 px-3 px-md-0">
         
-        <div class="d-flex flex-wrap align-items-center justify-content-start justify-content-md-end gap-2 w-auto">
-            <!-- Native Filter Pill -->
-            <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border">
-                <i class="bi bi-funnel-fill text-muted ms-2 me-1 small"></i>
-                <select id="noteYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
-                    <option value="all">All Years</option>
-                </select>
-            </div>
-            
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <h3 class="fw-bold text-dark mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
             {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
             <!-- Desktop Add Button -->
             <a href="/add_followup/{{ student.id }}" class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3 transition-hover d-none d-md-flex align-items-center">
                 <i class="bi bi-plus-lg me-1"></i> New Note
             </a>
             {% endif %}
+        </div>
+
+        <!-- 🚀 Scrollable Advanced Filter Row (Foolproof Mobile Scrolling) -->
+        <div class="w-100 position-relative custom-scrollbar" style="overflow-x: auto; -webkit-overflow-scrolling: touch; min-width: 0;">
+            <div class="d-flex flex-nowrap align-items-center gap-2 pb-2" style="width: max-content;">
+                
+                <!-- Type Filter Segmented Control -->
+                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
+                    <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn active bg-primary text-white shadow-sm" data-type="all" onclick="setTypeFilter('all', this)">All</button>
+                    <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn text-muted btn-transparent transition-hover" data-type="social" onclick="setTypeFilter('social', this)">Visits & Cases</button>
+                    <button class="btn btn-sm rounded-pill fw-bold px-3 type-filter-btn text-muted btn-transparent transition-hover" data-type="letter" onclick="setTypeFilter('letter', this)">Letters</button>
+                </div>
+
+                <div class="vr mx-1 text-muted opacity-25 flex-shrink-0"></div>
+
+                <!-- Native Year Filter Pill -->
+                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
+                    <i class="bi bi-calendar3 text-muted ms-3 me-2 small"></i>
+                    <select id="noteYearFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
+                        <option value="all">All Years</option>
+                    </select>
+                </div>
+
+                <!-- Native Month Filter Pill -->
+                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
+                    <i class="bi bi-calendar-month text-muted ms-3 me-2 small"></i>
+                    <select id="noteMonthFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
+                        <option value="all">All Months</option>
+                    </select>
+                </div>
+
+                <div class="vr mx-1 text-muted opacity-25 flex-shrink-0"></div>
+
+                <!-- Method/Location Filter -->
+                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
+                    <i class="bi bi-geo-alt-fill text-muted ms-3 me-2 small"></i>
+                    <select id="noteMethodFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
+                        <option value="all">All Methods</option>
+                    </select>
+                </div>
+
+                <!-- Staff Member Filter -->
+                <div class="bg-white p-1 rounded-pill shadow-sm d-flex align-items-center border flex-shrink-0">
+                    <i class="bi bi-person-badge-fill text-muted ms-3 me-2 small"></i>
+                    <select id="noteStaffFilter" class="form-select form-select-sm border-0 bg-transparent fw-bold text-dark shadow-none px-2 pe-4" onchange="filterNotes()">
+                        <option value="all">All Staff</option>
+                    </select>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -90,8 +132,17 @@
                 {% if followups %}
                     <div class="timeline-container ms-2 position-relative" style="border-left: 3px solid #f8d7da;">
                         {% for note in followups %}
-                        <div class="position-relative mb-4 ps-4 note-card" data-year="{{ note.followup_date[:4] }}">
-                            {% set risk_color = 'danger' if (note.risk_factors or note.child_protection_concerns) else ('warning' if (note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention') else 'success') %}
+                        {% set note_type = 'letter' if note.location == 'Sponsor Letter Update' else 'social' %}
+                        
+                        <!-- Injecting precise data attributes for advanced filtering -->
+                        <div class="position-relative mb-4 ps-4 note-card" 
+                             data-year="{{ note.followup_date[:4] }}" 
+                             data-month="{{ note.followup_date[5:7] }}" 
+                             data-method="{{ note.location }}" 
+                             data-staff="{{ note.completed_by }}" 
+                             data-type="{{ note_type }}">
+                             
+                            {% set risk_color = 'danger' if (note.risk_factors or note.child_protection_concerns or note.trafficking_risk) else ('warning' if (note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention') else 'success') %}
                             
                             <!-- Timeline Dot (Native App Style) -->
                             <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 20px; height: 20px; left: -11.5px; top: 24px; border: 4px solid #fff;"></div>
@@ -110,15 +161,28 @@
                                     
                                     <!-- Content Area -->
                                     <div class="p-3 p-md-4">
-                                        {% if note.general_notes %}
-                                        <div class="khmer-font text-dark mb-3 text-wrap text-break" style="font-size: 0.95rem; line-height: 1.7; word-break: break-word;">
-                                            {{ note.general_notes }}
+                                        
+                                        <!-- 1. Text Narratives (Catches all potential text fields) -->
+                                        {% if note.general_notes or note.staff_notes or note.student_story or note.parent_working_notes %}
+                                        <div class="khmer-font text-dark mb-4 text-wrap text-break" style="font-size: 0.95rem; line-height: 1.7; word-break: break-word;">
+                                            {% if note.general_notes %}
+                                                <div class="mb-2"><strong class="text-muted small text-uppercase">General Notes:</strong><br>{{ note.general_notes }}</div>
+                                            {% endif %}
+                                            {% if note.staff_notes %}
+                                                <div class="mb-2"><strong class="text-muted small text-uppercase">Staff Remarks:</strong><br>{{ note.staff_notes }}</div>
+                                            {% endif %}
+                                            {% if note.student_story %}
+                                                <div class="mb-2"><strong class="text-muted small text-uppercase">Student Update/Story:</strong><br>{{ note.student_story }}</div>
+                                            {% endif %}
+                                            {% if note.parent_working_notes %}
+                                                <div class="mb-2"><strong class="text-muted small text-uppercase">Family/Work Context:</strong><br>{{ note.parent_working_notes }}</div>
+                                            {% endif %}
                                         </div>
                                         {% endif %}
 
-                                        {% if note.location == 'Sponsor Letter Update' %}
                                         <!-- Sponsor Letter Specific UI -->
-                                        <div class="bg-success bg-opacity-10 rounded-4 p-3 border border-success border-opacity-25">
+                                        {% if note.location == 'Sponsor Letter Update' %}
+                                        <div class="bg-success bg-opacity-10 rounded-4 p-3 border border-success border-opacity-25 mb-4">
                                             <h6 class="fw-bold text-success-emphasis mb-3" style="font-size: 0.85rem;"><i class="bi bi-envelope-paper-heart me-1"></i> Letter Progress {% if note.letter_quarter %}{{ note.letter_quarter }} {{ note.letter_year }}{% endif %}</h6>
                                             <div class="d-flex flex-wrap gap-2">
                                                 <span class="badge {% if note.letter_given == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Given</span>
@@ -133,23 +197,52 @@
                                             </div>
                                             {% endif %}
                                         </div>
-                                        {% else %}
-                                        <!-- Native Tags -->
-                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                        {% endif %}
+
+                                        <!-- 2. Health & Well-being Badges -->
+                                        {% if note.physical_health or note.home_life or note.social_interaction %}
+                                        <div class="d-flex flex-wrap gap-2 mb-3">
                                             {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
                                             <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
                                             {% endif %}
                                             {% if note.home_life and note.home_life != 'Not Evaluated' %}
                                             <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
                                             {% endif %}
-                                            {% if note.child_protection_concerns %}
-                                            <div class="alert alert-danger py-2 px-3 small w-100 mt-2 border-danger border-opacity-25 rounded-3 fw-bold d-flex align-items-start shadow-sm">
-                                                <i class="bi bi-shield-exclamation-fill me-2 fs-5 mt-n1"></i> 
-                                                <div>{{ note.child_protection_concerns }}</div>
-                                            </div>
+                                            {% if note.social_interaction and note.social_interaction != 'Not Evaluated' %}
+                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-people text-info me-1"></i>Social: {{ note.social_interaction }}</span>
                                             {% endif %}
                                         </div>
                                         {% endif %}
+
+                                        <!-- 3. Education, Behavior & Lifestyle Context -->
+                                        {% if note.learning_difficulties or note.behavior_in_class or note.peer_issues or note.child_jobs %}
+                                        <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 p-3 rounded-4 mt-2 small text-dark shadow-xs">
+                                            <strong class="text-primary-emphasis"><i class="bi bi-book-fill text-primary me-1"></i> Academics, Behavior & Lifestyle:</strong>
+                                            <ul class="mb-0 ps-3 mt-2 text-muted fw-bold">
+                                                {% if note.learning_difficulties %}<li>Learning: {{ note.learning_difficulties }} {% if note.learning_difficulties_detail %}<span class="fw-normal">({{ note.learning_difficulties_detail }})</span>{% endif %}</li>{% endif %}
+                                                {% if note.behavior_in_class %}<li>Behavior: {{ note.behavior_in_class }} {% if note.behavior_in_class_detail %}<span class="fw-normal">({{ note.behavior_in_class_detail }})</span>{% endif %}</li>{% endif %}
+                                                {% if note.peer_issues %}<li>Peer Issues: {{ note.peer_issues }} {% if note.peer_issues_detail %}<span class="fw-normal">({{ note.peer_issues_detail }})</span>{% endif %}</li>{% endif %}
+                                                {% if note.child_jobs %}<li>Child Jobs/Labor: <span class="text-danger">{{ note.child_jobs }}</span></li>{% endif %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+
+                                        <!-- 4. Critical Risk Factors (Only shows if risks exist) -->
+                                        {% if note.risk_factors or note.child_protection_concerns or note.trafficking_risk or note.evidence_drugs_violence %}
+                                        <div class="alert alert-danger py-3 px-3 small w-100 mt-3 border-danger border-opacity-25 rounded-4 d-flex align-items-start shadow-sm mb-0">
+                                            <i class="bi bi-shield-exclamation-fill me-3 fs-3 text-danger mt-1"></i> 
+                                            <div>
+                                                <h6 class="fw-bold text-danger mb-2 mt-1">Protection & Risk Alerts</h6>
+                                                <ul class="mb-0 ps-3 text-danger-emphasis fw-bold">
+                                                    {% if note.risk_factors %}<li>{{ note.risk_factors }} {% if note.risk_details %}<span class="text-muted fw-normal">({{ note.risk_details }})</span>{% endif %}</li>{% endif %}
+                                                    {% if note.child_protection_concerns %}<li>{{ note.child_protection_concerns }}</li>{% endif %}
+                                                    {% if note.trafficking_risk %}<li>Trafficking Risk: {{ note.trafficking_risk }}</li>{% endif %}
+                                                    {% if note.evidence_drugs_violence %}<li>Evidence of Drugs/Violence: {{ note.evidence_drugs_violence }}</li>{% endif %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
                                     </div>
 
                                     <!-- Action Footer -->
@@ -190,7 +283,7 @@
                 <div id="noNotesMessage" class="text-center py-5 d-none bg-white rounded-4 shadow-sm border-0 native-card mt-4 mx-n3 mx-md-0">
                     <i class="bi bi-funnel fs-2 text-muted opacity-25 mb-3 d-block"></i>
                     <h6 class="fw-bold text-dark mb-1">No notes match.</h6>
-                    <p class="text-muted small mb-0">No follow-ups recorded for this selected year.</p>
+                    <p class="text-muted small mb-0">No follow-ups recorded for this combination of filters.</p>
                 </div>
             </div>
         </div>
@@ -248,25 +341,82 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const noteCards = document.querySelectorAll('.note-card');
-        const noteFilter = document.getElementById('noteYearFilter');
+        
+        // Filter Elements
+        const noteYearFilter = document.getElementById('noteYearFilter');
+        const noteMonthFilter = document.getElementById('noteMonthFilter');
+        const noteMethodFilter = document.getElementById('noteMethodFilter');
+        const noteStaffFilter = document.getElementById('noteStaffFilter');
         const noNotesMessage = document.getElementById('noNotesMessage');
         
+        let currentTypeFilter = 'all';
+
+        // Sets to hold unique data values
         const noteYears = new Set();
+        const noteMonths = new Set();
+        const noteMethods = new Set();
+        const noteStaff = new Set();
+
+        // Month formatting mapping
+        const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
         noteCards.forEach(card => {
-            const year = card.getAttribute('data-year');
-            if(year) noteYears.add(year);
+            if(card.dataset.year) noteYears.add(card.dataset.year);
+            if(card.dataset.month) noteMonths.add(card.dataset.month);
+            if(card.dataset.method) noteMethods.add(card.dataset.method);
+            if(card.dataset.staff) noteStaff.add(card.dataset.staff);
         });
         
+        // Populate Year Dropdown (Desc)
         Array.from(noteYears).sort().reverse().forEach(year => {
-            noteFilter.add(new Option(year, year));
+            noteYearFilter.add(new Option(year, year));
         });
 
+        // Populate Month Dropdown (Desc)
+        Array.from(noteMonths).sort().reverse().forEach(month => {
+            noteMonthFilter.add(new Option(monthNames[parseInt(month)], month));
+        });
+
+        // Populate Method Dropdown (Asc)
+        Array.from(noteMethods).sort().forEach(method => {
+            noteMethodFilter.add(new Option(method, method));
+        });
+
+        // Populate Staff Dropdown (Asc)
+        Array.from(noteStaff).sort().forEach(staff => {
+            noteStaffFilter.add(new Option(staff, staff));
+        });
+
+        // Handle the visual Segmented Pill Buttons
+        window.setTypeFilter = function(type, btn) {
+            document.querySelectorAll('.type-filter-btn').forEach(b => {
+                b.classList.remove('active', 'bg-primary', 'text-white', 'shadow-sm');
+                b.classList.add('text-muted', 'btn-transparent');
+            });
+            btn.classList.remove('text-muted', 'btn-transparent');
+            btn.classList.add('active', 'bg-primary', 'text-white', 'shadow-sm');
+            
+            currentTypeFilter = type;
+            filterNotes();
+        }
+
+        // The Master Filter Engine
         window.filterNotes = function() {
-            const selectedYear = noteFilter.value;
+            const selectedYear = noteYearFilter.value;
+            const selectedMonth = noteMonthFilter.value;
+            const selectedMethod = noteMethodFilter.value;
+            const selectedStaff = noteStaffFilter.value;
+
             let visibleCount = 0;
             
             noteCards.forEach(card => {
-                if (selectedYear === 'all' || card.getAttribute('data-year') === selectedYear) {
+                const matchYear = selectedYear === 'all' || card.dataset.year === selectedYear;
+                const matchMonth = selectedMonth === 'all' || card.dataset.month === selectedMonth;
+                const matchMethod = selectedMethod === 'all' || card.dataset.method === selectedMethod;
+                const matchStaff = selectedStaff === 'all' || card.dataset.staff === selectedStaff;
+                const matchType = currentTypeFilter === 'all' || card.dataset.type === currentTypeFilter;
+
+                if (matchYear && matchMonth && matchMethod && matchStaff && matchType) {
                     card.style.display = '';
                     visibleCount++;
                 } else {
