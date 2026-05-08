@@ -4,383 +4,16 @@
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
-{% endblock %}
-
-{% block main %}
-<div class="container-fluid container-xl mt-3 mt-md-4 mb-5 pb-5 px-3 px-md-4 mx-auto" style="max-width: 1000px;">
-
-    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
-    <div class="mb-4 px-1 d-flex justify-content-between align-items-center">
-        <a href="/student/{{ student.id }}/timeline" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem; letter-spacing: -0.2px;">
-            <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Cancel
-        </a>
-    </div>
-
-    <!-- PAGE TITLE -->
-    <div class="d-flex align-items-center mb-4 px-1">
-        <div>
-            <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-clipboard2-heart-fill text-danger me-2"></i>New Social Report</h2>
-            <p class="text-muted small mb-0 fw-bold">Logging a field visit or update for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
-        </div>
-    </div>
-
-    <form action="/add_followup/{{ student.id }}" method="post" id="followupForm" class="needs-validation" novalidate>
-        
-        <!-- ========================================== -->
-        <!-- SECTION 1: CLIENT INFORMATION & LOGISTICS  -->
-        <!-- ========================================== -->
-        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 1: Logistics</h6>
-        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-            <div class="card-body p-4">
-                <!-- Reference Card -->
-                <div class="bg-light p-3 rounded-4 mb-4 border border-secondary border-opacity-10 d-flex justify-content-between align-items-center shadow-xs">
-                    <div>
-                        <span class="d-block text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Student / ID</span>
-                        <span class="fw-bold text-dark fs-6">{{ student.first_name }} {{ student.last_name }} <span class="badge bg-white border text-muted ms-1 font-monospace">{{ student.ngo_id }}</span></span>
-                    </div>
-                    <div class="text-end">
-                        <span class="d-block text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Guardian</span>
-                        <span class="fw-bold text-dark small"><i class="bi bi-person-badge-fill text-info me-1"></i>{{ student.guardian_name if student.guardian_name else 'Not Listed' }}</span>
-                    </div>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Date of Follow-up *</label>
-                        <input type="date" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2" name="followup_date" id="followup_date" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Location / Method *</label>
-                        <select name="location" id="locationSelect" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2" required>
-                            <option value="" disabled selected>Select...</option>
-                            <option value="Home Visit">🏠 Home Visit</option>
-                            <option value="School Visit">🏫 School Visit</option>
-                            <option value="Office Visit">🏢 Office Visit</option>
-                            <option value="Phone Call">📱 Phone Call</option>
-                            <option value="Sponsor Letter Update">✉️ Sponsor Letter Update</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Completed By *</label>
-                        <!-- AUTO-FILLED from session -->
-                        <input type="text" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2 text-primary" name="completed_by" value="{{ session.get('name', session.get('username', '')) }}" required>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- SPONSOR LETTER WORKFLOW (Toggleable)       -->
-        <!-- ========================================== -->
-        <div id="sponsorLetterSection" style="display: none;">
-            <h6 class="fw-bold text-success text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;"><i class="bi bi-envelope-paper-heart me-1"></i>Sponsor Letter Cycle</h6>
-            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-success bg-opacity-10 border border-success border-opacity-25">
-                <div class="card-body p-4">
-                    <div class="row g-3 mb-4">
-                        <div class="col-6">
-                            <label class="form-label small fw-bold text-success-emphasis text-uppercase">Quarter</label>
-                            <select name="letter_quarter" class="form-select border-0 shadow-sm fw-bold px-3 py-2 bg-white">
-                                <option value="">N/A</option>
-                                <option value="Q1">Q1 (Jan-Mar)</option>
-                                <option value="Q2">Q2 (Apr-Jun)</option>
-                                <option value="Q3">Q3 (Jul-Sep)</option>
-                                <option value="Q4">Q4 (Oct-Dec)</option>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold text-success-emphasis text-uppercase">Year</label>
-                            <input type="number" class="form-control border-0 shadow-sm fw-bold px-3 py-2 bg-white" name="letter_year" id="letter_year" value="2025">
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-4 shadow-sm p-3 mb-3 border border-success border-opacity-10">
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" role="switch" id="lgiven" name="letter_given" value="Yes">
-                            <label class="form-check-label fw-bold text-dark ms-2" for="lgiven">1. Given to Student</label>
-                        </div>
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" role="switch" id="ltrans" name="letter_translated" value="Yes">
-                            <label class="form-check-label fw-bold text-dark ms-2" for="ltrans">2. Translated to English</label>
-                        </div>
-                        <div class="form-check form-switch mb-2">
-                            <input class="form-check-input" type="checkbox" role="switch" id="lscan" name="letter_scanned" value="Yes">
-                            <label class="form-check-label fw-bold text-dark ms-2" for="lscan">3. Scanned to PDF</label>
-                        </div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="lsent" name="letter_sent" value="Yes">
-                            <label class="form-check-label fw-bold text-dark ms-2" for="lsent">4. Sent to Sponsor</label>
-                        </div>
-                    </div>
-                    <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="letter_notes" rows="2" placeholder="Letter notes (delays, drawings, etc.)..."></textarea>
-                </div>
-            </div>
-        </div>
-
-        <div id="standardFollowupSections">
-            <!-- ========================================== -->
-            <!-- SECTION 2: WELL-BEING PROGRESS             -->
-            <!-- ========================================== -->
-            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 2: Well-being Progress</h6>
-            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-                <div class="card-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Physical Health</label>
-                            <select name="physical_health" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Good" selected>Good</option>
-                                <option value="Average">Average</option>
-                                <option value="Poor">Poor / Requires Attention</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Social Interaction</label>
-                            <select name="social_interaction" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Good" selected>Good</option>
-                                <option value="Average">Average</option>
-                                <option value="Isolated">Isolated / Withdrawn</option>
-                                <option value="Aggressive">Aggressive</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Health & Social Details</label>
-                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="physical_health_detail" rows="2" placeholder="If average or poor, share main problem and how we can help..."></textarea>
-                        </div>
-                        <div class="col-12 mt-4">
-                            <label class="form-label small fw-bold text-danger text-uppercase"><i class="bi bi-exclamation-octagon-fill me-1"></i> Evidence of Drugs, Alcohol, or Violence?</label>
-                            <select name="evidence_drugs_violence" class="form-select bg-danger bg-opacity-10 border-0 shadow-sm fw-bold text-danger px-3 py-2">
-                                <option value="No" selected>No signs observed</option>
-                                <option value="Yes">Yes (Details required below)</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="drugs_violence_detail" rows="2" placeholder="Indicate what evidence you learned about..."></textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ========================================== -->
-            <!-- SECTION 2a: RISK FACTORS & HOME LIFE       -->
-            <!-- ========================================== -->
-            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 2a: Risk Factors & Home</h6>
-            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
-                <div class="card-body p-4">
-                    <div class="mb-4 p-4 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
-                        <label class="form-label fw-bold text-danger mb-3 text-uppercase small"><i class="bi bi-shield-exclamation-fill me-1"></i> Current Risk Factors (Select ALL apply)</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% set risks = ['Abandonment', 'Emotional Abuse', 'Physical Abuse', 'Sexual Abuse', 'Addiction (Family)', 'Addiction (Child)', 'Bullying', 'Family Debt', 'Forced Begging', 'Garbage Collection', 'Gang Involvement', 'Sexual Grooming', 'Housing Insecurity', 'Mental Health Challenges', 'Neglect', 'Orphan', 'Parent Marital Status Change', 'Parent in Jail', 'Physical Health Challenges', 'Drug use/selling (Family)', 'Drug use/selling (Child)', 'Single Parent'] %}
-                            {% for r in risks %}
-                            <input type="checkbox" class="btn-check" id="risk_{{ loop.index }}" name="risk_factors" value="{{ r }}">
-                            <label class="btn btn-white border rounded-pill fw-bold py-2 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ loop.index }}">{{ r }}</label>
-                            {% endfor %}
-                        </div>
-                        <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3 mt-3" name="risk_details" rows="3" placeholder="Details - Share specific details for ALL selections chosen above..."></textarea>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
-                            <select name="home_condition" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Excellent">Excellent</option>
-                                <option value="Good" selected>Good</option>
-                                <option value="Average">Average</option>
-                                <option value="Poor">Poor</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Attending Church / Prayer?</label>
-                            <select name="church_attendance" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Yes">Regularly</option>
-                                <option value="Occasionally">Occasionally</option>
-                                <option value="No" selected>No / Never</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Parents/Guardians Working?</label>
-                            <div class="p-3 border rounded-4 bg-light shadow-xs border-secondary border-opacity-10">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span class="small fw-bold text-dark"><i class="bi bi-person-fill text-danger me-1"></i>Mother:</span>
-                                    <select name="mother_working" class="form-select form-select-sm border-0 bg-white shadow-sm w-auto py-1 fw-bold">
-                                        <option>Select One</option><option>Yes</option><option>No</option><option>Searching</option>
-                                    </select>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="small fw-bold text-dark"><i class="bi bi-person-fill text-primary me-1"></i>Father:</span>
-                                    <select name="father_working" class="form-select form-select-sm border-0 bg-white shadow-sm w-auto py-1 fw-bold">
-                                        <option>Select One</option><option>Yes</option><option>No</option><option>Searching</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Current Work / Income Notes</label>
-                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 h-100" name="parent_working_notes" placeholder="Write each family member's current work..."></textarea>
-                        </div>
-                        <div class="col-12 mt-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Home Life / Condition Narrative</label>
-                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="home_life_detail" rows="2" placeholder="Describe living conditions, slum safety, rent concerns..."></textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ========================================== -->
-            <!-- SECTION 3: EDUCATIONAL PROGRESS            -->
-            <!-- ========================================== -->
-            <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 3: Educational Progress</h6>
-            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-                <div class="card-body p-4">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Learning Difficulties or Disorders?</label>
-                            <select name="learning_difficulties" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="No" selected>No</option>
-                                <option value="Suspected">Suspected</option>
-                                <option value="Confirmed">Confirmed Diagnosis</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Behavior in Class</label>
-                            <select name="behavior_in_class" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Good" selected>Good</option>
-                                <option value="Average">Average</option>
-                                <option value="Poor">Poor / Disruptive</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="learning_difficulties_detail" rows="2" placeholder="If yes, please explain how we are helping..."></textarea>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Peer Issues?</label>
-                            <select name="peer_issues" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="None" selected>None</option>
-                                <option value="Victim">Victim</option>
-                                <option value="Instigator">Instigator</option>
-                            </select>
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Peer Issues Detail</label>
-                            <input type="text" class="form-control bg-light border-0 shadow-sm khmer-font px-3 py-2" name="peer_issues_detail" placeholder="If selected, explain what we are doing to help...">
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Teacher Involvement</label>
-                            <input type="text" class="form-control bg-light border-0 shadow-sm khmer-font px-3 py-2" name="teacher_detail" placeholder="Comments or concerns from the child's teacher...">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Transportation</label>
-                            <select name="transportation" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Good" selected>Good</option>
-                                <option value="Needs Repair">Needs Repair</option>
-                                <option value="Walking">Walking (Far)</option>
-                                <option value="None">None</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Tutoring</label>
-                            <select name="tutoring_participation" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                                <option value="Good" selected>Good</option>
-                                <option value="Average">Average</option>
-                                <option value="Poor">Poor</option>
-                                <option value="N/A">N/A</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ========================================== -->
-            <!-- SECTION 5: PROTECTION & RISK ASSESSMENT   -->
-            <!-- ========================================== -->
-            <h6 class="fw-bold text-danger text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 5: Final Assessment</h6>
-            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
-                <div class="card-body p-4">
-                    <div class="mb-4 text-center">
-                        <label class="form-label fw-bold small text-danger text-uppercase d-block mb-3">Overall Risk Rating (Visual Scale)</label>
-                        <div class="d-flex justify-content-between gap-2">
-                            {% set risk_ratings = [
-                                {'val': 1, 'label': 'Safe', 'color': 'success'},
-                                {'val': 2, 'label': 'Stable', 'color': 'info'},
-                                {'val': 3, 'label': 'Concern', 'color': 'warning'},
-                                {'val': 4, 'label': 'Urgent', 'color': 'danger'},
-                                {'val': 5, 'label': 'Crisis', 'color': 'danger'}
-                            ] %}
-                            {% for rr in risk_ratings %}
-                            <div class="flex-fill">
-                                <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}" required>
-                                <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}"><span class="fs-5">{{ rr.val }}</span><br><small style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">{{ rr.label }}</small></label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- RED ZONE: Child Protection -->
-                    <div class="p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
-                        <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between align-items-center mb-3">
-                            <span><i class="bi bi-shield-exclamation-fill me-2 fs-5"></i>Child Protection Concerns?</span>
-                            <span class="badge bg-danger text-white px-2 py-1 shadow-sm">RED ZONE</span>
-                        </label>
-                        <select name="has_protection_concerns" class="form-select bg-white border-danger border-opacity-50 fw-bold text-danger mb-3 shadow-sm px-3 py-2">
-                            <option value="No" selected>No Concerns Identified</option>
-                            <option value="Yes">YES - REPORT IMMEDIATELY</option>
-                        </select>
-                        <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="child_protection_concerns" rows="3" placeholder="If yes, please explain concerns (e.g. stop studying to work at pub, abuse, neglect)..."></textarea>
-                    </div>
-
-                    <div class="mb-0">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Increased risk of Trafficking, Exploitation, Abuse?</label>
-                        <select name="trafficking_risk" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
-                            <option value="No" selected>No</option>
-                            <option value="Yes">Yes (Notify Protection Team)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- FINAL NARRATIVE & STAFF NOTES              -->
-        <!-- ========================================== -->
-        <h6 class="fw-bold text-muted text-uppercase mb-2 ms-2 d-block tracking-wide" style="font-size: 0.7rem;">Section 4: Staff Notes</h6>
-        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white">
-            <div class="card-body p-4">
-                <div class="mb-4">
-                    <label class="form-label small fw-bold text-muted text-uppercase">General Visit Notes / Information Learned *</label>
-                    <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3" name="general_notes" id="general_notes" rows="6" placeholder="Describe the visit, child's story, and observations..." required></textarea>
-                </div>
-                
-                <div class="mb-0">
-                    <label class="form-label small fw-bold text-primary text-uppercase">Changes / Recommendations</label>
-                    <textarea class="form-control bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm khmer-font p-3 text-dark" name="staff_notes" rows="3" placeholder="Share any changes you believe may be helpful for the child..."></textarea>
-                </div>
-            </div>
-        </div>
-
-        <!-- Desktop Action Buttons -->
-        <div class="d-none d-md-flex justify-content-between gap-3 mb-5">
-            <a href="/student/{{ student.id }}/timeline" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 px-5 shadow-sm transition-hover">Cancel</a>
-            <button type="submit" class="btn btn-danger fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5">
-                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Save Report
-            </button>
-        </div>
-    </form>
-
-    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
-    <button type="submit" form="followupForm" class="btn btn-danger text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Save Report</span>
-    </button>
-
-</div>
-
 <style>
+    /* Section Toggle Animations */
+    .card-header[aria-expanded="true"] .rotate-icon { transform: rotate(180deg); }
+    .rotate-icon { transition: transform 0.3s ease; }
+    .cursor-pointer { cursor: pointer; }
+    
+    /* Smooth Scrolling for Jump Nav */
+    html { scroll-behavior: smooth; }
+    .scroll-section { scroll-margin-top: 140px; }
+    
     .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
     
@@ -411,9 +44,572 @@
 </style>
 {% endblock %}
 
+{% block main %}
+<div class="container-fluid container-xl mt-3 mt-md-4 mb-5 pb-5 px-3 px-md-4 mx-auto" style="max-width: 1000px;">
+
+    <!-- NATIVE iOS/ANDROID STYLE HEADER -->
+    <div class="mb-4 px-1 d-flex justify-content-between align-items-center">
+        <a href="/student/{{ student.id }}/timeline" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem; letter-spacing: -0.2px;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Cancel
+        </a>
+    </div>
+
+    <!-- PAGE TITLE -->
+    <div class="d-flex align-items-center mb-4 px-1">
+        <div>
+            <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-clipboard2-heart-fill text-danger me-2"></i>New Social Report</h2>
+            <p class="text-muted small mb-0 fw-bold">Logging a field visit or update for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
+        </div>
+    </div>
+
+    <!-- 🚀 SMART JUMP NAVIGATION (Sticky Glass) -->
+    <div class="glass-panel border-bottom mx-n3 mx-md-0 mb-4 px-3 px-md-4 pt-2 sticky-top shadow-sm" style="top: 60px; z-index: 1020; border-radius: 0 0 20px 20px;">
+        <ul class="nav nav-underline d-flex flex-nowrap overflow-auto custom-scrollbar gap-4" style="white-space: nowrap; border-bottom: none;">
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 quick-nav-link active text-dark" data-color="#0d6efd" style="border-bottom: 3px solid #0d6efd; font-size: 0.85rem;" href="#section-logistics">
+                    <i class="bi bi-geo-alt-fill me-1 text-primary"></i> Logistics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 quick-nav-link text-muted transition-hover" data-color="#0dcaf0" style="border-bottom: 3px solid transparent; font-size: 0.85rem;" href="#section-wellbeing">
+                    <i class="bi bi-heart-pulse-fill me-1 text-info"></i> Well-being
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 quick-nav-link text-muted transition-hover" data-color="#dc3545" style="border-bottom: 3px solid transparent; font-size: 0.85rem;" href="#section-risk">
+                    <i class="bi bi-house-heart-fill me-1 text-danger"></i> Risk & Home
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 quick-nav-link text-muted transition-hover" data-color="#198754" style="border-bottom: 3px solid transparent; font-size: 0.85rem;" href="#section-education">
+                    <i class="bi bi-mortarboard-fill me-1 text-success"></i> Education
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 quick-nav-link text-muted transition-hover" data-color="#dc3545" style="border-bottom: 3px solid transparent; font-size: 0.85rem;" href="#section-assessment">
+                    <i class="bi bi-shield-exclamation-fill me-1 text-danger"></i> Assessment
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-bold pb-3 px-0 quick-nav-link text-muted transition-hover" data-color="#6c757d" style="border-bottom: 3px solid transparent; font-size: 0.85rem;" href="#section-notes">
+                    <i class="bi bi-chat-left-text-fill me-1 text-secondary"></i> Notes
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <form action="/add_followup/{{ student.id }}" method="post" id="followupForm" class="needs-validation" novalidate>
+        
+        <!-- ========================================== -->
+        <!-- SECTION 1: CLIENT INFORMATION & LOGISTICS  -->
+        <!-- ========================================== -->
+        <div class="scroll-section" id="section-logistics">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseLogistics" aria-expanded="true">
+                    <h6 class="fw-bold text-dark mb-0 text-uppercase tracking-wide" style="font-size: 0.8rem;">
+                        <i class="bi bi-geo-alt-fill text-primary me-2"></i>1. Client & Logistics
+                    </h6>
+                    <i class="bi bi-chevron-down text-muted transition-hover rotate-icon"></i>
+                </div>
+                
+                <div id="collapseLogistics" class="collapse show">
+                    <div class="card-body p-4 pt-1 border-top border-light">
+                        
+                        <!-- Section Hint -->
+                        <p class="text-muted small mb-4 lh-sm border-bottom pb-3"><i class="bi bi-info-circle-fill text-primary me-1"></i><strong>Why fill this out?</strong> Accurately recording who you spoke with and when ensures we have a reliable legal and historical timeline of all interventions.</p>
+
+                        <!-- Reference Card -->
+                        <div class="bg-light p-3 rounded-4 mb-4 border border-secondary border-opacity-10 d-flex justify-content-between align-items-center shadow-xs">
+                            <div>
+                                <span class="d-block text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Student / ID</span>
+                                <span class="fw-bold text-dark fs-6">{{ student.first_name }} {{ student.last_name }} <span class="badge bg-white border text-muted ms-1 font-monospace">{{ student.ngo_id }}</span></span>
+                            </div>
+                            <div class="text-end">
+                                <span class="d-block text-muted fw-bold text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 0.5px;">Guardian</span>
+                                <span class="fw-bold text-dark small"><i class="bi bi-person-badge-fill text-info me-1"></i>{{ student.guardian_name if student.guardian_name else 'Not Listed' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- LOGISTICS ROW -->
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Date of Follow-up *</label>
+                                <input type="date" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2" name="followup_date" id="followup_date" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Location / Method *</label>
+                                <select name="location" id="locationSelect" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2" required>
+                                    <option value="" disabled selected>Select...</option>
+                                    <option value="Home Visit">🏠 Home Visit</option>
+                                    <option value="School Visit">🏫 School Visit</option>
+                                    <option value="Office Visit">🏢 Office Visit</option>
+                                    <option value="Phone Call">📱 Phone Call</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase"><i class="bi bi-lock-fill me-1"></i>Completed By *</label>
+                                <!-- SECURITY: Readonly lock to prevent spoofing records -->
+                                <input type="text" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2 text-primary" name="completed_by" value="{{ session.get('name', session.get('username', '')) }}" readonly required>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Spoke With / Interviewee</label>
+                                <input type="text" class="form-control bg-white border-primary border-opacity-25 shadow-sm fw-bold px-3 py-2" id="interviewee" name="interviewee_temp" placeholder="e.g. Mother, Student, Teacher">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Age at Time of Visit</label>
+                                <input type="text" class="form-control bg-light border-0 shadow-sm fw-bold px-3 py-2 text-muted" id="age_at_visit" data-dob="{{ student.dob }}" placeholder="Calculated automatically..." readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECTION 2: WELL-BEING PROGRESS (Routine Data) -->
+        <!-- ========================================== -->
+        <div class="scroll-section" id="section-wellbeing">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-info border-4">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseWellbeing" aria-expanded="true">
+                    <h6 class="fw-bold text-info text-uppercase mb-0 tracking-wide" style="font-size: 0.8rem;">
+                        <i class="bi bi-heart-pulse-fill me-2"></i>2. Routine Well-being
+                    </h6>
+                    <i class="bi bi-chevron-down text-muted transition-hover rotate-icon"></i>
+                </div>
+
+                <div id="collapseWellbeing" class="collapse show">
+                    <div class="card-body p-4 pt-1 border-top border-light">
+                        
+                        <!-- Section Hint -->
+                        <p class="text-muted small mb-4 lh-sm border-bottom pb-3"><i class="bi bi-info-circle-fill text-info me-1"></i><strong>Routine Progress:</strong> These fields log standard health and social baselines to help us catch early signs of illness or isolation before they become severe.</p>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Physical Health</label>
+                                <select name="physical_health" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="Good" selected>Good</option>
+                                    <option value="Average">Average</option>
+                                    <option value="Poor">Poor / Requires Attention</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Physical Health Details</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font py-2 px-3" name="physical_health_detail" rows="1" placeholder="If average or poor, share main problem..."></textarea>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase mt-2">Social Interaction</label>
+                                <select name="social_interaction" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="Good" selected>Good</option>
+                                    <option value="Average">Average</option>
+                                    <option value="Isolated">Isolated / Withdrawn</option>
+                                    <option value="Aggressive">Aggressive</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase mt-2">Social Interaction Details</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font py-2 px-3" name="social_interaction_detail" rows="1" placeholder="Notes on friends, mood, behavior..."></textarea>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <label class="form-label small fw-bold text-danger text-uppercase"><i class="bi bi-exclamation-octagon-fill me-1"></i> Evidence of Drugs, Alcohol, or Violence?</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 border-start border-danger border-4" name="evidence_drugs_violence" rows="2" placeholder="Leave blank if none. Otherwise, indicate what evidence you learned about..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECTION 3: RISK FACTORS & HOME LIFE        -->
+        <!-- ========================================== -->
+        <div class="scroll-section" id="section-risk">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-warning border-4">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseRisk" aria-expanded="true">
+                    <h6 class="fw-bold text-warning text-darken text-uppercase mb-0 tracking-wide" style="font-size: 0.8rem;">
+                        <i class="bi bi-house-heart-fill me-2"></i>3. Specialized Risk & Home Assessment
+                    </h6>
+                    <i class="bi bi-chevron-down text-muted transition-hover rotate-icon"></i>
+                </div>
+
+                <div id="collapseRisk" class="collapse show">
+                    <div class="card-body p-4 pt-1 border-top border-light">
+                        
+                        <!-- Section Hint -->
+                        <p class="text-muted small mb-4 lh-sm border-bottom pb-3"><i class="bi bi-info-circle-fill text-warning text-darken me-1"></i><strong>Escalation Data:</strong> If any specific risk factors (like Debt or Abuse) are present, select them below to trigger specialized, structured data collection.</p>
+
+                        <!-- 🚀 HISTORICAL RISK CARRY-OVER -->
+                        {% if last_followup and last_followup.risk_factors and last_followup.risk_factors != 'None' %}
+                        <div class="mb-4 p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-4 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-warning-emphasis small text-uppercase tracking-wide" style="font-size: 0.65rem;"><i class="bi bi-clock-history me-1"></i> Previously Logged Risks ({{ last_followup.followup_date }})</span>
+                                <button type="button" class="btn btn-sm btn-white border border-warning border-opacity-50 text-warning-emphasis rounded-pill shadow-xs fw-bold py-1 px-3 transition-hover" onclick="carryOverRisks('{{ last_followup.risk_factors }}')">
+                                    <i class="bi bi-arrow-down-circle-fill me-1"></i> Carry Over
+                                </button>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                {% for pr in last_followup.risk_factors.split(',') %}
+                                    <span class="badge bg-white text-dark border border-warning border-opacity-50 shadow-xs">{{ pr.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% if last_followup.risk_details %}
+                            <div class="text-muted small khmer-font fst-italic border-start border-warning border-2 ps-2" style="font-size: 0.75rem;">
+                                "{{ last_followup.risk_details|truncate(120) }}"
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-4 p-4 border border-danger border-opacity-10 rounded-4 bg-danger bg-opacity-10">
+                            <label class="form-label fw-bold text-danger mb-3 text-uppercase small"><i class="bi bi-shield-exclamation-fill me-1"></i> Current Risk Factors (Select ALL apply)</label>
+                            
+                            <div class="d-flex flex-column gap-3">
+                                {% set risk_categories = [
+                                    ('Abuse & Neglect', ['Abandonment', 'Emotional Abuse', 'Physical Abuse', 'Sexual Abuse', 'Sexual Grooming', 'Neglect']),
+                                    ('Family & Household Context', ['Addiction (Family)', 'Drug use/selling (Family)', 'Family Debt', 'Housing Insecurity', 'Parent Marital Status Change', 'Parent in Jail', 'Single Parent', 'Orphan']),
+                                    ('Child Vulnerability & Behavior', ['Addiction (Child)', 'Drug use/selling (Child)', 'Bullying', 'Forced Begging', 'Garbage Collection', 'Gang Involvement', 'Mental Health Challenges', 'Physical Health Challenges'])
+                                ] %}
+                                
+                                {% set counter = namespace(val=0) %}
+                                {% for category_name, category_risks in risk_categories %}
+                                <div>
+                                    <span class="d-block small fw-bold text-danger-emphasis mb-2 border-bottom border-danger border-opacity-25 pb-1"><i class="bi bi-arrow-return-right me-1"></i>{{ category_name }}</span>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for r in category_risks %}
+                                        {% set counter.val = counter.val + 1 %}
+                                        <input type="checkbox" class="btn-check risk-checkbox" id="risk_{{ counter.val }}" name="risk_factors" value="{{ r }}">
+                                        <label class="btn btn-white border rounded-pill fw-bold py-2 px-3 shadow-sm transition-hover" style="font-size: 0.75rem;" for="risk_{{ counter.val }}">{{ r }}</label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- 🚀 SMART UI (AI-Ready Data Hook) -->
+                            <div class="mt-4">
+                                <label class="form-label fw-bold text-danger-emphasis small text-uppercase mb-2"><i class="bi bi-pencil-square me-1"></i> Escalated Risk Details (Structured Data)</label>
+                                <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" id="risk_details_input" name="risk_details" rows="4" placeholder="If you select a risk above, specific questions will appear here to help you gather the necessary information..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Condition of Home</label>
+                                <select name="home_life" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good" selected>Good</option>
+                                    <option value="Average">Average</option>
+                                    <option value="Poor">Poor</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Church / Prayer?</label>
+                                <select name="church_attendance" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="Yes">Regularly</option>
+                                    <option value="Occasionally">Occasionally</option>
+                                    <option value="No" selected>No / Never</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Child Labor / Jobs?</label>
+                                <select name="child_jobs" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="No" selected>No</option>
+                                    <option value="Light Chores">Light Chores</option>
+                                    <option value="Working/Labor">Yes (Working)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Parents/Guardians Working?</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 h-100" name="parent_working_notes" placeholder="Write each family member's current work and income situation..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Home Life / Condition Narrative</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 h-100" name="home_life_detail" rows="3" placeholder="Describe living conditions, slum safety, rent concerns..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECTION 4: EDUCATIONAL PROGRESS (Routine Data) -->
+        <!-- ========================================== -->
+        <div class="scroll-section" id="section-education">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-success border-4">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseEducation" aria-expanded="true">
+                    <h6 class="fw-bold text-success text-uppercase mb-0 tracking-wide" style="font-size: 0.8rem;">
+                        <i class="bi bi-mortarboard-fill me-2"></i>4. Educational Progress
+                    </h6>
+                    <i class="bi bi-chevron-down text-muted transition-hover rotate-icon"></i>
+                </div>
+
+                <div id="collapseEducation" class="collapse show">
+                    <div class="card-body p-4 pt-1 border-top border-light">
+                        
+                        <!-- Section Hint -->
+                        <p class="text-muted small mb-4 lh-sm border-bottom pb-3"><i class="bi bi-info-circle-fill text-success me-1"></i><strong>Why track this?</strong> These behavioral metrics complement formal academic grades. Issues with transportation, peers, or undiagnosed learning difficulties help us assign the right tutoring or counseling support to prevent dropouts.</p>
+
+                        <!-- 🚀 HISTORICAL ACADEMIC CONTEXT -->
+                        {% if latest_academic_report %}
+                        <div class="mb-4 p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-4 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-success-emphasis small text-uppercase tracking-wide" style="font-size: 0.65rem;"><i class="bi bi-journal-check me-1"></i> Latest Academic Snapshot ({{ latest_academic_report.month }} {{ latest_academic_report.academic_year }})</span>
+                                <span class="badge {% if latest_academic_report.overall_average and latest_academic_report.overall_average|float < 50 %}bg-danger{% elif latest_academic_report.overall_average and latest_academic_report.overall_average|float >= 85 %}bg-success{% else %}bg-warning text-darken{% endif %} rounded-pill shadow-xs">Overall Avg: {{ latest_academic_report.overall_average if latest_academic_report.overall_average else 'N/A' }}%</span>
+                            </div>
+                            
+                            {% if failing_subjects and failing_subjects|length > 0 %}
+                            <div class="mb-3">
+                                <span class="small fw-bold text-danger d-block mb-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Struggling Subjects (< 50%):</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for sub in failing_subjects %}
+                                        <span class="badge bg-white text-danger border border-danger border-opacity-50 shadow-xs">{{ sub.subject_name }} ({{ sub.score }}%)</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="mb-3">
+                                 <span class="small fw-bold text-success"><i class="bi bi-check-circle-fill me-1"></i>No failing subjects reported recently.</span>
+                            </div>
+                            {% endif %}
+
+                            <div class="p-2 bg-white rounded-3 border border-success border-opacity-25">
+                                <p class="text-success-emphasis small mb-0 lh-sm">
+                                    <strong><i class="bi bi-chat-right-quote-fill me-1"></i>Interview Prompts:</strong> Why did the score change? Are they attending tutoring? Are previous interventions working? How can we help improve their focus or behavior?
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Learning Difficulties?</label>
+                                <select name="learning_difficulties" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="No" selected>No</option>
+                                    <option value="Suspected">Suspected</option>
+                                    <option value="Confirmed">Confirmed Diagnosis</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Behavior in Class</label>
+                                <select name="behavior_in_class" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="Good" selected>Good</option>
+                                    <option value="Average">Average</option>
+                                    <option value="Poor">Poor / Disruptive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Peer Issues (Bullying)</label>
+                                <input type="text" class="form-control bg-light border-0 shadow-sm khmer-font px-3 py-2" name="peer_issues" placeholder="Leave blank if none...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Teacher Involvement</label>
+                                <input type="text" class="form-control bg-light border-0 shadow-sm khmer-font px-3 py-2" name="teacher_involvement" placeholder="Comments or concerns from the child's teacher...">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Transportation</label>
+                                <select name="transportation" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="Good" selected>Good</option>
+                                    <option value="Needs Repair">Needs Repair</option>
+                                    <option value="Walking">Walking (Far)</option>
+                                    <option value="None">None</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Tutoring / Support Level</label>
+                                <select name="support_level" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                    <option value="1">Level 1 (Standard)</option>
+                                    <option value="2" selected>Level 2 (Active)</option>
+                                    <option value="3">Level 3 (Intensive)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECTION 5: PROTECTION & RISK ASSESSMENT    -->
+        <!-- ========================================== -->
+        <div class="scroll-section" id="section-assessment">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-danger border-4">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseAssessment" aria-expanded="true">
+                    <h6 class="fw-bold text-danger text-uppercase mb-0 tracking-wide" style="font-size: 0.8rem;">
+                        <i class="bi bi-shield-exclamation-fill me-2"></i>5. Final Assessment
+                    </h6>
+                    <i class="bi bi-chevron-down text-muted transition-hover rotate-icon"></i>
+                </div>
+
+                <div id="collapseAssessment" class="collapse show">
+                    <div class="card-body p-4 pt-1 border-top border-light">
+                        
+                        <!-- Section Hint -->
+                        <p class="text-muted small mb-4 lh-sm border-bottom pb-3"><i class="bi bi-info-circle-fill text-danger me-1"></i><strong>Crucial Step:</strong> The Overall Risk Rating powers the Executive Dashboard. Selecting <strong>4 (Urgent)</strong> or <strong>5 (Crisis)</strong> immediately flags this student for leadership review.</p>
+
+                        <div class="mb-4 text-center">
+                            <label class="form-label fw-bold small text-danger text-uppercase d-block mb-3">Overall Risk Rating (Visual Scale) *</label>
+                            <div class="d-flex justify-content-between gap-2">
+                                {% set risk_ratings = [
+                                    {'val': 1, 'label': 'Safe', 'color': 'success'},
+                                    {'val': 2, 'label': 'Stable', 'color': 'info'},
+                                    {'val': 3, 'label': 'Concern', 'color': 'warning'},
+                                    {'val': 4, 'label': 'Urgent', 'color': 'danger'},
+                                    {'val': 5, 'label': 'Crisis', 'color': 'danger'}
+                                ] %}
+                                {% for rr in risk_ratings %}
+                                <div class="flex-fill">
+                                    <input type="radio" class="btn-check" name="risk_level" id="rl{{ rr.val }}" value="{{ rr.val }}" required>
+                                    <label class="btn btn-outline-{{ rr.color }} w-100 fw-bold py-3 rounded-4 shadow-sm transition-hover {% if rr.val == 4 %}opacity-75{% endif %}" for="rl{{ rr.val }}"><span class="fs-5">{{ rr.val }}</span><br><small style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px;">{{ rr.label }}</small></label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- RED ZONE: Child Protection -->
+                        <div class="p-4 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 mb-4">
+                            <label class="form-label small fw-bold text-danger text-uppercase d-flex justify-content-between align-items-center mb-3">
+                                <span><i class="bi bi-shield-exclamation-fill me-2 fs-5"></i>Child Protection Concerns?</span>
+                                <span class="badge bg-danger text-white px-2 py-1 shadow-sm">RED ZONE</span>
+                            </label>
+                            <textarea class="form-control bg-white border-0 shadow-sm khmer-font p-3" name="child_protection_concerns" rows="3" placeholder="Leave blank if none. If yes, please explain concerns (e.g. stop studying to work at pub, abuse, neglect)..."></textarea>
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Increased risk of Trafficking, Exploitation, Abuse?</label>
+                            <select name="trafficking_risk" class="form-select bg-light border-0 shadow-sm fw-bold px-3 py-2">
+                                <option value="No" selected>No</option>
+                                <option value="Yes">Yes (Notify Protection Team)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SECTION 6: NARRATIVE & STAFF NOTES         -->
+        <!-- ========================================== -->
+        <div class="scroll-section" id="section-notes">
+            <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-secondary border-4">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-3 px-4 cursor-pointer d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#collapseNotes" aria-expanded="true">
+                    <h6 class="fw-bold text-secondary text-uppercase mb-0 tracking-wide" style="font-size: 0.8rem;">
+                        <i class="bi bi-chat-left-text-fill me-2"></i>6. Staff Notes
+                    </h6>
+                    <i class="bi bi-chevron-down text-muted transition-hover rotate-icon"></i>
+                </div>
+
+                <div id="collapseNotes" class="collapse show">
+                    <div class="card-body p-4 pt-1 border-top border-light">
+                        
+                        <!-- Section Hint -->
+                        <p class="text-muted small mb-4 lh-sm border-bottom pb-3"><i class="bi bi-info-circle-fill text-secondary me-1"></i><strong>The Human Element:</strong> Checkboxes don't tell the whole story. Use this section to provide detailed narrative context, direct quotes from the family, and specific action plans for other staff reviewing the case.</p>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">General Visit Notes / Information Learned *</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 h-100" name="general_notes" id="general_notes" rows="6" placeholder="Describe the visit and observations..." required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted text-uppercase">Student Story / Quote</label>
+                                <textarea class="form-control bg-light border-0 shadow-sm khmer-font p-3 h-100" name="student_story" rows="6" placeholder="A specific story or quote from the child..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-0">
+                            <label class="form-label small fw-bold text-primary text-uppercase">Changes / Recommendations</label>
+                            <textarea class="form-control bg-primary bg-opacity-10 border-primary border-opacity-25 shadow-sm khmer-font p-3 text-dark" name="staff_notes" rows="3" placeholder="Share any changes you believe may be helpful for the child..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Action Buttons -->
+        <div class="d-none d-md-flex justify-content-between gap-3 mb-5">
+            <a href="/student/{{ student.id }}/timeline" class="btn btn-light bg-white border fw-bold text-dark rounded-pill py-3 px-5 shadow-sm transition-hover">Cancel</a>
+            <button type="submit" class="btn btn-danger fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i> Save Report
+            </button>
+        </div>
+    </form>
+
+    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <button type="submit" form="followupForm" class="btn btn-danger text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Save Report</span>
+    </button>
+
+</div>
+{% endblock %}
+
 {% block scripts %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        
+        // --- SMART AGE CALCULATION ENGINE ---
+        function calculateAgeAtVisit() {
+            const ageField = document.getElementById('age_at_visit');
+            const dobStr = ageField.getAttribute('data-dob');
+            const visitDateStr = document.getElementById('followup_date').value;
+
+            if (dobStr && dobStr !== 'None' && visitDateStr) {
+                const dob = new Date(dobStr);
+                const visit = new Date(visitDateStr);
+                let age = visit.getFullYear() - dob.getFullYear();
+                const m = visit.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && visit.getDate() < dob.getDate())) {
+                    age--;
+                }
+                ageField.value = age > 0 ? age + " years old" : "Under 1 year";
+            } else {
+                ageField.value = "Unknown DOB";
+            }
+        }
+        
+        document.getElementById('followup_date').addEventListener('change', calculateAgeAtVisit);
+
+        // --- SMART JUMP NAVIGATION OBSERVER ---
+        const sections = document.querySelectorAll('.scroll-section');
+        const navLinks = document.querySelectorAll('.quick-nav-link');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '-150px 0px -50% 0px',
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.target.style.display !== 'none') {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active', 'text-dark');
+                        link.classList.add('text-muted');
+                        link.style.borderBottom = '3px solid transparent';
+                        
+                        if (link.getAttribute('href').slice(1) === entry.target.id) {
+                            link.classList.add('active', 'text-dark');
+                            link.classList.remove('text-muted');
+                            link.style.borderBottom = '3px solid ' + link.getAttribute('data-color');
+                            link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(sec => observer.observe(sec));
+
+
+        // --- DRAFT AUTO-SAVE ENGINE ---
         const draftKey = `eep_draft_add_followup_{{ student.id }}`;
         const form = document.getElementById('followupForm');
 
@@ -424,14 +620,27 @@
                     const data = JSON.parse(saved);
                     Object.keys(data).forEach(key => {
                         const el = form.elements[key];
-                        if (el && key !== 'completed_by') { // Don't clear session auto-fill
-                            if (el.type === 'checkbox' || el.type === 'radio') {
-                                if (Array.isArray(data[key])) { if (data[key].includes(el.value)) el.checked = true; }
-                                else { if (el.value === data[key]) el.checked = true; }
-                            } else { el.value = data[key]; }
+                        if (el && key !== 'completed_by') { 
+                            if (el.length && (el[0].type === 'checkbox' || el[0].type === 'radio')) {
+                                Array.from(el).forEach(input => {
+                                    if (Array.isArray(data[key])) { 
+                                        input.checked = data[key].includes(input.value); 
+                                    } else { 
+                                        input.checked = (input.value === data[key]); 
+                                    }
+                                });
+                            } else if (el.type === 'checkbox' || el.type === 'radio') {
+                                if (Array.isArray(data[key])) { 
+                                    el.checked = data[key].includes(el.value); 
+                                } else { 
+                                    el.checked = (el.value === data[key]); 
+                                }
+                            } else { 
+                                el.value = data[key]; 
+                            }
                         }
                     });
-                    toggleSections();
+                    calculateAgeAtVisit();
                 } catch(e) { console.error("Draft failed", e); }
             }
         }
@@ -440,51 +649,121 @@
             const formData = new FormData(form);
             const data = {};
             for (let [key, value] of formData.entries()) {
-                if (key === 'risk_factors') { if (!data[key]) data[key] = []; data[key].push(value); }
-                else { data[key] = value; }
+                if (key === 'risk_factors') { 
+                    if (!data[key]) data[key] = []; 
+                    data[key].push(value); 
+                } else { 
+                    data[key] = value; 
+                }
             }
+            data['interviewee_temp'] = document.getElementById('interviewee').value;
             localStorage.setItem(draftKey, JSON.stringify(data));
         });
-
-        form.addEventListener('submit', () => { if (form.checkValidity()) localStorage.removeItem(draftKey); });
+        
         setTimeout(loadDraft, 100);
 
-        const locationSelect = document.getElementById('locationSelect');
-        const letterSection = document.getElementById('sponsorLetterSection');
-        const standardSections = document.getElementById('standardFollowupSections');
-
-        function toggleSections() {
-            if (locationSelect.value === 'Sponsor Letter Update') {
-                letterSection.style.display = 'block';
-                standardSections.style.display = 'none';
-            } else {
-                letterSection.style.display = 'none';
-                standardSections.style.display = 'block';
-            }
-        }
-
-        locationSelect.addEventListener('change', toggleSections);
-        toggleSections(); // Init
-
+        // Date Defaults
         const dateInput = document.getElementById('followup_date');
-        if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+        if (!dateInput.value) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+            calculateAgeAtVisit(); // Run once for default today date
+        }
         
-        const yearInput = document.getElementById('letter_year');
-        if (yearInput && !yearInput.value) yearInput.value = new Date().getFullYear();
-        
-        // Form Validation
-        var forms = document.querySelectorAll('.needs-validation');
-        Array.prototype.slice.call(forms).forEach(function (form) {
-            form.addEventListener('submit', function (event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const firstInvalid = form.querySelector(':invalid');
-                    if(firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                form.classList.add('was-validated');
-            }, false);
-        });
+        // --- SMART SUBMIT HANDLER ---
+        form.addEventListener('submit', function (event) {
+            
+            // 1. Spoke With Data Injection
+            const interviewee = document.getElementById('interviewee').value.trim();
+            const notes = document.getElementById('general_notes');
+            if (interviewee && !notes.value.includes(`[Spoke With: `)) {
+                notes.value = `[Spoke With: ${interviewee}]\n\n` + notes.value;
+            }
+
+            // 2. Bootstrap Validation Engine
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                const firstInvalid = form.querySelector(':invalid');
+                if(firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                localStorage.removeItem(draftKey);
+            }
+            form.classList.add('was-validated');
+        }, false);
     });
+
+    // --- 🚀 SMART RISK DETAILS INJECTION (SOP TEMPLATES) ---
+    const riskCheckboxes = document.querySelectorAll('.risk-checkbox');
+    const riskDetailsInput = document.getElementById('risk_details_input');
+
+    const riskPrompts = {
+        'Family Debt': "[Family Debt]\n - How much is owed (approx)? \n - Owed to whom (bank, private lender, relative)? \n - Why was the debt taken? \n - How are they repaying it (monthly amount)? \n",
+        'Abandonment': "[Abandonment]\n - Who abandoned the child? \n - When did this happen? \n - Who is currently acting as the primary caregiver? \n",
+        'Physical Abuse': "[Physical Abuse]\n - Who is the suspected abuser? \n - What injuries/signs were observed? \n - Is the child in immediate physical danger? \n",
+        'Sexual Abuse': "[Sexual Abuse]\n - Is the child in immediate danger? \n - Has this been reported to the Protection Team? \n - General context (do NOT press child for specific details): \n",
+        'Sexual Grooming': "[Sexual Grooming]\n - Who is the suspected perpetrator? \n - What concerning behaviors were observed or reported? \n",
+        'Emotional Abuse': "[Emotional Abuse]\n - Who is the suspected abuser? \n - What specific behaviors are occurring (yelling, belittling, isolation)? \n",
+        'Neglect': "[Neglect]\n - What specific needs are unmet (food, hygiene, medical, supervision)? \n - How often does this happen? \n",
+        'Addiction (Family)': "[Addiction (Family)]\n - Who is addicted and to what substance? \n - How does this directly affect the household income/child's safety? \n",
+        'Drug use/selling (Family)': "[Drug use/selling (Family)]\n - Who is involved in the household? \n - Are drugs kept or used around the child? \n - Are there immediate safety risks? \n",
+        'Housing Insecurity': "[Housing Insecurity]\n - What is the immediate threat (eviction, unsafe structure, weather damage)? \n - How much is rent & how far behind are they? \n - Do they have a backup location? \n",
+        'Parent in Jail': "[Parent in Jail]\n - Which parent is incarcerated and why? \n - How long is the expected sentence? \n - How is the remaining family coping financially? \n",
+        'Parent Marital Status Change': "[Marital Change]\n - What changed (divorce, separation, new partner)? \n - How is this impacting the child's living situation or emotional state? \n",
+        'Bullying': "[Bullying]\n - Where is it happening (school, village, online)? \n - Who is bullying them? \n - Is it physical, verbal, or emotional? \n",
+        'Mental Health Challenges': "[Mental Health]\n - Who is suffering (child or parent)? \n - What symptoms are observed (depression, severe anxiety, self-harm)? \n - Are they receiving any treatment? \n"
+    };
+
+    if (riskCheckboxes && riskDetailsInput) {
+        riskCheckboxes.forEach(cb => {
+            cb.addEventListener('change', function() {
+                const riskName = this.value;
+                if (this.checked) {
+                    const promptText = riskPrompts[riskName] || `[${riskName}]\n - What/How: \n - Why/When/Who: \n - Impact on Child: \n`;
+                    if (!riskDetailsInput.value.includes(`[${riskName}]`)) {
+                        const prefix = riskDetailsInput.value.trim() === '' ? '' : '\n\n';
+                        riskDetailsInput.value += prefix + promptText;
+                        riskDetailsInput.dispatchEvent(new Event('input')); 
+                    }
+                    riskDetailsInput.setAttribute('required', 'required');
+                    
+                    setTimeout(() => {
+                        riskDetailsInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        riskDetailsInput.classList.add('border-danger', 'border-2');
+                        setTimeout(() => riskDetailsInput.classList.remove('border-danger', 'border-2'), 1000);
+                    }, 200);
+                } else {
+                    const anyChecked = Array.from(riskCheckboxes).some(c => c.checked);
+                    if (!anyChecked) {
+                        riskDetailsInput.removeAttribute('required');
+                    }
+                }
+            });
+        });
+    }
+
+    // --- 🚀 HISTORICAL RISK CARRY-OVER ENGINE ---
+    window.carryOverRisks = function(riskStr) {
+        if (!riskStr) return;
+        const risks = riskStr.split(',').map(r => r.trim());
+        const checkboxes = document.querySelectorAll('.risk-checkbox');
+        let triggered = false;
+        
+        checkboxes.forEach(cb => {
+            if (risks.includes(cb.value) && !cb.checked) {
+                cb.checked = true;
+                cb.dispatchEvent(new Event('change'));
+                triggered = true;
+            }
+        });
+        
+        if (triggered) {
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `<div class="badge bg-warning text-dark px-4 py-2 rounded-pill shadow-lg border border-warning" style="font-size: 0.85rem;"><i class="bi bi-arrow-down-circle-fill me-2"></i>Previous Risks Carried Over</div>`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+    };
 </script>
 {% endblock %}

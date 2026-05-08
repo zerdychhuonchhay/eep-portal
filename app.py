@@ -1554,8 +1554,32 @@ def add_followup(student_id):
     today_date = datetime.now().strftime('%Y-%m-%d')
     staff_query = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
     current_user = staff_query[0]["username"] if staff_query else ""
+    last_followup_query = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC LIMIT 1", student_id)
+    last_followup = last_followup_query[0] if last_followup_query else None
 
-    return render_template("social_work/add_followup.html", student=student, current_year=current_year, today_date=today_date, current_user=current_user)
+    # 1. Fetch the latest academic report for the student
+    latest_report_query = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC LIMIT 1", student_id)
+    latest_academic_report = latest_report_query[0] if latest_report_query else None
+
+    # 2. Fetch failing subjects (Score < 50)
+    failing_subjects = []
+    if latest_academic_report:
+        grades = db.execute("""
+            SELECT s.name as subject_name, g.score 
+            FROM grades g 
+            JOIN subjects s ON g.subject_id = s.id 
+            WHERE g.report_id = ?
+        """, latest_academic_report['id'])
+        
+        for g in grades:
+            try:
+                # Assumes your grades are numeric, but avoids crashing on "Pass"/"A"
+                if float(g['score']) < 50:
+                    failing_subjects.append(g)
+            except ValueError:
+                pass
+
+    return render_template("social_work/add_followup.html", student=student, current_year=current_year, today_date=today_date, current_user=current_user, last_followup=last_followup, latest_academic_report=latest_academic_report, failing_subjects=failing_subjects)
 
 @app.route("/edit_followup/<int:followup_id>", methods=["GET", "POST"])
 @login_required
@@ -1608,22 +1632,63 @@ def edit_followup(followup_id):
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     return render_template("social_work/edit_followup.html", student=student, followup=followup)
 
+# =========================================================
+# BULK OPERATIONS ENGINE
+# =========================================================
 @app.route("/bulk_followup", methods=["GET", "POST"])
 @login_required
 @permission_required("can_create_followups")
 def bulk_followup():
     """Log a single follow-up note for multiple students at once"""
     if request.method == "POST":
-        # 1. Logistics
+        
+        # 1. Identity
+        student_ids = request.form.getlist("student_ids")
+
+        # 2. Logistics
         followup_date = request.form.get("followup_date")
         completed_by = request.form.get("completed_by")
         location = request.form.get("location")
         
-        # 2. Check Toggles
+        if not student_ids:
+            flash("You must select at least one student from the roster first.", "warning")
+            return redirect("/roster?mode=bulk")
+
+        if not followup_date or not completed_by:
+            flash("Date and Completed By are required.", "danger")
+            return redirect("/roster?mode=bulk")
+
+        # 3. Check Task Toggles
         is_sponsor_update = request.form.get("is_sponsor_update") == "on"
         is_master_update = request.form.get("is_master_update") == "on"
 
-        # 3. Monthly Pulse
+        # 4. Extract Sponsor Letter Data
+        letter_quarter = request.form.get("letter_quarter") if is_sponsor_update else None
+        letter_year = request.form.get("letter_year") if is_sponsor_update else None
+        letter_given = request.form.get("letter_given") if is_sponsor_update else None
+        letter_translated = request.form.get("letter_translated") if is_sponsor_update else None
+        letter_scanned = request.form.get("letter_scanned") if is_sponsor_update else None
+        letter_sent = request.form.get("letter_sent") if is_sponsor_update else None
+        letter_notes = request.form.get("letter_notes") if is_sponsor_update else None
+
+        # 5. Extract Permanent Master Data
+        home_life = request.form.get("home_life") if is_master_update else None
+        church_attendance = request.form.get("church_attendance") if is_master_update else None
+        
+        # Smart Map: Mother & Father Working dropdowns seamlessly inject into working notes
+        parent_working_notes = request.form.get("parent_working_notes", "") if is_master_update else ""
+        if is_master_update:
+            mother_working = request.form.get("mother_working")
+            father_working = request.form.get("father_working")
+            if mother_working or father_working:
+                prefix = f"[Mother: {mother_working or 'N/A'} | Father: {father_working or 'N/A'}]\n"
+                parent_working_notes = prefix + parent_working_notes
+
+        risk_factors_list = request.form.getlist("risk_factors") if is_master_update else []
+        risk_factors = ", ".join(risk_factors_list) if risk_factors_list else None
+        risk_details = request.form.get("risk_details") if is_master_update else None
+
+        # 6. Extract Standard Followup Data (Monthly Pulse)
         physical_health = request.form.get("physical_health")
         physical_health_detail = request.form.get("physical_health_detail")
         social_interaction = request.form.get("social_interaction")
@@ -1635,42 +1700,16 @@ def bulk_followup():
         evidence_drugs_violence = request.form.get("evidence_drugs_violence")
         risk_level = request.form.get("risk_level")
 
-        # 4. Narrative & Action
+        # 7. Narrative & Protection
         general_notes = request.form.get("general_notes")
         child_protection_concerns = request.form.get("child_protection_concerns")
         trafficking_risk = request.form.get("trafficking_risk")
         staff_notes = request.form.get("staff_notes")
-        
-        # 5. Sponsor Letter fields
-        letter_quarter = request.form.get("letter_quarter") if is_sponsor_update else None
-        letter_year = request.form.get("letter_year") if is_sponsor_update else None
-        letter_given = request.form.get("letter_given") if is_sponsor_update else None
-        letter_translated = request.form.get("letter_translated") if is_sponsor_update else None
-        letter_scanned = request.form.get("letter_scanned") if is_sponsor_update else None
-        letter_sent = request.form.get("letter_sent") if is_sponsor_update else None
-        letter_notes = request.form.get("letter_notes") if is_sponsor_update else None
 
-        # 6. Master Data fields
-        home_condition = request.form.get("home_condition") if is_master_update else None
-        church_attendance = request.form.get("church_attendance") if is_master_update else None
-        parent_working_notes = request.form.get("parent_working_notes") if is_master_update else None
-        
-        risk_factors_list = request.form.getlist("risk_factors") if is_master_update else []
-        risk_factors = ", ".join(risk_factors_list) if risk_factors_list else ""
-
-        # 7. Students List
-        student_ids = request.form.getlist("student_ids")
-
-        if not followup_date or not completed_by:
-            flash("Date and Completed By are required.", "danger")
-            return redirect("/roster")
-
-        if not student_ids:
-            flash("You must select at least one student from the roster first.", "warning")
-            return redirect("/roster")
-
+        # System Alert Flag
         alert_status = 'Active' if child_protection_concerns and child_protection_concerns.strip() else None
 
+        # 8. Loop execution
         for sid in student_ids:
             db.execute("""
                 INSERT INTO followups (
@@ -1679,31 +1718,117 @@ def bulk_followup():
                     behavior_in_class, behavior_in_class_detail, tutoring_participation, tutoring_participation_detail,
                     evidence_drugs_violence, risk_level, child_protection_concerns, trafficking_risk, staff_notes,
                     letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes,
-                    home_life, church_attendance, parent_working_notes, risk_factors, alert_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    home_life, church_attendance, parent_working_notes, risk_factors, risk_details, alert_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, sid, followup_date, location, completed_by, general_notes,
-                physical_health, physical_health_detail, social_interaction, social_interaction_detail,
-                behavior_in_class, behavior_in_class_detail, tutoring_participation, tutoring_detail,
-                evidence_drugs_violence, risk_level, child_protection_concerns, trafficking_risk, staff_notes,
-                letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes,
-                home_condition, church_attendance, parent_working_notes, risk_factors, alert_status)
+                 physical_health, physical_health_detail, social_interaction, social_interaction_detail,
+                 behavior_in_class, behavior_in_class_detail, tutoring_participation, tutoring_detail,
+                 evidence_drugs_violence, risk_level, child_protection_concerns, trafficking_risk, staff_notes,
+                 letter_quarter, letter_year, letter_given, letter_translated, letter_scanned, letter_sent, letter_notes,
+                 home_life, church_attendance, parent_working_notes, risk_factors, risk_details, alert_status)
 
-        log_action(f"Logged Group Follow-Up ({location}) for {len(student_ids)} students")
-        flash(f"Successfully logged group follow-up for {len(student_ids)} students!", "success")
-        return redirect("/")
+        log_action(f"Logged Group Note ({location}) for {len(student_ids)} students")
+        flash(f"Successfully applied notes to {len(student_ids)} student profiles!", "success")
+        return redirect("/roster")
 
     else:
-        # === GET REQUEST LOGIC (The Roster Handoff) ===
+        # === GET REQUEST LOGIC (Triggered directly from the Roster Action Bar) ===
         student_ids = request.args.getlist("student_ids")
         
         selected_students = []
         if student_ids:
-            # Create a string of question marks for the SQL IN clause (?,?,?)
+            # Create dynamic IN clause (?,?,?) safely
             placeholders = ','.join('?' * len(student_ids))
             query = f"SELECT id, first_name, last_name, ngo_id FROM students WHERE id IN ({placeholders})"
             selected_students = db.execute(query, *student_ids)
 
         return render_template("social_work/bulk_followup.html", selected_students=selected_students)
+
+# =========================================================
+# SPONSOR LETTER MATRIX (AJAX SPREADSHEET)
+# =========================================================
+@app.route("/letters", methods=["GET"])
+@login_required
+@permission_required("can_manage_followups")
+def letter_matrix():
+    """Spreadsheet-style tracking for Sponsor Letters"""
+    # Auto-calculate current quarter
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+    
+    if current_month <= 3: default_q = "Q1"
+    elif current_month <= 6: default_q = "Q2"
+    elif current_month <= 9: default_q = "Q3"
+    else: default_q = "Q4"
+    
+    selected_q = request.args.get("quarter", default_q)
+    selected_y = request.args.get("year", str(current_year))
+    
+    # Fetch active students and LEFT JOIN their LATEST letter record for this exact Quarter/Year
+    query = """
+        SELECT s.id, s.first_name, s.last_name, s.ngo_id, s.profile_picture,
+               f.id as letter_id, f.letter_given, f.letter_translated, f.letter_scanned, f.letter_sent, f.letter_notes
+        FROM students s
+        LEFT JOIN (
+            SELECT * FROM followups 
+            WHERE location = 'Sponsor Letter Update' 
+            AND letter_quarter = ? AND letter_year = ?
+            GROUP BY student_id HAVING MAX(id)
+        ) f ON s.id = f.student_id
+        WHERE s.status = 'Active'
+        ORDER BY s.first_name
+    """
+    students_letters = db.execute(query, selected_q, selected_y)
+    
+    # Calculate quick stats
+    total = len(students_letters)
+    sent_count = sum(1 for s in students_letters if s["letter_sent"] == "Yes")
+    
+    return render_template("social_work/letter_matrix.html", 
+                           students=students_letters, 
+                           quarter=selected_q, 
+                           year=selected_y,
+                           total=total,
+                           sent_count=sent_count)
+
+@app.route("/api/update_letter", methods=["POST"])
+@login_required
+def api_update_letter():
+    """AJAX endpoint for the Letter Matrix auto-save"""
+    data = request.get_json()
+    student_id = data.get("student_id")
+    quarter = data.get("quarter")
+    year = data.get("year")
+    field = data.get("field")
+    value = data.get("value")
+    
+    valid_fields = ["letter_given", "letter_translated", "letter_scanned", "letter_sent", "letter_notes"]
+    if field not in valid_fields:
+        return jsonify({"success": False, "error": "Invalid security field"}), 400
+        
+    # Find if an entry already exists for this quarter
+    existing = db.execute("""
+        SELECT id FROM followups 
+        WHERE student_id = ? AND location = 'Sponsor Letter Update' AND letter_quarter = ? AND letter_year = ?
+        ORDER BY id DESC LIMIT 1
+    """, student_id, quarter, year)
+    
+    if existing:
+        # Update existing record
+        record_id = existing[0]["id"]
+        db.execute(f"UPDATE followups SET {field} = ? WHERE id = ?", value, record_id)
+    else:
+        # Create a new pristine record just for this letter lifecycle
+        today = datetime.now().strftime('%Y-%m-%d')
+        staff_name = session.get("name", session.get("username", "Staff"))
+        db.execute(f"""
+            INSERT INTO followups (
+                student_id, followup_date, location, completed_by, 
+                letter_quarter, letter_year, {field}
+            ) VALUES (?, ?, 'Sponsor Letter Update', ?, ?, ?, ?)
+        """, student_id, today, staff_name, quarter, year, value)
+        
+    return jsonify({"success": True})
 
 @app.route("/resolve_alert/<int:followup_id>", methods=["POST"])
 @login_required

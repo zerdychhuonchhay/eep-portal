@@ -313,6 +313,7 @@
                 <a href="/roster" class="sidebar-link {% if '/roster' in request.path or '/student' in request.path %}active{% endif %}"><i class="bi bi-people-fill"></i> Directory</a>
                 <a href="/manage_households" class="sidebar-link {% if '/household' in request.path %}active{% endif %}"><i class="bi bi-house-heart-fill"></i> Families</a>
                 <a href="/calendar" class="sidebar-link {% if '/calendar' in request.path %}active{% endif %}"><i class="bi bi-calendar-event-fill"></i> Calendar</a>
+                <a href="/letters" class="sidebar-link {% if '/letters' in request.path %}active{% endif %}"><i class="bi bi-envelope-paper-heart-fill"></i> Letters</a>
 
                 <h6 class="text-muted small fw-bold text-uppercase tracking-wide mb-2 mt-4 px-2">Leadership</h6>
                 <a href="/dashboard" class="sidebar-link {% if '/dashboard' in request.path %}active{% endif %}"><i class="bi bi-pie-chart-fill"></i> Executive Metrics</a>
@@ -389,6 +390,9 @@
                 </a>
                 <a href="/calendar" class="sidebar-link {% if '/calendar' in request.path %}active{% endif %}">
                     <i class="bi bi-calendar-event-fill"></i> Calendar
+                </a>
+                <a href="/letters" class="sidebar-link {% if '/letters' in request.path %}active{% endif %}">
+                    <i class="bi bi-envelope-paper-heart-fill"></i> Letters
                 </a>
 
                 <h6 class="text-muted small fw-bold text-uppercase tracking-wide mb-2 mt-4 px-2">Leadership</h6>

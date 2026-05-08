@@ -59,7 +59,10 @@
     <div class="d-flex flex-column gap-3 mb-4 px-3 px-md-0">
         
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <h3 class="fw-bold text-dark mb-0 text-nowrap"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+            <div>
+                <h3 class="fw-bold text-dark mb-1 text-nowrap"><i class="bi bi-clock-history text-danger me-2"></i>Social Work Timeline</h3>
+                <p class="text-muted small fw-bold mb-0">Chronological audit trail of all interventions and visits.</p>
+            </div>
             
             <div class="d-flex gap-2 flex-shrink-0 flex-wrap">
                 
@@ -157,153 +160,217 @@
         </div>
     </div>
 
-    <!-- FULL-WIDTH TIMELINE LAYOUT -->
+    <!-- FULL-WIDTH TIMELINE LAYOUT (Chronological Engine) -->
     <div class="row g-4 px-0 px-md-0">
-        <!-- 🚀 Now takes 100% width on all screens -->
         <div class="col-12">
-
             <div class="px-2 px-md-0" id="notesContainer">
+                
                 {% if followups %}
-                    <div class="timeline-container ms-2 position-relative" style="border-left: 3px solid #f8d7da;">
-                        {% for note in followups %}
-                        {% set note_type = 'letter' if note.location == 'Sponsor Letter Update' else 'social' %}
+                    <div class="timeline-container ms-2 position-relative pt-4 pb-4" style="border-left: 3px solid #e9ecef;">
                         
-                        <!-- Injecting precise data attributes for advanced filtering -->
-                        <div class="position-relative mb-4 ps-4 note-card" 
-                             data-year="{{ note.followup_date[:4] }}" 
-                             data-month="{{ note.followup_date[5:7] }}" 
-                             data-method="{{ note.location }}" 
-                             data-staff="{{ note.completed_by }}" 
-                             data-type="{{ note_type }}">
-                             
-                            {% set risk_color = 'danger' if (note.risk_factors or note.child_protection_concerns or note.trafficking_risk) else ('warning' if (note.home_life == 'High Conflict/Unstable' or note.physical_health == 'Requires Medical Attention') else 'success') %}
+                        {# Setup Grouping Namespaces #}
+                        {% set ns = namespace(year='', month='') %}
+                        {% set month_names = {'01':'Jan', '02':'Feb', '03':'Mar', '04':'Apr', '05':'May', '06':'Jun', '07':'Jul', '08':'Aug', '09':'Sep', '10':'Oct', '11':'Nov', '12':'Dec'} %}
+
+                        {% for note in followups %}
                             
-                            <!-- Timeline Dot (Native App Style) -->
-                            <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 20px; height: 20px; left: -11.5px; top: 24px; border: 4px solid #fff;"></div>
+                            {# Data Parsing #}
+                            {% set n_year = (note.followup_date|string)[:4] if note.followup_date else '0000' %}
+                            {% set n_month_num = (note.followup_date|string)[5:7] if note.followup_date else '00' %}
+                            {% set n_day = (note.followup_date|string)[8:10] if note.followup_date else '--' %}
+                            {% set n_month_name = month_names.get(n_month_num, n_month_num) %}
+                            {% set note_type = 'letter' if note.location == 'Sponsor Letter Update' else 'social' %}
                             
-                            <!-- NATIVE CARD -->
-                            <div class="card shadow-sm border-0 rounded-4 transition-hover mt-2 native-card bg-white">
-                                <div class="card-body p-0">
-                                    
-                                    <!-- Header -->
-                                    <div class="d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-secondary border-opacity-10">
-                                        <span class="fw-bold text-dark fs-6 d-flex align-items-center">
-                                            <i class="bi bi-calendar-event-fill text-muted opacity-50 me-2 d-none d-sm-inline"></i>{{ note.followup_date }}
-                                        </span>
-                                        <span class="badge bg-{{ risk_color }} bg-opacity-10 text-{{ risk_color }} border border-{{ risk_color }} border-opacity-25 rounded-pill px-3 py-1 shadow-sm"><i class="bi bi-geo-alt-fill me-1"></i> {{ note.location }}</span>
+                            {# Risk Level Assessment (The Evidentiary Trail) #}
+                            {% set is_critical = (note.risk_level and note.risk_level >= 4) or note.child_protection_concerns or note.trafficking_risk == 'Yes' %}
+                            {% set risk_color = 'danger' if is_critical else ('warning' if (note.risk_level == 3 or note.home_life == 'Poor' or note.physical_health == 'Poor' or note.evidence_drugs_violence) else 'success') %}
+                            
+                            <!-- 🚀 CHRONOLOGICAL HEADERS -->
+                            {% if n_year != ns.year %}
+                                <div class="position-relative mb-4 ps-4 year-header" data-year-header="{{ n_year }}">
+                                    <div class="position-absolute bg-dark rounded-pill shadow-sm text-white fw-bold px-3 py-1" style="left: -20px; top: -10px; font-size: 0.8rem; z-index: 2; border: 3px solid var(--app-bg);">
+                                        {{ n_year }}
                                     </div>
-                                    
-                                    <!-- Content Area -->
-                                    <div class="p-3 p-md-4">
+                                </div>
+                                {% set ns.year = n_year %}
+                                {% set ns.month = '' %} {# Reset month on new year #}
+                            {% endif %}
+
+                            {% if n_month_num != ns.month %}
+                                <div class="position-relative ps-4 mt-5 mb-4 month-header" data-year-header="{{ n_year }}" data-month-header="{{ n_month_num }}">
+                                    <div class="position-absolute bg-white border border-3 border-secondary border-opacity-25 rounded-circle" style="width: 16px; height: 16px; left: -9.5px; top: 1px; z-index: 2;"></div>
+                                    <h6 class="fw-bold text-muted text-uppercase mb-0 tracking-wide" style="font-size: 0.85rem; letter-spacing: 1px;">{{ n_month_name }} {{ n_year }}</h6>
+                                </div>
+                                {% set ns.month = n_month_num %}
+                            {% endif %}
+
+                            <!-- 🚀 INDIVIDUAL NOTE CARD -->
+                            <div class="position-relative mb-4 ps-4 note-card" 
+                                 data-year="{{ n_year }}" 
+                                 data-month="{{ n_month_num }}" 
+                                 data-method="{{ note.location }}" 
+                                 data-staff="{{ note.completed_by }}" 
+                                 data-type="{{ note_type }}">
+                                 
+                                <!-- Timeline Node Marker -->
+                                <div class="position-absolute bg-{{ risk_color }} rounded-circle shadow-sm" style="width: 20px; height: 20px; left: -11.5px; top: 24px; border: 4px solid #fff; z-index: 2;"></div>
+                                
+                                <!-- THE AUDIT CARD -->
+                                <div class="card shadow-sm border-0 rounded-4 transition-hover mt-2 native-card bg-white {% if is_critical %}border-start border-danger border-4 bg-danger bg-opacity-10{% endif %}" style="{% if is_critical %}background: linear-gradient(to right, rgba(220,53,69,0.05), #ffffff);{% endif %}">
+                                    <div class="card-body p-0">
                                         
-                                        <!-- 1. Text Narratives (Catches all potential text fields) -->
-                                        {% if note.general_notes or note.staff_notes or note.student_story or note.parent_working_notes %}
-                                        <div class="khmer-font text-dark mb-4 text-wrap text-break" style="font-size: 0.95rem; line-height: 1.7; word-break: break-word;">
-                                            {% if note.general_notes %}
-                                                <div class="mb-2"><strong class="text-muted small text-uppercase">General Notes:</strong><br>{{ note.general_notes }}</div>
+                                        <!-- Header (Audit Date Stamp) -->
+                                        <div class="d-flex justify-content-between align-items-center p-3 p-md-4 border-bottom border-secondary border-opacity-10">
+                                            
+                                            <!-- Date/Author Identity Block -->
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="bg-light rounded-3 d-flex flex-column align-items-center justify-content-center border shadow-xs" style="width: 45px; height: 45px; min-width: 45px;">
+                                                    <span class="text-danger fw-bold d-block lh-1" style="font-size: 0.55rem; letter-spacing: 1px;">{{ n_month_name|upper }}</span>
+                                                    <span class="text-dark fw-bold d-block lh-1 fs-5" style="font-family: 'Poppins', sans-serif;">{{ n_day }}</span>
+                                                </div>
+                                                <div class="lh-sm">
+                                                    <h6 class="fw-bold text-dark mb-1 fs-6 d-flex align-items-center flex-wrap gap-2">
+                                                        {{ note.location }}
+                                                        {% if note.risk_level %}
+                                                            {% set rl_color = 'success' if note.risk_level == 1 else ('info' if note.risk_level == 2 else ('warning text-darken' if note.risk_level == 3 else 'danger')) %}
+                                                            <span class="badge bg-{{ rl_color }} bg-opacity-10 text-{{ rl_color }} border border-{{ rl_color }} border-opacity-25 rounded-pill px-2 py-0 shadow-sm" style="font-size: 0.65rem;">
+                                                                Risk Level: {{ note.risk_level }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </h6>
+                                                    <span class="text-muted small fw-bold"><i class="bi bi-person-fill me-1 opacity-50"></i>{{ note.completed_by }}</span>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        
+                                        <!-- Content Area -->
+                                        <div class="p-3 p-md-4">
+                                            
+                                            <!-- Smart Note Parser (Extracting Spoke With) -->
+                                            {% set parsed_notes = note.general_notes if note.general_notes else '' %}
+                                            {% set spoke_with = '' %}
+                                            {% if parsed_notes and '[Spoke With: ' in parsed_notes %}
+                                                {% set parts = parsed_notes.split(']\n\n', 1) %}
+                                                {% set spoke_with = parts[0].replace('[Spoke With: ', '') %}
+                                                {% set parsed_notes = parts[1] if parts|length > 1 else '' %}
                                             {% endif %}
-                                            {% if note.staff_notes %}
-                                                <div class="mb-2"><strong class="text-muted small text-uppercase">Staff Remarks:</strong><br>{{ note.staff_notes }}</div>
+
+                                            {% if spoke_with %}
+                                            <div class="mb-3">
+                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill shadow-xs" style="font-size: 0.75rem;">
+                                                    <i class="bi bi-person-lines-fill me-1"></i> Interviewed: {{ spoke_with }}
+                                                </span>
+                                            </div>
                                             {% endif %}
+
+                                            <!-- Main Narrative -->
+                                            {% if parsed_notes %}
+                                            <div class="khmer-font text-dark mb-4 text-wrap text-break" style="font-size: 0.95rem; line-height: 1.7; word-break: break-word;">
+                                                {{ parsed_notes }}
+                                            </div>
+                                            {% endif %}
+
+                                            <!-- Qualitative Story/Quote -->
                                             {% if note.student_story %}
-                                                <div class="mb-2"><strong class="text-muted small text-uppercase">Student Update/Story:</strong><br>{{ note.student_story }}</div>
-                                            {% endif %}
-                                            {% if note.parent_working_notes %}
-                                                <div class="mb-2"><strong class="text-muted small text-uppercase">Family/Work Context:</strong><br>{{ note.parent_working_notes }}</div>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
-
-                                        <!-- Sponsor Letter Specific UI -->
-                                        {% if note.location == 'Sponsor Letter Update' %}
-                                        <div class="bg-success bg-opacity-10 rounded-4 p-3 border border-success border-opacity-25 mb-4">
-                                            <h6 class="fw-bold text-success-emphasis mb-3" style="font-size: 0.85rem;"><i class="bi bi-envelope-paper-heart me-1"></i> Letter Progress {% if note.letter_quarter %}{{ note.letter_quarter }} {{ note.letter_year }}{% endif %}</h6>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <span class="badge {% if note.letter_given == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Given</span>
-                                                <span class="badge {% if note.letter_translated == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-translate me-1"></i> Translated</span>
-                                                <span class="badge {% if note.letter_scanned == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-printer-fill me-1"></i> Scanned</span>
-                                                <span class="badge {% if note.letter_sent == 'Yes' %}bg-success text-white shadow-sm{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-send-check-fill me-1"></i> Sent</span>
-                                            </div>
-                                            {% if note.letter_notes %}
-                                            <div class="mt-3 pt-2 border-top border-success border-opacity-25">
-                                                <span class="d-block small fw-bold text-success-emphasis mb-1">Letter Notes:</span>
-                                                <span class="khmer-font small text-dark d-block">{{ note.letter_notes }}</span>
+                                            <div class="bg-light rounded-4 p-3 mb-4 border border-secondary border-opacity-10 position-relative">
+                                                <i class="bi bi-quote position-absolute text-secondary opacity-10" style="font-size: 3rem; top: -10px; left: 10px;"></i>
+                                                <span class="d-block small fw-bold text-muted text-uppercase mb-1 position-relative z-1" style="font-size: 0.65rem;">Student Story / Quote</span>
+                                                <p class="khmer-font text-dark mb-0 position-relative z-1" style="font-size: 0.95rem; font-style: italic;">"{{ note.student_story }}"</p>
                                             </div>
                                             {% endif %}
-                                        </div>
-                                        {% endif %}
 
-                                        <!-- 2. Health & Well-being Badges -->
-                                        {% if note.physical_health or note.home_life or note.social_interaction %}
-                                        <div class="d-flex flex-wrap gap-2 mb-3">
-                                            {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
-                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
+                                            {% if note.location == 'Sponsor Letter Update' %}
+                                            <!-- Sponsor Letter Specific UI -->
+                                            <div class="bg-success bg-opacity-10 rounded-4 p-3 border border-success border-opacity-25 mb-4">
+                                                <h6 class="fw-bold text-success-emphasis mb-3" style="font-size: 0.85rem;"><i class="bi bi-envelope-paper-heart me-1"></i> Letter Progress {% if note.letter_quarter %}{{ note.letter_quarter }} {{ note.letter_year }}{% endif %}</h6>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    <span class="badge {% if note.letter_given == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i> Given</span>
+                                                    <span class="badge {% if note.letter_translated == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-translate me-1"></i> Translated</span>
+                                                    <span class="badge {% if note.letter_scanned == 'Yes' %}bg-success text-white{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-printer-fill me-1"></i> Scanned</span>
+                                                    <span class="badge {% if note.letter_sent == 'Yes' %}bg-success text-white shadow-sm{% else %}bg-white text-muted border{% endif %} rounded-pill px-2 py-1"><i class="bi bi-send-check-fill me-1"></i> Sent</span>
+                                                </div>
+                                                {% if note.letter_notes %}
+                                                <div class="mt-3 pt-2 border-top border-success border-opacity-25">
+                                                    <span class="d-block small fw-bold text-success-emphasis mb-1">Letter Notes:</span>
+                                                    <span class="khmer-font small text-dark d-block">{{ note.letter_notes }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
                                             {% endif %}
-                                            {% if note.home_life and note.home_life != 'Not Evaluated' %}
-                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
-                                            {% endif %}
-                                            {% if note.social_interaction and note.social_interaction != 'Not Evaluated' %}
-                                            <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-people text-info me-1"></i>Social: {{ note.social_interaction }}</span>
-                                            {% endif %}
-                                        </div>
-                                        {% endif %}
 
-                                        <!-- 3. Education, Behavior & Lifestyle Context -->
-                                        {% if note.learning_difficulties or note.behavior_in_class or note.peer_issues or note.child_jobs %}
-                                        <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 p-3 rounded-4 mt-2 small text-dark shadow-xs">
-                                            <strong class="text-primary-emphasis"><i class="bi bi-book-fill text-primary me-1"></i> Academics, Behavior & Lifestyle:</strong>
-                                            <ul class="mb-0 ps-3 mt-2 text-muted fw-bold">
-                                                {% if note.learning_difficulties %}<li>Learning: {{ note.learning_difficulties }} {% if note.learning_difficulties_detail %}<span class="fw-normal">({{ note.learning_difficulties_detail }})</span>{% endif %}</li>{% endif %}
-                                                {% if note.behavior_in_class %}<li>Behavior: {{ note.behavior_in_class }} {% if note.behavior_in_class_detail %}<span class="fw-normal">({{ note.behavior_in_class_detail }})</span>{% endif %}</li>{% endif %}
-                                                {% if note.peer_issues %}<li>Peer Issues: {{ note.peer_issues }} {% if note.peer_issues_detail %}<span class="fw-normal">({{ note.peer_issues_detail }})</span>{% endif %}</li>{% endif %}
-                                                {% if note.child_jobs %}<li>Child Jobs/Labor: <span class="text-danger">{{ note.child_jobs }}</span></li>{% endif %}
-                                            </ul>
-                                        </div>
-                                        {% endif %}
+                                            <!-- Contextual Evidence Logs (Health, Education, Risk) -->
+                                            {% if note.location != 'Sponsor Letter Update' or note.physical_health %}
+                                            
+                                            <!-- Health & Social Badges -->
+                                            {% if note.physical_health or note.home_life or note.social_interaction %}
+                                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                                {% if note.physical_health and note.physical_health != 'Not Evaluated' %}
+                                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-heart-pulse text-danger me-1"></i>Health: {{ note.physical_health }}</span>
+                                                {% endif %}
+                                                {% if note.home_life and note.home_life != 'Not Evaluated' %}
+                                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-house-door text-primary me-1"></i>Home: {{ note.home_life }}</span>
+                                                {% endif %}
+                                                {% if note.social_interaction and note.social_interaction != 'Not Evaluated' %}
+                                                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill shadow-sm"><i class="bi bi-people text-info me-1"></i>Social: {{ note.social_interaction }}</span>
+                                                {% endif %}
+                                            </div>
+                                            {% endif %}
 
-                                        <!-- 4. Critical Risk Factors (Only shows if risks exist) -->
-                                        {% if note.risk_factors or note.child_protection_concerns or note.trafficking_risk or note.evidence_drugs_violence %}
-                                        <div class="alert alert-danger py-3 px-3 small w-100 mt-3 border-danger border-opacity-25 rounded-4 d-flex align-items-start shadow-sm mb-0">
-                                            <i class="bi bi-shield-exclamation-fill me-3 fs-3 text-danger mt-1"></i> 
-                                            <div>
-                                                <h6 class="fw-bold text-danger mb-2 mt-1">Protection & Risk Alerts</h6>
-                                                <ul class="mb-0 ps-3 text-danger-emphasis fw-bold">
-                                                    {% if note.risk_factors %}<li>{{ note.risk_factors }} {% if note.risk_details %}<span class="text-muted fw-normal">({{ note.risk_details }})</span>{% endif %}</li>{% endif %}
-                                                    {% if note.child_protection_concerns %}<li>{{ note.child_protection_concerns }}</li>{% endif %}
-                                                    {% if note.trafficking_risk %}<li>Trafficking Risk: {{ note.trafficking_risk }}</li>{% endif %}
-                                                    {% if note.evidence_drugs_violence %}<li>Evidence of Drugs/Violence: {{ note.evidence_drugs_violence }}</li>{% endif %}
+                                            <!-- Education & Lifestyle Context -->
+                                            {% if note.learning_difficulties or note.behavior_in_class or note.peer_issues or note.child_jobs or note.church_attendance %}
+                                            <div class="bg-primary bg-opacity-10 border border-primary border-opacity-25 p-3 rounded-4 mt-2 mb-3 small text-dark shadow-xs">
+                                                <strong class="text-primary-emphasis"><i class="bi bi-bookmark-star-fill text-primary me-1"></i> Social & Academic Context:</strong>
+                                                <ul class="mb-0 ps-3 mt-2 text-muted fw-bold">
+                                                    {% if note.learning_difficulties and note.learning_difficulties != 'No' %}<li>Learning: {{ note.learning_difficulties }} {% if note.learning_difficulties_detail %}<span class="fw-normal">({{ note.learning_difficulties_detail }})</span>{% endif %}</li>{% endif %}
+                                                    {% if note.behavior_in_class and note.behavior_in_class != 'Good' %}<li>Behavior: {{ note.behavior_in_class }} {% if note.behavior_in_class_detail %}<span class="fw-normal">({{ note.behavior_in_class_detail }})</span>{% endif %}</li>{% endif %}
+                                                    {% if note.peer_issues %}<li>Peer Issues: {{ note.peer_issues }} {% if note.peer_issues_detail %}<span class="fw-normal">({{ note.peer_issues_detail }})</span>{% endif %}</li>{% endif %}
+                                                    {% if note.church_attendance and note.church_attendance != 'No' %}<li>Church / Prayer: {{ note.church_attendance }}</li>{% endif %}
+                                                    {% if note.child_jobs and note.child_jobs != 'No' %}<li>Child Jobs/Labor: <span class="text-danger">{{ note.child_jobs }}</span></li>{% endif %}
                                                 </ul>
                                             </div>
-                                        </div>
-                                        {% endif %}
+                                            {% endif %}
 
-                                    </div>
-
-                                    <!-- Action Footer -->
-                                    <div class="card-footer bg-light bg-opacity-50 border-top border-secondary border-opacity-10 py-3 px-3 px-md-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
-                                        <div class="w-100 w-sm-auto d-flex align-items-center">
-                                            <div class="bg-secondary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-2 flex-shrink-0" style="width: 32px; height: 32px;">
-                                                <i class="bi bi-person-badge-fill text-secondary small"></i>
+                                            <!-- Critical Risk Factors -->
+                                            {% if note.risk_factors or note.child_protection_concerns or note.trafficking_risk or note.evidence_drugs_violence %}
+                                            <div class="alert alert-danger py-3 px-3 small w-100 mt-3 border-danger border-opacity-25 rounded-4 d-flex align-items-start shadow-sm mb-0">
+                                                <i class="bi bi-shield-exclamation-fill me-3 fs-3 text-danger mt-1"></i> 
+                                                <div>
+                                                    <h6 class="fw-bold text-danger mb-2 mt-1">Protection & Escalation Flags</h6>
+                                                    <ul class="mb-0 ps-3 text-danger-emphasis fw-bold">
+                                                        {% if note.risk_factors %}
+                                                            {% for r in note.risk_factors.split(',') %}
+                                                                <li>{{ r.strip() }}</li>
+                                                            {% endfor %}
+                                                            {% if note.risk_details %}<li class="text-muted fw-normal fst-italic list-unstyled ms-n3 mt-2">"{{ note.risk_details }}"</li>{% endif %}
+                                                        {% endif %}
+                                                        {% if note.child_protection_concerns %}<li class="mt-3 text-danger fs-6 border-top border-danger border-opacity-25 pt-2">RED ZONE: {{ note.child_protection_concerns }}</li>{% endif %}
+                                                        {% if note.trafficking_risk and note.trafficking_risk == 'Yes' %}<li class="text-danger">High Trafficking Risk Flagged</li>{% endif %}
+                                                        {% if note.evidence_drugs_violence %}<li class="text-danger">Evidence of Drugs/Violence: {{ note.evidence_drugs_violence }}</li>{% endif %}
+                                                    </ul>
+                                                </div>
                                             </div>
-                                            <span class="small text-muted fw-bold">{{ note.completed_by }}</span>
+                                            {% endif %}
+                                            
+                                            {% endif %}
                                         </div>
-                                        
-                                        <div class="d-flex gap-2 w-100 w-sm-auto justify-content-sm-end">
+
+                                        <!-- Action Footer -->
+                                        <div class="card-footer bg-transparent border-top border-secondary border-opacity-10 py-3 px-3 px-md-4 d-flex justify-content-end gap-2">
                                             {% if session.get('can_update_followups') or session.get('can_manage_followups') %}
-                                            <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-2 py-sm-1 px-4 shadow-sm rounded-pill transition-hover flex-fill flex-sm-grow-0 text-center">Edit Note</a>
+                                            <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-primary fw-bold py-1 px-4 shadow-sm rounded-pill transition-hover flex-fill flex-sm-grow-0 text-center">Edit Record</a>
                                             {% endif %}
 
                                             <!-- 🛡️ SECURITY CONTROL: Admins Only Delete Note -->
                                             {% if session.get('role') == 'Admin' %}
                                             <form action="/delete_followup/{{ note.id }}" method="post" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to permanently delete this follow-up note?');">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; padding: 0;" title="Delete Note"><i class="bi bi-trash-fill"></i></button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0;" title="Delete Note"><i class="bi bi-trash-fill"></i></button>
                                             </form>
                                             {% endif %}
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                         {% endfor %}
                     </div>
                 {% else %}
@@ -324,7 +391,7 @@
 
     </div>
 
-    <!-- 🚀 NEW: OFFCANVAS SUMMARY SIDEBAR (Replaces Fixed Right Column) -->
+    <!-- 🚀 OFFCANVAS SUMMARY SIDEBAR -->
     <div class="offcanvas offcanvas-end shadow-lg border-0" tabindex="-1" id="summaryOffcanvas" style="width: 340px;">
         <div class="offcanvas-header bg-light border-bottom py-3 px-4">
             <h6 class="offcanvas-title fw-bold text-dark text-uppercase tracking-wide mb-0" style="font-size: 0.8rem;"><i class="bi bi-layout-sidebar-inset-reverse text-info me-2"></i>Timeline Summary</h6>
@@ -372,7 +439,6 @@
         .container-fluid { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
         .glass-panel { border-radius: 0 !important; }
     }
-    
     /* Dropdown UI Polishes */
     .dropdown-item.active, .dropdown-item:active { background-color: #f0f7ff !important; color: #0d6efd !important; }
 </style>
@@ -383,7 +449,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         const noteCards = document.querySelectorAll('.note-card');
         
-        // Filter Elements (Now Hidden Inputs)
+        // Filter Elements
         const noteYearFilter = document.getElementById('noteYearFilter');
         const noteMonthFilter = document.getElementById('noteMonthFilter');
         const noteMethodFilter = document.getElementById('noteMethodFilter');
@@ -392,7 +458,7 @@
         
         let currentTypeFilter = 'all';
 
-        // Sets to hold unique data values
+        // Sets to hold unique data
         const noteYears = new Set();
         const noteMonths = new Set();
         const noteMethods = new Set();
@@ -467,9 +533,16 @@
 
             let visibleCount = 0;
             
+            // Hide all structural headers initially
+            document.querySelectorAll('.year-header').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.month-header').forEach(el => el.style.display = 'none');
+
             noteCards.forEach(card => {
-                const matchYear = selectedYear === 'all' || card.dataset.year === selectedYear;
-                const matchMonth = selectedMonth === 'all' || card.dataset.month === selectedMonth;
+                const cy = card.dataset.year;
+                const cm = card.dataset.month;
+                
+                const matchYear = selectedYear === 'all' || cy === selectedYear;
+                const matchMonth = selectedMonth === 'all' || cm === selectedMonth;
                 const matchMethod = selectedMethod === 'all' || card.dataset.method === selectedMethod;
                 const matchStaff = selectedStaff === 'all' || card.dataset.staff === selectedStaff;
                 const matchType = currentTypeFilter === 'all' || card.dataset.type === currentTypeFilter;
@@ -477,6 +550,13 @@
                 if (matchYear && matchMonth && matchMethod && matchStaff && matchType) {
                     card.style.display = '';
                     visibleCount++;
+                    
+                    // Show corresponding group headers dynamically
+                    const yh = document.querySelector(`.year-header[data-year-header="${cy}"]`);
+                    const mh = document.querySelector(`.month-header[data-year-header="${cy}"][data-month-header="${cm}"]`);
+                    if(yh) yh.style.display = '';
+                    if(mh) mh.style.display = '';
+                    
                 } else {
                     card.style.display = 'none';
                 }
