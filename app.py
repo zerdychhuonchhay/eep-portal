@@ -117,7 +117,11 @@ def refresh_session_permissions():
             live_user = db.execute("SELECT role, program_id FROM staff WHERE id = ?", session["user_id"])
             if live_user:
                 session["role"] = live_user[0]["role"]
-                session["program_id"] = live_user[0]["program_id"]
+                
+                # 🚀 FIX: Only set the default workspace if they don't currently have one active.
+                # Overwriting this every click breaks the Workspace Switcher!
+                if "program_id" not in session:
+                    session["program_id"] = live_user[0]["program_id"]
 
                 # 2. Get Live Permissions for that role
                 live_perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", session["role"])
