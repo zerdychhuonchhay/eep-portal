@@ -1,11 +1,45 @@
 import os
 import time
+import sqlite3
 from functools import wraps
 from flask import redirect, session, flash, request
 from werkzeug.utils import secure_filename
 
 # =========================================================
-# 1. THE SECURITY BOUNCERS
+# 1. LIVE DATABASE CHECKERS
+# =========================================================
+def get_live_role(user_id):
+    """Fetches the user's role directly from the database to prevent needing a logout"""
+    if not user_id:
+        return None
+    try:
+        conn = sqlite3.connect("eep.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        user = cursor.execute("SELECT role FROM staff WHERE id = ?", (user_id,)).fetchone()
+        conn.close()
+        return user["role"] if user else None
+    except Exception:
+        return session.get("role")
+
+def get_live_permission(role, permission_key):
+    """Fetches the exact granular permission for a role directly from the database"""
+    if role == "Admin":
+        return True
+    try:
+        conn = sqlite3.connect("eep.db")
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        perms = cursor.execute("SELECT * FROM role_permissions WHERE role = ?", (role,)).fetchone()
+        conn.close()
+        if perms and permission_key in perms.keys() and perms[permission_key] == 1:
+            return True
+        return False
+    except Exception:
+        return session.get(permission_key)
+
+# =========================================================
+# 2. THE SECURITY BOUNCERS
 # =========================================================
 def login_required(f):
     """Ensures a user is logged in before viewing a page."""
@@ -20,7 +54,13 @@ def admin_required(f):
     """Ensures ONLY Admins can perform destructive actions like Delete."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if session.get("role") != "Admin":
+        # Support for "View As" feature
+        if session.get("real_role"):
+            active_role = session.get("role")
+        else:
+            active_role = get_live_role(session.get("user_id"))
+
+        if active_role != "Admin":
             flash("Unauthorized Action: Only Admins can perform this action.", "danger")
             return redirect(request.referrer or "/")
         return f(*args, **kwargs)
@@ -30,7 +70,7 @@ def real_admin_required(f):
     """Ensures the user is genuinely an Admin, even if they are using 'View As' to test a lower role."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        actual_role = session.get("real_role", session.get("role"))
+        actual_role = get_live_role(session.get("user_id"))
         if actual_role != "Admin":
             flash("System Security: Only true Admins can use the View As feature.", "danger")
             return redirect(request.referrer or "/")
@@ -38,13 +78,21 @@ def real_admin_required(f):
     return decorated_function
 
 def permission_required(permission_key):
-    """Checks the granular RBAC permissions loaded into the user session at login."""
+    """Checks the LIVE granular RBAC permissions from the database."""
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Always allow Admins, otherwise check specific boolean flag
-            if session.get("role") != "Admin" and not session.get(permission_key):
-                flash(f"Unauthorized Access: You lack the required permission to perform this action.", "danger")
+            user_id = session.get("user_id")
+            
+            # Support for "View As" feature
+            if session.get("real_role"):
+                active_role = session.get("role")
+            else:
+                active_role = get_live_role(user_id)
+            
+            # LIVE Check
+            if active_role != "Admin" and not get_live_permission(active_role, permission_key):
+                flash("Unauthorized Access: You lack the required permission to perform this action.", "danger")
                 return redirect(request.referrer or "/")
             return f(*args, **kwargs)
         return decorated_function
@@ -52,7 +100,7 @@ def permission_required(permission_key):
 
 
 # =========================================================
-# 2. THE MATH ENGINE
+# 3. THE MATH ENGINE
 # =========================================================
 def calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max):
     """Calculates the average and assigns an automated letter grade."""
@@ -128,7 +176,7 @@ def get_subject_grade_data(score_raw, max_raw):
     return grade_letter, box_class, text_class, badge_class
 
 # =========================================================
-# 3. THE FILE UPLOAD MANAGER
+# 4. THE FILE UPLOAD MANAGER
 # =========================================================
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf', 'doc', 'docx', 'webp', 'heic', 'heif'}
 

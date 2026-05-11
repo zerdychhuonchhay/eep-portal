@@ -107,6 +107,44 @@ def log_action(description):
 # NEIGHBORHOOD: AUTHENTICATION & STAFF MANAGEMENT
 # ==============================================================================
 
+@app.before_request
+def refresh_session_permissions():
+    """Invisible Background Engine: Syncs the user's session cookie with the live DB on every click."""
+    # Only run if user is logged in AND they are not using the 'View As' testing feature
+    if "user_id" in session and not session.get("real_role"):
+        try:
+            # 1. Get Live Role & Workspace
+            live_user = db.execute("SELECT role, program_id FROM staff WHERE id = ?", session["user_id"])
+            if live_user:
+                session["role"] = live_user[0]["role"]
+                session["program_id"] = live_user[0]["program_id"]
+
+                # 2. Get Live Permissions for that role
+                live_perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", session["role"])
+                if live_perms:
+                    for key, val in live_perms[0].items():
+                        if key != 'role':  # Skip the primary key string
+                            session[key] = bool(val)
+                elif session["role"] == "Admin":
+                    # Failsafe: Admins get all permissions dynamically
+                    session["can_edit_profiles"] = True
+                    session["can_create_profiles"] = True
+                    session["can_update_profiles"] = True
+                    session["can_manage_academics"] = True
+                    session["can_create_academics"] = True
+                    session["can_update_academics"] = True
+                    session["can_delete_academics"] = True
+                    session["can_manage_followups"] = True
+                    session["can_create_followups"] = True
+                    session["can_update_followups"] = True
+                    session["can_upload_files"] = True
+                    session["can_create_files"] = True
+                    session["can_delete_files"] = True
+                    session["can_create_expenses"] = True
+                    session["can_export_data"] = True
+        except Exception:
+            pass # Fail silently to prevent crashing the app, fallback to existing cookie
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Public registration: Users create account, but stay 'Pending' until Admin approves"""
