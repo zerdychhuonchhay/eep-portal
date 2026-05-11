@@ -130,79 +130,115 @@
                 </div>
 
                 <!-- ============================================== -->
-                <!-- TAB: ACADEMIC SUBJECTS                         -->
+                <!-- TAB: ACADEMIC SUBJECTS (UPGRADED Cross-Drag)   -->
                 <!-- ============================================== -->
                 <div class="tab-pane fade" id="subjects" role="tabpanel">
                     
-                    <div class="mb-4">
-                        <h4 class="fw-bold text-dark mb-1">Academic Curriculum</h4>
-                        <p class="text-muted small fw-bold">Manage the subjects that appear on report cards. Reorder them using the numeric weight.</p>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                        <div>
+                            <h4 class="fw-bold text-dark mb-1">Curriculum Matrix</h4>
+                            <p class="text-muted small fw-bold mb-0">Drag and drop using the <i class="bi bi-grip-vertical"></i> handle to arrange the exact input order. You can drag subjects between different tiers!</p>
+                        </div>
+                        <button class="btn btn-success fw-bold rounded-pill shadow-sm transition-hover" data-bs-toggle="collapse" data-bs-target="#addSubjectCard">
+                            <i class="bi bi-plus-lg me-1"></i> Add Subject
+                        </button>
                     </div>
 
-                    <!-- Add Subject Card -->
-                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white">
-                        <div class="card-header bg-white text-dark fw-bold pt-3 pb-2 px-4 border-bottom-0">
-                            <span class="text-uppercase tracking-wide small"><i class="bi bi-plus-circle text-success me-2"></i> Add New Subject</span>
-                        </div>
-                        <div class="card-body p-4 pt-2">
-                            <form action="/settings" method="post" class="row g-3 align-items-end">
-                                <input type="hidden" name="action" value="add_subject">
-                                <div class="col-12 col-md-5">
-                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Subject Name</label>
-                                    <input type="text" class="form-control bg-light border-0 shadow-sm py-2 fw-bold" name="new_subject" placeholder="e.g. Advanced Physics" required>
-                                </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="form-label small fw-bold text-muted text-uppercase mb-1">Education Tier</label>
-                                    <select class="form-select bg-light border-0 shadow-sm py-2 fw-bold" name="category" required>
-                                        <option value="Primary / Lower Grade">Primary Level</option>
-                                        <option value="High School">High School</option>
-                                        <option value="University / Vocational">University / Voc</option>
-                                        <option value="General" selected>General</option>
-                                    </select>
-                                </div>
-                                <div class="col-12 col-md-3">
-                                    <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm rounded-pill py-2 transition-hover">Add Subject</button>
-                                </div>
-                            </form>
+                    <!-- Collapsible Add Subject Form -->
+                    <div class="collapse mb-4" id="addSubjectCard">
+                        <div class="card shadow-sm border-0 rounded-4 native-card bg-white border-start border-success border-4">
+                            <div class="card-body p-4">
+                                <form action="/settings" method="post" class="row g-3 align-items-end">
+                                    <input type="hidden" name="action" value="add_subject">
+                                    <div class="col-12 col-md-5">
+                                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Subject Name</label>
+                                        <input type="text" class="form-control bg-light border-0 shadow-sm py-2 fw-bold" name="new_subject" placeholder="e.g. Advanced Physics" required>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Target School Tier</label>
+                                        <select class="form-select bg-light border-0 shadow-sm py-2 fw-bold" name="category" required>
+                                            <option value="Primary / Lower Grade">Primary / Lower Grade</option>
+                                            <option value="High School">High School</option>
+                                            <option value="University / Vocational">University / Vocational</option>
+                                            <option value="General" selected>General (All)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-3">
+                                        <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm rounded-pill py-2 transition-hover">Create</button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Manage Subjects Card -->
+                    <!-- Manage Subjects -->
                     <form action="/settings" method="post" id="updateSubjectsForm">
                         <input type="hidden" name="action" value="update_subjects">
-                        <div class="list-group shadow-sm rounded-4 border-0 native-card mb-4 overflow-hidden">
-                            {% for subject in subjects %}
-                            <div class="list-group-item bg-white p-3 p-md-4 border-bottom border-light transition-hover">
-                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                    
-                                    <!-- Sort & Name -->
-                                    <div class="d-flex align-items-center flex-grow-1 w-100">
-                                        <div class="d-flex flex-column align-items-center me-3 flex-shrink-0">
-                                            <span class="text-muted d-none d-md-block" style="font-size: 0.5rem; font-weight: 800; text-transform: uppercase;">Order</span>
-                                            <input type="number" class="form-control text-center fw-bold bg-light border-0 shadow-sm px-1 py-1" style="width: 55px;" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}">
+                        
+                        <!-- 🚀 STICKY SAVE BUTTON FOR LONG LISTS -->
+                        <div class="position-sticky d-flex justify-content-end mb-3" style="top: 80px; z-index: 1010; pointer-events: none;">
+                            <button type="submit" class="btn btn-dark shadow-lg fw-bold rounded-pill px-4 py-2 transition-hover" style="pointer-events: auto;">
+                                <i class="bi bi-save2-fill me-2"></i> Save Matrix Order
+                            </button>
+                        </div>
+
+                        <div class="accordion shadow-sm rounded-4 border-0 overflow-hidden mb-4" id="subjectsAccordion">
+                            {% set categories = ['Primary / Lower Grade', 'High School', 'University / Vocational', 'General'] %}
+                            
+                            {% for cat in categories %}
+                                {% set cat_subs = subjects | selectattr('category', 'equalto', cat) | sort(attribute='sort_order') | list %}
+                                
+                                <div class="accordion-item border-0 bg-white">
+                                    <h2 class="accordion-header">
+                                        <!-- Keep accordion open by default to allow cross-dragging -->
+                                        <button class="accordion-button fw-bold fs-6 py-3 bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#cat-{{ loop.index }}">
+                                            <i class="bi bi-layers-half text-primary me-2 opacity-75"></i> {{ cat }}
+                                            <span class="badge bg-light text-secondary border rounded-pill ms-2 shadow-xs subject-count">{{ cat_subs|length }}</span>
+                                        </button>
+                                    </h2>
+                                    <div id="cat-{{ loop.index }}" class="accordion-collapse collapse show" data-bs-parent="#subjectsAccordion">
+                                        <div class="accordion-body p-0 bg-light border-top border-light">
+                                            <!-- 🚀 ADDED data-category-name for cross-list moving -->
+                                            <div class="list-group list-group-flush sortable-list" data-category-name="{{ cat }}" style="min-height: 50px;">
+                                                {% for subject in cat_subs %}
+                                                <div class="list-group-item bg-white p-3 border-bottom border-light subject-item transition-style" style="position: relative;">
+                                                    <div class="row align-items-center g-2 g-md-3">
+                                                        
+                                                        <!-- DRAG AND DROP HANDLE -->
+                                                        <div class="col-auto d-flex flex-column align-items-center justify-content-center pe-2 pe-md-3 ps-1 border-end border-light drag-handle" style="cursor: grab;" title="Drag to reorder or move to another tier">
+                                                            <i class="bi bi-grip-vertical text-muted fs-4 hover-primary transition-hover"></i>
+                                                            <input type="hidden" class="subject-sort-input" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}">
+                                                        </div>
+                                                        
+                                                        <div class="col-8 col-md-5">
+                                                            <label class="small text-muted fw-bold d-block d-md-none text-uppercase" style="font-size:0.6rem;">Subject Name</label>
+                                                            <input type="text" class="form-control fw-bold border-0 bg-transparent px-1 khmer-font text-dark shadow-none fs-6" name="name_{{ subject.id }}" value="{{ subject.name }}">
+                                                        </div>
+                                                        
+                                                        <div class="col-10 col-md-4 ms-auto ms-md-0 ps-4 ps-md-2">
+                                                            <label class="small text-muted fw-bold d-block d-md-none text-uppercase" style="font-size:0.6rem;">School Tier</label>
+                                                            <select class="form-select border-0 shadow-sm bg-light text-muted fw-bold py-2 category-select" style="font-size: 0.85rem;" name="category_{{ subject.id }}">
+                                                                <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Primary / Lower</option>
+                                                                <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>High School</option>
+                                                                <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>University / Voc</option>
+                                                                <option value="General" {% if subject.category == 'General' or not subject.category %}selected{% endif %}>General (All)</option>
+                                                            </select>
+                                                        </div>
+                                                        
+                                                        <div class="col-2 col-md-1 text-end d-flex justify-content-end align-items-center">
+                                                            <button type="button" class="btn btn-light border text-danger rounded-circle shadow-xs transition-hover d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" onclick="deleteSubject('{{ subject.id }}', '{{ subject.name|escape }}')">
+                                                                <i class="bi bi-trash-fill"></i>
+                                                            </button>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
-                                        <input type="text" class="form-control fw-bold border-0 bg-transparent px-0 text-dark fs-5 shadow-none w-100" name="name_{{ subject.id }}" value="{{ subject.name }}">
                                     </div>
-                                    
-                                    <!-- Tier & Delete (Grouped for mobile) -->
-                                    <div class="d-flex align-items-center gap-2 w-100 w-md-auto ms-md-3">
-                                        <select class="form-select border-0 shadow-sm bg-light text-muted fw-bold flex-grow-1" style="min-width: 180px; font-size: 0.85rem;" name="category_{{ subject.id }}">
-                                            <option value="Primary / Lower Grade" {% if subject.category == 'Primary / Lower Grade' %}selected{% endif %}>Tier: Primary / Lower</option>
-                                            <option value="High School" {% if subject.category == 'High School' %}selected{% endif %}>Tier: High School</option>
-                                            <option value="University / Vocational" {% if subject.category == 'University / Vocational' %}selected{% endif %}>Tier: University</option>
-                                            <option value="General" {% if subject.category == 'General' or not subject.category %}selected{% endif %}>Tier: General</option>
-                                        </select>
-                                        <button type="button" class="btn btn-light border text-danger rounded-circle shadow-xs flex-shrink-0 d-flex align-items-center justify-content-center transition-hover" style="width: 38px; height: 38px;" onclick="deleteSubject('{{ subject.id }}', '{{ subject.name|escape }}')"><i class="bi bi-trash-fill"></i></button>
-                                    </div>
-                                    
                                 </div>
-                            </div>
-                            {% else %}
-                            <div class="list-group-item text-center text-muted py-5 bg-light border-0">No subjects found.</div>
                             {% endfor %}
-                            <div class="list-group-item bg-light p-3">
-                                <button type="submit" class="btn btn-dark w-100 shadow-sm fw-bold rounded-pill py-2 transition-hover"><i class="bi bi-list-check me-2"></i> Save Matrix Order</button>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -219,7 +255,7 @@
                     </div>
 
                     <!-- Add Workspace -->
-                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white">
+                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white border-top border-primary border-4">
                         <div class="card-header bg-white text-dark fw-bold pt-3 pb-2 px-4 border-bottom-0">
                             <span class="text-uppercase tracking-wide small"><i class="bi bi-plus-circle text-primary me-2"></i> Register Workspace</span>
                         </div>
@@ -242,7 +278,7 @@
                     </div>
 
                     <!-- Active Workspaces -->
-                    <div class="card shadow-sm border-0 rounded-4 native-card overflow-hidden border-top border-primary border-4">
+                    <div class="card shadow-sm border-0 rounded-4 native-card overflow-hidden">
                         <div class="list-group list-group-flush">
                             {% for p in programs %}
                             <div class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 bg-white border-bottom transition-hover">
@@ -424,7 +460,7 @@
                         <p class="text-muted small fw-bold">Map system codes to exact English and Khmer strings for the UI.</p>
                     </div>
 
-                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white">
+                    <div class="card shadow-sm border-0 rounded-4 native-card mb-4 bg-white border-top border-warning border-4">
                         <div class="card-header bg-white text-dark fw-bold py-3 px-4 border-bottom d-flex justify-content-between align-items-center">
                             <div class="input-group w-100 shadow-sm rounded-pill overflow-hidden border border-secondary border-opacity-10 bg-light">
                                 <span class="input-group-text bg-transparent border-0 px-3"><i class="bi bi-search text-muted"></i></span>
@@ -579,13 +615,19 @@
     
     .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05) !important; }
+    .transition-style { transition: background-color 0.3s ease; }
+    .hover-primary:hover { color: #0d6efd !important; }
+    
+    /* SortableJS Ghost UI */
+    .bg-ghost { background-color: #f8f9fa !important; border: 2px dashed #0d6efd !important; opacity: 0.6; }
+    
     .cursor-pointer { cursor: pointer; }
     .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .text-darken { color: #b48600 !important; }
     
     .form-control:focus, .form-select:focus { border-color: #86b7fe !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
     
-    /* Mobile-Specific Refinements (The Fluid "App Chip" Navigation) */
+    /* Mobile-Specific Refinements */
     @media (max-width: 991.98px) {
         .custom-scrollbar::-webkit-scrollbar { display: none; }
         .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -615,50 +657,102 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Include SortableJS for Drag-and-Drop capability -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
 <script>
-    // ---------------------------------------------------------
-    // RBAC MATRIX: TOGGLE ALL BUTTON
-    // ---------------------------------------------------------
-    function toggleRoleRow(roleName) {
-        const safeRole = roleName.replace(/\s+/g, '');
-        const checkboxes = document.querySelectorAll(`.role-cb-${safeRole}`);
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => {
-            if (!cb.disabled) cb.checked = !allChecked;
-        });
-    }
-
-    // ---------------------------------------------------------
-    // LIVE DICTIONARY SEARCH
-    // ---------------------------------------------------------
-    document.getElementById('langSearch')?.addEventListener('keyup', function() {
-        let filter = this.value.toLowerCase();
-        let items = document.querySelectorAll('.lang-item');
-        items.forEach(item => {
-            let inputs = item.querySelectorAll('input[type="text"]');
-            let match = false;
-            inputs.forEach(input => {
-                if (input.value.toLowerCase().includes(filter)) match = true;
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // ---------------------------------------------------------
+        // INTUITIVE DRAG-AND-DROP SUBJECT SORTING (CROSS-CATEGORY)
+        // ---------------------------------------------------------
+        function recalculateSortOrder(container) {
+            const items = container.querySelectorAll('.subject-item');
+            items.forEach((item, index) => {
+                const sortInput = item.querySelector('.subject-sort-input');
+                if (sortInput) sortInput.value = index + 1; // Force 1-based sequential ordering based on visual DOM order
             });
-            item.style.display = match ? '' : 'none';
+        }
+
+        // Initialize SortableJS on all subject tier lists
+        document.querySelectorAll('.sortable-list').forEach(function(list) {
+            new Sortable(list, {
+                group: 'shared-subjects', // 🚀 NEW: Allows dragging subjects BETWEEN different school tiers
+                handle: '.drag-handle',
+                animation: 200,
+                ghostClass: 'bg-ghost',
+                onEnd: function(evt) {
+                    // 🚀 NEW: If moved to a different category list, update its internal <select> dropdown automatically
+                    const toList = evt.to;
+                    const newCategory = toList.getAttribute('data-category-name');
+                    
+                    if (newCategory) {
+                        const selectEl = evt.item.querySelector('.category-select');
+                        if (selectEl) {
+                            selectEl.value = newCategory;
+                        }
+                    }
+                    
+                    // Update counts on the accordion badges
+                    document.querySelectorAll('.accordion-item').forEach(acc => {
+                        const countBadge = acc.querySelector('.subject-count');
+                        const items = acc.querySelectorAll('.subject-item');
+                        if (countBadge) countBadge.innerText = items.length;
+                    });
+                    
+                    // Recalculate sort numbers
+                    recalculateSortOrder(evt.from);
+                    if (evt.from !== evt.to) {
+                        recalculateSortOrder(evt.to);
+                    }
+                }
+            });
         });
+
+        // ---------------------------------------------------------
+        // RBAC MATRIX: TOGGLE ALL BUTTON
+        // ---------------------------------------------------------
+        window.toggleRoleRow = function(roleName) {
+            const safeRole = roleName.replace(/\s+/g, '');
+            const checkboxes = document.querySelectorAll(`.role-cb-${safeRole}`);
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                if (!cb.disabled) cb.checked = !allChecked;
+            });
+        };
+
+        // ---------------------------------------------------------
+        // LIVE DICTIONARY SEARCH
+        // ---------------------------------------------------------
+        document.getElementById('langSearch')?.addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let items = document.querySelectorAll('.lang-item');
+            items.forEach(item => {
+                let inputs = item.querySelectorAll('input[type="text"]');
+                let match = false;
+                inputs.forEach(input => {
+                    if (input.value.toLowerCase().includes(filter)) match = true;
+                });
+                item.style.display = match ? '' : 'none';
+            });
+        });
+
+        // ---------------------------------------------------------
+        // SAFELY DELETE ENTRIES
+        // ---------------------------------------------------------
+        window.deleteSubject = function(subjectId, subjectName) {
+            if(confirm(`Are you sure you want to delete the subject '${subjectName}'? Note: It will block deletion if grades exist for this subject to protect student records.`)) {
+                document.getElementById('delete_subject_id').value = subjectId;
+                document.getElementById('deleteSubjectForm').submit();
+            }
+        };
+
+        window.deleteTranslation = function(keyName) {
+            if(confirm(`Remove vocabulary term '${keyName}' from the dictionary?`)) {
+                document.getElementById('delete_translation_key').value = keyName;
+                document.getElementById('deleteTranslationForm').submit();
+            }
+        };
     });
-
-    // ---------------------------------------------------------
-    // SAFELY DELETE ENTRIES
-    // ---------------------------------------------------------
-    function deleteSubject(subjectId, subjectName) {
-        if(confirm(`Are you sure you want to delete the subject '${subjectName}'? Note: It will block deletion if grades exist for this subject to protect student records.`)) {
-            document.getElementById('delete_subject_id').value = subjectId;
-            document.getElementById('deleteSubjectForm').submit();
-        }
-    }
-
-    function deleteTranslation(keyName) {
-        if(confirm(`Remove vocabulary term '${keyName}' from the dictionary?`)) {
-            document.getElementById('delete_translation_key').value = keyName;
-            document.getElementById('deleteTranslationForm').submit();
-        }
-    }
 </script>
 {% endblock %}

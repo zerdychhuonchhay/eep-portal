@@ -1285,6 +1285,7 @@ def add_report(student_id):
         has_numeric = False
         missing_max = False
 
+        # 1. PROCESS STANDARD SUBJECTS
         for subject in subjects:
             sub_id = subject['id']
             score = request.form.get(f"score_{sub_id}")
@@ -1303,23 +1304,31 @@ def add_report(student_id):
                 except ValueError:
                     pass
 
-        custom_name = request.form.get("custom_subject_name")
-        custom_score = request.form.get("custom_score")
-        custom_max = request.form.get("custom_max_score")
+        # 2. 🚀 PROCESS DYNAMIC CUSTOM SUBJECTS (Using getlist)
+        custom_names = request.form.getlist("custom_subject_name[]")
+        custom_scores = request.form.getlist("custom_score[]")
+        custom_maxes = request.form.getlist("custom_max_score[]")
 
-        if custom_score:
-            db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
-                       report_id, custom_score, custom_max, custom_name)
-            try:
-                calculated_total += float(custom_score)
-                if custom_max and str(custom_max).strip() != "":
-                    calculated_max += float(custom_max)
-                else:
-                    missing_max = True
-                has_numeric = True
-            except ValueError:
-                pass
+        # Loop through however many custom subjects the teacher added
+        for i in range(len(custom_scores)):
+            c_score = custom_scores[i]
+            c_name = custom_names[i] if i < len(custom_names) else "Custom Subject"
+            c_max = custom_maxes[i] if i < len(custom_maxes) else "100"
 
+            if c_score and str(c_score).strip() != "":
+                db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
+                           report_id, c_score, c_max, c_name)
+                try:
+                    calculated_total += float(c_score)
+                    if c_max and str(c_max).strip() != "":
+                        calculated_max += float(c_max)
+                    else:
+                        missing_max = True
+                    has_numeric = True
+                except ValueError:
+                    pass
+
+        # 3. CALCULATE FINALS
         calculated_avg, calculated_grade = calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max)
 
         manual_total = request.form.get("manual_total_score")
@@ -1356,11 +1365,15 @@ def add_report(student_id):
 @login_required
 @permission_required("can_update_academics")
 def edit_report(report_id):
+    """Edit an existing monthly academic report"""
+    # Verify the report exists
     report_data = db.execute("SELECT * FROM monthly_reports WHERE id = ?", report_id)
-    if len(report_data) != 1:
-        return render_template("_layouts/apology.html", message="Report not found")
+    if not report_data:
+        flash("Error: Academic report not found.", "danger")
+        return redirect(request.referrer or "/roster")
+    
     report = report_data[0]
-    student_id = report["student_id"]
+    student_id = report['student_id']
 
     if request.method == "POST":
         month = request.form.get("month")
@@ -1368,84 +1381,101 @@ def edit_report(report_id):
         academic_year = request.form.get("academic_year")
         grade_level = request.form.get("grade_level")
         school_name = request.form.get("school_name")
-        attendance_days = request.form.get("attendance_days")
-        teacher_comment = request.form.get("teacher_comment")
         class_rank = request.form.get("class_rank")
+        teacher_comment = request.form.get("teacher_comment")
+        attendance_days = request.form.get("attendance_days")
         source_url = request.form.get("source_url")
 
         if source_url == "None" or not source_url:
             source_url = None
 
         if not month or not academic_year:
-            return render_template("_layouts/apology.html", message="Month and Academic Year are required. Please use your browser's BACK arrow to return without losing data.")
+            return render_template("_layouts/apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
 
+        # Prevent duplicate reports (excluding this specific report ID)
         existing_report = db.execute("""
             SELECT id FROM monthly_reports
             WHERE student_id = ? AND month = ? AND academic_year = ? AND IFNULL(semester, '') = IFNULL(?, '') AND id != ?
         """, student_id, month, academic_year, semester, report_id)
 
         if existing_report:
-            return render_template("_layouts/apology.html", message="Another report for this term already exists. Please use your browser's BACK arrow to return.")
+            return render_template("_layouts/apology.html", message=f"A {semester if semester else 'Regular'} report for {month} {academic_year} already exists! Please use your browser's BACK arrow to return to the form.")
 
+        # Handle File Replacement (Optional)
         file = request.files.get('scanned_document')
         if file and file.filename != '':
             scanned_filename, _ = handle_file_upload(file, student_id, "report", app.config['UPLOAD_FOLDER'])
-            if scanned_filename:
-                db.execute("UPDATE monthly_reports SET scanned_document = ? WHERE id = ?", scanned_filename, report_id)
+            db.execute("UPDATE monthly_reports SET scanned_document = ? WHERE id = ?", scanned_filename, report_id)
 
         db.execute("""
-            UPDATE monthly_reports
-            SET month = ?, academic_year = ?, semester = ?, attendance_days = ?, teacher_comment = ?, class_rank = ?, grade_level = ?, school_name = ?
+            UPDATE monthly_reports 
+            SET month = ?, academic_year = ?, semester = ?, class_rank = ?, teacher_comment = ?, attendance_days = ?, grade_level = ?, school_name = ?
             WHERE id = ?
-        """, month, academic_year, semester, attendance_days, teacher_comment, class_rank, grade_level, school_name, report_id)
+        """, month, academic_year, semester, class_rank, teacher_comment, attendance_days, grade_level, school_name, report_id)
 
         subjects = db.execute("SELECT * FROM subjects")
-        for subject in subjects:
-            sub_id = subject['id']
-            score = request.form.get(f"score_{sub_id}")
-            max_score = request.form.get(f"max_score_{sub_id}")
-            existing_grade = db.execute("SELECT id FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
-
-            if score:
-                if existing_grade:
-                    db.execute("UPDATE grades SET score = ?, max_score = ? WHERE report_id = ? AND subject_id = ?", score, max_score, report_id, sub_id)
-                else:
-                    db.execute("INSERT INTO grades (report_id, subject_id, score, max_score) VALUES (?, ?, ?, ?)", report_id, sub_id, score, max_score)
-            elif existing_grade:
-                db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
-
-        custom_name = request.form.get("custom_subject_name")
-        custom_score = request.form.get("custom_score")
-        custom_max = request.form.get("custom_max_score")
-        existing_custom = db.execute("SELECT id FROM grades WHERE report_id = ? AND subject_id = 0", report_id)
-
-        if custom_score:
-            if existing_custom:
-                db.execute("UPDATE grades SET score = ?, max_score = ?, custom_subject_name = ? WHERE report_id = ? AND subject_id = 0",
-                           custom_score, custom_max, custom_name, report_id)
-            else:
-                db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
-                           report_id, custom_score, custom_max, custom_name)
-        elif existing_custom:
-            db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = 0", report_id)
-
-        current_grades = db.execute("SELECT score, max_score FROM grades WHERE report_id = ?", report_id)
         calculated_total = 0.0
         calculated_max = 0.0
         has_numeric = False
         missing_max = False
 
-        for g in current_grades:
-            try:
-                calculated_total += float(g['score'])
-                if g['max_score'] and str(g['max_score']).strip() != "":
-                    calculated_max += float(g['max_score'])
-                else:
-                    missing_max = True
-                has_numeric = True
-            except ValueError:
-                pass
+        # 1. PROCESS STANDARD SUBJECTS (Update existing or Insert new)
+        for subject in subjects:
+            sub_id = subject['id']
+            score = request.form.get(f"score_{sub_id}")
+            max_score = request.form.get(f"max_score_{sub_id}")
 
+            if score and str(score).strip() != "":
+                # Check if grade already exists for this subject
+                existing_grade = db.execute("SELECT id FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
+                
+                if existing_grade:
+                    db.execute("UPDATE grades SET score = ?, max_score = ? WHERE report_id = ? AND subject_id = ?", 
+                               score, max_score, report_id, sub_id)
+                else:
+                    db.execute("INSERT INTO grades (report_id, subject_id, score, max_score) VALUES (?, ?, ?, ?)",
+                               report_id, sub_id, score, max_score)
+                               
+                try:
+                    calculated_total += float(score)
+                    if max_score and str(max_score).strip() != "":
+                        calculated_max += float(max_score)
+                    else:
+                        missing_max = True
+                    has_numeric = True
+                except ValueError:
+                    pass
+            else:
+                # If the score was cleared out, delete the record from the db
+                db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
+
+        # 2. 🚀 PROCESS DYNAMIC CUSTOM SUBJECTS (Wipe and Replace)
+        # Because arrays can change dynamically, it's safest to delete all custom subjects and re-insert
+        db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = 0", report_id)
+
+        custom_names = request.form.getlist("custom_subject_name[]")
+        custom_scores = request.form.getlist("custom_score[]")
+        custom_maxes = request.form.getlist("custom_max_score[]")
+
+        for i in range(len(custom_scores)):
+            c_score = custom_scores[i]
+            c_name = custom_names[i] if i < len(custom_names) else "Custom Subject"
+            c_max = custom_maxes[i] if i < len(custom_maxes) else "100"
+
+            if c_score and str(c_score).strip() != "":
+                db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
+                           report_id, c_score, c_max, c_name)
+                try:
+                    calculated_total += float(c_score)
+                    if c_max and str(c_max).strip() != "":
+                        calculated_max += float(c_max)
+                    else:
+                        missing_max = True
+                    has_numeric = True
+                except ValueError:
+                    pass
+
+        # 3. CALCULATE FINALS
         calculated_avg, calculated_grade = calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max)
 
         manual_total = request.form.get("manual_total_score")
@@ -1464,18 +1494,35 @@ def edit_report(report_id):
 
         final_grade = str(manual_grade).strip() if manual_grade and str(manual_grade).strip() != "" else calculated_grade
 
-        db.execute("UPDATE monthly_reports SET total_score = ?, overall_average = ?, overall_grade = ? WHERE id = ?", final_total, final_avg, final_grade, report_id)
+        db.execute("""
+            UPDATE monthly_reports
+            SET total_score = ?, overall_average = ?, overall_grade = ?
+            WHERE id = ?
+        """, final_total, final_avg, final_grade, report_id)
 
-        log_action(f"Edited academic report for Student ID: {student_id}")
+        log_action(f"Updated academic report for Student ID: {student_id}")
         flash("Academic report successfully updated!", "success")
         return redirect(source_url) if source_url else redirect(f"/student/{student_id}")
 
+    # --- GET REQUEST (Load existing data for form) ---
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
-    grades = db.execute("SELECT * FROM grades WHERE report_id = ?", report_id)
-    existing_grades = {g['subject_id']: g for g in grades}
+    
+    # Fetch all grades for this report
+    grades_raw = db.execute("SELECT * FROM grades WHERE report_id = ?", report_id)
+    
+    # 🚀 Map Standard Grades by subject_id
+    existing_grades = {g['subject_id']: g for g in grades_raw if g['subject_id'] != 0}
+    
+    # 🚀 Extract Custom Grades as a list
+    custom_grades = [g for g in grades_raw if g['subject_id'] == 0]
 
-    return render_template("academics/edit_report.html", student=student, report=report, subjects=subjects, existing_grades=existing_grades)
+    return render_template("academics/edit_report.html", 
+                           student=student, 
+                           report=report, 
+                           subjects=subjects, 
+                           existing_grades=existing_grades,
+                           custom_grades=custom_grades)
 
 @app.route("/delete_report/<int:report_id>", methods=["POST"])
 @login_required

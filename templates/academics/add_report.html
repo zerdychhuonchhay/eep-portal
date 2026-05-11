@@ -7,292 +7,357 @@
 {% endblock %}
 
 {% block main %}
-<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 1200px;">
+<div class="container-fluid container-xl mt-3 mt-md-4 mb-5 px-0 px-md-3 mx-auto" style="max-width: 1300px;">
     
-    <div class="mb-4 px-3 px-md-0">
-        <a href="/student/{{ student.id }}/academics" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
-            <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Back to Academics
-        </a>
-        <div class="d-flex justify-content-between align-items-end">
-            <div>
-                <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-journal-plus text-success me-2"></i>Log Academic Report</h2>
-                <p class="text-muted small fw-bold mb-0">Entering grades for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
-            </div>
+    <div class="mb-4 px-3 px-md-0 d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
+        <div>
+            <a href="/student/{{ student.id }}/academics" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
+                <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Back to Academics
+            </a>
+            <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-journal-plus text-success me-2"></i>Log Academic Report</h2>
+            <p class="text-muted small fw-bold mb-0">Entering grades for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
         </div>
     </div>
 
     <!-- Auto-saving form -->
     <form id="addReportForm" action="/add_report/{{ student.id }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
-        <div class="row g-0 g-md-4">
-            
-            <!-- LEFT COLUMN (PC Preview) -->
-            <div class="col-lg-5">
-                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card sticky-lg-top bg-white" style="top: 80px; z-index: 5;">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-camera-fill me-2 text-info"></i>1. Reference Scan</h5>
+        
+        <input type="hidden" name="source_url" value="{{ request.referrer if request.referrer else '' }}">
+        <input type="hidden" name="calendar_year" id="hidden_calendar_year" value="">
+
+        <!-- ========================================== -->
+        <!-- 1. ACADEMIC TERM & DOCUMENT UPLOAD         -->
+        <!-- ========================================== -->
+        <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>1. Term & Document</h5>
+            </div>
+            <div class="card-body p-4 pt-2">
+                <div class="row g-3">
+                    
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Academic Year *</label>
+                        <select name="academic_year" id="academic_year_select" class="form-select bg-light fw-bold text-dark" required onchange="updateCalendarYear()">
+                            <option value="" disabled selected>Select Year...</option>
+                            <option value="2025-2026">2025-2026</option>
+                            <option value="2024-2025">2024-2025</option>
+                            <option value="2023-2024">2023-2024</option>
+                            <option value="2022-2023">2022-2023</option>
+                        </select>
                     </div>
-                    <div class="card-body p-4 pt-2">
+                    
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase d-flex justify-content-between align-items-center">
+                            <span>Month *</span>
+                            <span id="calYearBadge" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-none" style="font-size: 0.65rem;">📅 Cal Year: </span>
+                        </label>
+                        <select name="month" id="month_select" class="form-select bg-light fw-bold text-dark" required onchange="updateCalendarYear()">
+                            <option value="" disabled selected>Select Month...</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4 col-lg-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Exam / Term Type</label>
+                        <select name="semester" class="form-select bg-light fw-bold text-dark">
+                            <option value="" selected>Standard Monthly Report</option>
+                            <option value="Semester 1">Semester 1 Exam</option>
+                            <option value="Semester 2">Semester 2 Exam</option>
+                            <option value="Final">Final Exam</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Grade Level *</label>
+                        <select class="form-select bg-light fw-bold text-primary" id="grade_level" name="grade_level" required onchange="filterSubjects()">
+                            <option value="" disabled>Select Grade...</option>
+                            <optgroup label="Early Education">
+                                <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
+                            </optgroup>
+                            <optgroup label="Primary & Secondary (K-12)">
+                                <option value="Grade 1" {% if student.grade_level == 'Grade 1' %}selected{% endif %}>Grade 1</option>
+                                <option value="Grade 2" {% if student.grade_level == 'Grade 2' %}selected{% endif %}>Grade 2</option>
+                                <option value="Grade 3" {% if student.grade_level == 'Grade 3' %}selected{% endif %}>Grade 3</option>
+                                <option value="Grade 4" {% if student.grade_level == 'Grade 4' %}selected{% endif %}>Grade 4</option>
+                                <option value="Grade 5" {% if student.grade_level == 'Grade 5' %}selected{% endif %}>Grade 5</option>
+                                <option value="Grade 6" {% if student.grade_level == 'Grade 6' %}selected{% endif %}>Grade 6</option>
+                                <option value="Grade 7" {% if student.grade_level == 'Grade 7' %}selected{% endif %}>Grade 7</option>
+                                <option value="Grade 8" {% if student.grade_level == 'Grade 8' %}selected{% endif %}>Grade 8</option>
+                                <option value="Grade 9" {% if student.grade_level == 'Grade 9' %}selected{% endif %}>Grade 9</option>
+                                <option value="Grade 10" {% if student.grade_level == 'Grade 10' %}selected{% endif %}>Grade 10</option>
+                                <option value="Grade 11" {% if student.grade_level == 'Grade 11' %}selected{% endif %}>Grade 11</option>
+                                <option value="Grade 12" {% if student.grade_level == 'Grade 12' %}selected{% endif %}>Grade 12</option>
+                            </optgroup>
+                            <optgroup label="Higher Education">
+                                <option value="University Year 1" {% if student.grade_level == 'University Year 1' %}selected{% endif %}>University Year 1</option>
+                                <option value="University Year 2" {% if student.grade_level == 'University Year 2' %}selected{% endif %}>University Year 2</option>
+                                <option value="University Year 3" {% if student.grade_level == 'University Year 3' %}selected{% endif %}>University Year 3</option>
+                                <option value="University Year 4" {% if student.grade_level == 'University Year 4' %}selected{% endif %}>University Year 4</option>
+                                <option value="University Year 5" {% if student.grade_level == 'University Year 5' %}selected{% endif %}>University Year 5</option>
+                                <option value="Vocational Training" {% if student.grade_level == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 col-lg-5">
+                        <label class="form-label fw-bold small text-muted text-uppercase">School Name</label>
+                        <input type="text" name="school_name" class="form-control bg-light khmer-font" value="{{ student.current_school if student.current_school else '' }}" placeholder="Enter school name...">
+                    </div>
+
+                    <div class="col-md-12 col-lg-7">
                         <label class="form-label fw-bold small text-muted text-uppercase">Upload Report Card</label>
-                        <div class="input-group shadow-sm rounded-3 overflow-hidden mb-3">
-                            <input type="file" name="scanned_document" id="scan_upload" class="form-control bg-light border-0" accept="image/*,application/pdf" capture="environment">
-                            <span class="input-group-text bg-white text-primary border-0 fw-bold"><i class="bi bi-upload"></i></span>
+                        <div class="input-group shadow-sm rounded-3 overflow-hidden border border-secondary border-opacity-10">
+                            <!-- ACCEPTS BOTH PDFs AND IMAGES -->
+                            <span class="input-group-text bg-white text-info border-0 fw-bold"><i class="bi bi-camera-fill"></i></span>
+                            <input type="file" name="scanned_document" id="scan_upload" class="form-control bg-white border-0" accept="image/*,.pdf,application/pdf" capture="environment">
+                            <!-- Note: Redundant inline view button permanently removed -->
                         </div>
-                        
-                        <div class="preview-pane rounded-4 border border-2 border-secondary border-opacity-10 bg-light" id="preview_container">
-                            <div id="placeholder_text" class="text-muted text-center p-5">
-                                <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
-                                <span class="fw-bold small text-uppercase">No document selected</span>
-                            </div>
-                            <iframe id="scan_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none; border-radius: 1rem;"></iframe>
-                            <img id="scan_preview" src="" class="zoom-image" style="display:none;" alt="Report Card Scan">
-                        </div>
-                        <small class="text-muted mt-3 d-block text-center fw-bold"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Hover over images to zoom. PDFs are scrollable.</small>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- RIGHT COLUMN (Form Data) -->
-            <div class="col-lg-7">
+        <!-- ========================================== -->
+        <!-- 2. PERFORMANCE OVERVIEW                    -->
+        <!-- ========================================== -->
+        <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-bar-chart-fill me-2 text-success"></i>2. Performance Overview</h5>
+            </div>
+            <div class="card-body p-4 pt-2">
+                <div class="row g-3">
+                    <div class="col-12 mb-1">
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">Auto-Calculation</span>
+                        <span class="small text-muted ms-2">Leave these blank to automatically calculate from subjects below.</span>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Total Score</label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-plus-slash-minus"></i></span>
+                            <input type="number" step="0.01" name="manual_total_score" class="form-control border-start-0 ps-0 fw-bold bg-light" placeholder="e.g. 450">
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Overall Avg %</label>
+                        <div class="input-group input-group-merge shadow-sm">
+                            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calculator"></i></span>
+                            <input type="number" step="0.01" name="manual_average" class="form-control border-start-0 ps-0 fw-bold bg-light text-dark" placeholder="e.g. 85.5">
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Letter Grade</label>
+                        <input type="text" name="manual_grade" class="form-control bg-light fw-bold shadow-sm" placeholder="e.g. A, B+, Pass">
+                    </div>
+                    
+                    <div class="col-sm-6 mt-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Class Rank</label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-trophy"></i></span>
+                            <input type="text" name="class_rank" class="form-control border-start-0 ps-0 fw-bold" placeholder="e.g. 5/40">
+                        </div>
+                    </div>
+                    <div class="col-sm-6 mt-4">
+                        <label class="form-label fw-bold small text-muted text-uppercase">Attendance</label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-check"></i></span>
+                            <input type="number" name="attendance_days" class="form-control border-start-0 ps-0 fw-bold" placeholder="e.g. 22">
+                            <span class="input-group-text bg-light text-muted small">days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. DETAILED SUBJECTS (COMPACT DRAG & DROP) -->
+        <!-- ========================================== -->
+        <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+            
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center rounded-top-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>3. Detailed Subjects</h5>
                 
-                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>2. Academic Term</h5>
-                    </div>
-                    <div class="card-body p-4 pt-2">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Academic Year *</label>
-                                <select name="academic_year" class="form-select bg-light fw-bold text-dark" required>
-                                    <option value="" disabled selected>Select Year...</option>
-                                    <option value="2025-2026">2025-2026</option>
-                                    <option value="2024-2025">2024-2025</option>
-                                    <option value="2023-2024">2023-2024</option>
-                                    <option value="2022-2023">2022-2023</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Month *</label>
-                                <select name="month" class="form-select bg-light fw-bold text-dark" required>
-                                    <option value="" disabled selected>Select Month...</option>
-                                    <option value="August">August</option>
-                                    <option value="September">September</option>
-                                    <option value="October">October</option>
-                                    <option value="November">November</option>
-                                    <option value="December">December</option>
-                                    <option value="January">January</option>
-                                    <option value="February">February</option>
-                                    <option value="March">March</option>
-                                    <option value="April">April</option>
-                                    <option value="May">May</option>
-                                    <option value="June">June</option>
-                                    <option value="July">July</option>
-                                </select>
-                            </div>
+                <!-- 🚀 QUICK ADD MODAL TRIGGER -->
+                {% if session.get('role') == 'Admin' or session.get('program_id') == 1 %}
+                <button type="button" class="btn btn-sm btn-light border fw-bold text-secondary rounded-pill px-3 shadow-sm transition-hover d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#quickAddSubjectModal">
+                    <i class="bi bi-gear-fill me-1"></i> Edit Default Matrix
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="card-body p-3 p-md-4 pt-2 bg-light bg-opacity-50">
+
+                <div class="alert alert-secondary py-2 mb-4 border-0 bg-secondary bg-opacity-10 text-secondary-emphasis d-flex align-items-center">
+                    <i class="fw-bold bi bi-lightning-charge-fill text-secondary me-3 fs-3"></i> 
+                    <span class="small fw-bold lh-sm">
+                        <strong>High Speed Entry:</strong> Type a score, hit <code>Tab</code>. 
+                        <strong>New:</strong> Grab the <i class="bi bi-grip-vertical"></i> handle to reorder the fields below to match the physical piece of paper!
+                    </span>
+                </div>
+
+                <!-- 🚀 UPGRADED: High-Speed Sortable Grid -->
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3" id="subjectsGrid">
+                    
+                    {% for subject in subjects %}
+                    <div class="col subject-row" data-category="{{ subject.category }}">
+                        <div class="p-2 bg-white border border-secondary border-opacity-10 rounded-3 shadow-sm h-100 subject-card transition-hover d-flex flex-column justify-content-between">
                             
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Exam / Term Type</label>
-                                <select name="semester" class="form-select bg-light fw-bold text-dark">
-                                    <option value="" selected>Standard Monthly Report</option>
-                                    <option value="Semester 1">Semester 1 Exam</option>
-                                    <option value="Semester 2">Semester 2 Exam</option>
-                                    <option value="Final">Final Exam</option>
-                                </select>
+                            <!-- Title Row (With Grip Handle) -->
+                            <div class="d-flex justify-content-between align-items-start mb-2 px-1">
+                                <label class="khmer-font fw-bold text-dark lh-sm mb-0 d-flex align-items-center" style="font-size: 0.85rem;">
+                                    <i class="bi bi-grip-vertical text-muted opacity-50 me-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
+                                    <span class="text-muted opacity-50 small me-1 subject-index"></span>{{ subject.name }}
+                                </label>
+                                <span class="badge bg-light text-secondary border d-none d-sm-inline-block flex-shrink-0" style="font-size: 0.6rem;">{{ subject.category }}</span>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Grade Level *</label>
-                                <select class="form-select bg-light fw-bold text-primary" id="grade_level" name="grade_level" required onchange="filterSubjects()">
-                                    <option value="" disabled>Select Grade...</option>
-                                    <optgroup label="Early Education">
-                                        <option value="Kindergarten" {% if student.grade_level == 'Kindergarten' %}selected{% endif %}>Kindergarten</option>
-                                    </optgroup>
-                                    <optgroup label="Primary & Secondary (K-12)">
-                                        <option value="Grade 1" {% if student.grade_level == 'Grade 1' %}selected{% endif %}>Grade 1</option>
-                                        <option value="Grade 2" {% if student.grade_level == 'Grade 2' %}selected{% endif %}>Grade 2</option>
-                                        <option value="Grade 3" {% if student.grade_level == 'Grade 3' %}selected{% endif %}>Grade 3</option>
-                                        <option value="Grade 4" {% if student.grade_level == 'Grade 4' %}selected{% endif %}>Grade 4</option>
-                                        <option value="Grade 5" {% if student.grade_level == 'Grade 5' %}selected{% endif %}>Grade 5</option>
-                                        <option value="Grade 6" {% if student.grade_level == 'Grade 6' %}selected{% endif %}>Grade 6</option>
-                                        <option value="Grade 7" {% if student.grade_level == 'Grade 7' %}selected{% endif %}>Grade 7</option>
-                                        <option value="Grade 8" {% if student.grade_level == 'Grade 8' %}selected{% endif %}>Grade 8</option>
-                                        <option value="Grade 9" {% if student.grade_level == 'Grade 9' %}selected{% endif %}>Grade 9</option>
-                                        <option value="Grade 10" {% if student.grade_level == 'Grade 10' %}selected{% endif %}>Grade 10</option>
-                                        <option value="Grade 11" {% if student.grade_level == 'Grade 11' %}selected{% endif %}>Grade 11</option>
-                                        <option value="Grade 12" {% if student.grade_level == 'Grade 12' %}selected{% endif %}>Grade 12</option>
-                                    </optgroup>
-                                    <optgroup label="Higher Education">
-                                        <option value="University Year 1" {% if student.grade_level == 'University Year 1' %}selected{% endif %}>University Year 1</option>
-                                        <option value="University Year 2" {% if student.grade_level == 'University Year 2' %}selected{% endif %}>University Year 2</option>
-                                        <option value="University Year 3" {% if student.grade_level == 'University Year 3' %}selected{% endif %}>University Year 3</option>
-                                        <option value="University Year 4" {% if student.grade_level == 'University Year 4' %}selected{% endif %}>University Year 4</option>
-                                        <option value="University Year 5" {% if student.grade_level == 'University Year 5' %}selected{% endif %}>University Year 5</option>
-                                        <option value="Vocational Training" {% if student.grade_level == 'Vocational Training' %}selected{% endif %}>Vocational Training</option>
-                                    </optgroup>
-                                </select>
+
+                            <!-- Input Row -->
+                            <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-secondary border-opacity-10 focus-group mt-auto">
+                                <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
+                                <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="max_score_{{ subject.id }}" value="100" tabindex="-1" style="max-width: 55px;">
+                                
+                                <span class="input-group-text bg-primary bg-opacity-10 border-0 text-primary fw-bold border-start px-2" style="font-size: 0.8rem;">Score</span>
+                                <input type="text" class="form-control bg-primary bg-opacity-10 border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="score_{{ subject.id }}" placeholder="-" tabindex="1">
                             </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold small text-muted text-uppercase">School Name</label>
-                                <input type="text" name="school_name" class="form-control bg-light khmer-font" value="{{ student.current_school if student.current_school else '' }}" placeholder="Enter school name...">
-                            </div>
+
                         </div>
                     </div>
-                </div>
+                    {% endfor %}
 
-                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-bar-chart-fill me-2 text-success"></i>3. Performance Overview</h5>
-                    </div>
-                    <div class="card-body p-4 pt-2">
-                        <div class="row g-3">
-                            <div class="col-12 mb-1">
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">Auto-Calculation</span>
-                                <span class="small text-muted ms-2">Leave these blank to automatically calculate from subjects below.</span>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Total Score</label>
-                                <div class="input-group shadow-sm">
-                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-plus-slash-minus"></i></span>
-                                    <input type="number" step="0.01" name="manual_total_score" class="form-control border-start-0 ps-0 fw-bold bg-light" placeholder="e.g. 450">
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Overall Avg %</label>
-                                <div class="input-group input-group-merge shadow-sm">
-                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calculator"></i></span>
-                                    <input type="number" step="0.01" name="manual_average" class="form-control border-start-0 ps-0 fw-bold bg-light text-dark" placeholder="e.g. 85.5">
-                                </div>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Letter Grade</label>
-                                <input type="text" name="manual_grade" class="form-control bg-light fw-bold shadow-sm" placeholder="e.g. A, B+, Pass">
-                            </div>
-                            
-                            <div class="col-sm-6 mt-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Class Rank</label>
-                                <div class="input-group shadow-sm">
-                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-trophy"></i></span>
-                                    <input type="text" name="class_rank" class="form-control border-start-0 ps-0 fw-bold" placeholder="e.g. 5/40">
-                                </div>
-                            </div>
-                            <div class="col-sm-6 mt-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Attendance</label>
-                                <div class="input-group shadow-sm">
-                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-calendar-check"></i></span>
-                                    <input type="number" name="attendance_days" class="form-control border-start-0 ps-0 fw-bold" placeholder="e.g. 22">
-                                    <span class="input-group-text bg-light text-muted small">days</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center rounded-top-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>4. Detailed Subjects</h5>
-                    </div>
-                    <div class="card-body p-4 pt-2 bg-light bg-opacity-50">
-
-                        <div class="alert alert-secondary py-2 mb-3 border-0 bg-secondary bg-opacity-10 text-secondary-emphasis">
-                            <i class="fw-bold bi bi-magic text-secondary me-2"></i> <span class="small fw-bold">The subject list is automatically filtered based on the student's <strong>Grade Level</strong>.</span>
-                        </div>
-
-                        <!-- Responsive List-Group replaces rigid table -->
-                        <div class="list-group bg-white border border-secondary border-opacity-10 rounded-4 shadow-sm" id="subjectsList">
-                            {% for subject in subjects %}
-                                <div class="list-group-item p-3 subject-row border-light" data-category="{{ subject.category }}">
-                                    <div class="row gx-3 gy-2 align-items-center">
-                                        <!-- Subject Name -->
-                                        <div class="col-12 col-sm-6">
-                                            <span class="badge bg-light text-secondary border mb-1 d-inline-block d-sm-none" style="font-size: 0.6rem;">{{ subject.category }}</span>
-                                            <strong class="khmer-font text-dark d-block fs-5 lh-sm">{{ subject.name }}</strong>
-                                            <span class="badge bg-light text-secondary border mt-1 d-none d-sm-inline-block" style="font-size: 0.6rem;">{{ subject.category }}</span>
-                                        </div>
-                                        <!-- Score Input -->
-                                        <div class="col-6 col-sm-3">
-                                            <label class="small text-muted fw-bold d-block d-sm-none mb-1">Score</label>
-                                            <input type="text" class="form-control text-center fw-bold bg-light border-0 fs-6" name="score_{{ subject.id }}" placeholder="Score">
-                                        </div>
-                                        <!-- Max Input -->
-                                        <div class="col-6 col-sm-3">
-                                            <label class="small text-muted fw-bold d-block d-sm-none mb-1">Max</label>
-                                            <input type="number" class="form-control text-center text-muted bg-light border-0" name="max_score_{{ subject.id }}" value="100" placeholder="Max">
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-
-                            <!-- Wildcard Custom Subject Row -->
-                            <div class="list-group-item p-3 bg-warning bg-opacity-10 border-top border-warning border-opacity-25">
-                                <div class="row gx-3 gy-2 align-items-center">
-                                    <div class="col-12 col-sm-6">
-                                        <div class="small fw-bold text-warning-emphasis mb-1">
-                                            <i class="bi bi-stars"></i> Custom Subject / <span class="khmer-font">មុខវិជ្ជាផ្សេងៗ</span>
-                                        </div>
-                                        <input type="text" class="form-control border-warning border-opacity-25" name="custom_subject_name" placeholder="e.g. Art Project">
-                                    </div>
-                                    <div class="col-6 col-sm-3">
-                                        <label class="small text-muted fw-bold d-block d-sm-none mb-1">Score</label>
-                                        <input type="text" class="form-control text-center fw-bold text-dark border-warning border-opacity-25" name="custom_score" placeholder="Score">
-                                    </div>
-                                    <div class="col-6 col-sm-3">
-                                        <label class="small text-muted fw-bold d-block d-sm-none mb-1">Max</label>
-                                        <input type="number" class="form-control text-center text-muted bg-light border-warning border-opacity-25" name="custom_max_score" placeholder="100" value="100">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <div class="card shadow-sm border rounded-4 mb-5 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-chat-left-text me-2 text-secondary"></i>5. Additional Notes</h5>
-                    </div>
-                    <div class="card-body p-4 pt-2">
-                        <div>
-                            <label class="form-label fw-bold small text-muted text-uppercase">Teacher's Comment</label>
-                            <textarea name="teacher_comment" class="form-control bg-light khmer-font" rows="4" placeholder="Enter translated teacher notes here..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Desktop-only bottom action bar (Static, non-sticky) -->
-                <div class="d-none d-md-flex justify-content-between align-items-center bg-white p-4 rounded-4 shadow-sm border mt-4 mb-3">
-                    <a href="/student/{{ student.id }}/academics" class="btn btn-light border fw-bold px-4 py-2 rounded-pill text-dark transition-hover">Cancel</a>
-                    <button type="submit" class="btn btn-success fw-bold px-5 py-2 rounded-pill shadow-sm transition-hover fs-6">
-                        <i class="bi bi-cloud-arrow-up-fill me-2"></i>Save Report Card
-                    </button>
                 </div>
 
             </div>
+        </div>
+
+        <div class="card shadow-sm border rounded-4 mb-5 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-chat-left-text me-2 text-secondary"></i>4. Additional Notes</h5>
+            </div>
+            <div class="card-body p-4 pt-2">
+                <div>
+                    <label class="form-label fw-bold small text-muted text-uppercase">Teacher's Comment</label>
+                    <textarea name="teacher_comment" class="form-control bg-light khmer-font" rows="4" placeholder="Enter translated teacher notes here..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop-only bottom action bar (Static, non-sticky) -->
+        <div class="d-none d-md-flex justify-content-between align-items-center bg-white p-4 rounded-4 shadow-sm border mt-4 mb-3">
+            <a href="/student/{{ student.id }}/academics" class="btn btn-light border fw-bold px-4 py-2 rounded-pill text-dark transition-hover">Cancel</a>
+            <button type="submit" class="btn btn-success fw-bold px-5 py-2 rounded-pill shadow-sm transition-hover fs-6">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i>Save Report Card
+            </button>
         </div>
     </form>
 
-    <!-- MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <!-- 🚀 MOBILE FLOATING SAVE BUTTON (FAB) -->
+    <!-- Kept as the ONLY floating button on mobile to prevent clutter -->
     <button type="submit" form="addReportForm" class="btn btn-success text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
         <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Save</span>
     </button>
-
-    <!-- MOBILE PICTURE-IN-PICTURE (PIP) SCAN VIEWER FAB -->
-    <button type="button" class="btn btn-info text-white border border-2 border-white rounded-circle shadow-lg position-fixed transition-hover d-none flex-column align-items-center justify-content-center" id="fabViewScan" data-bs-toggle="offcanvas" data-bs-target="#mobileScanOffcanvas" style="bottom: 155px; right: 20px; width: 55px; height: 55px; z-index: 1040;">
-        <i class="bi bi-image fs-4"></i>
+    
+    <!-- 🚀 DESKTOP FLOATING SCAN VIEWER BUTTON (Side Tab - Hidden by default) -->
+    <!-- Appears only on PC to allow side-by-side grading. Safely positioned and layered. -->
+    <!-- Smart Auto-Hide Engine will add .scan-fab-hidden when dropdowns are opened -->
+    <button type="button" class="btn btn-info text-white fw-bold shadow-lg position-fixed transition-hover d-none align-items-center justify-content-center px-4 py-3 border border-end-0 border-white" id="fabDesktopScan" data-bs-toggle="offcanvas" data-bs-target="#scanViewerOffcanvas" style="top: 50%; margin-top: -28px; right: 0; z-index: 990; border-radius: 50rem 0 0 50rem; opacity: 0.9;" disabled>
+        <i class="bi bi-file-earmark-image fs-5 me-2"></i> View Scan
     </button>
-
-    <!-- MOBILE PIP SCAN VIEWER OFFCANVAS -->
-    <div class="offcanvas offcanvas-top shadow-lg border-bottom border-info border-4" tabindex="-1" id="mobileScanOffcanvas" data-bs-backdrop="false" data-bs-scroll="true" style="height: 45vh; z-index: 1030;">
-        <div class="offcanvas-header bg-white border-bottom py-2 px-3">
-            <h6 class="offcanvas-title fw-bold text-dark small"><i class="bi bi-camera-fill me-2 text-info"></i>Reference Scan</h6>
-            <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div class="offcanvas-body p-0 bg-light d-flex justify-content-center align-items-center position-relative overflow-auto">
-            <iframe id="offcanvas_preview_pdf" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
-            <img id="offcanvas_preview_img" src="" style="display:none; width: 100%; object-fit: contain;" alt="Report Card Scan">
-        </div>
-    </div>
 
 </div>
 
+<!-- 🚀 QUICK ADD SUBJECT MODAL -->
+{% if session.get('role') == 'Admin' or session.get('program_id') == 1 %}
+<div class="modal fade" id="quickAddSubjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white border-bottom-0 pt-4 pb-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="bi bi-journal-plus me-2 text-warning"></i>Quick Add Subject</h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickAddSubjectForm">
+                <div class="modal-body p-4 bg-light">
+                    <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info-emphasis rounded-3 small mb-3">
+                        <i class="bi bi-info-circle-fill me-2"></i> Your currently typed grades are auto-saved. Adding a subject will refresh the page and instantly restore your progress!
+                    </div>
+                    <input type="hidden" name="action" value="add_subject">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Subject Name</label>
+                        <input type="text" class="form-control bg-white border-0 shadow-sm py-2 fw-bold" name="new_subject" placeholder="e.g. Advanced Physics" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Target School Tier</label>
+                        <select class="form-select bg-white border-0 shadow-sm py-2 fw-bold" name="category" required>
+                            <option value="Primary / Lower Grade">Primary / Lower Grade</option>
+                            <option value="High School">High School</option>
+                            <option value="University / Vocational">University / Vocational</option>
+                            <option value="General" selected>General (All)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top-0 px-4 py-3 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm transition-hover">
+                        <i class="bi bi-plus-lg me-1"></i> Add to Matrix
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 🚀 UNIVERSAL OFFCANVAS SCAN VIEWER (Smart Fluid Width/Height) -->
+<div class="offcanvas shadow-lg border-0" tabindex="-1" id="scanViewerOffcanvas" data-bs-scroll="true" data-bs-backdrop="false" style="z-index: 1060;">
+    <div class="offcanvas-header bg-dark text-white border-bottom-0 py-3 px-4">
+        <h6 class="offcanvas-title fw-bold small text-uppercase tracking-wide"><i class="bi bi-camera-fill me-2 text-info"></i>Reference Document</h6>
+        <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0 bg-secondary bg-opacity-10 d-flex flex-column h-100">
+        
+        <div id="placeholder_text" class="text-muted text-center m-auto p-5">
+            <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
+            <span class="fw-bold small text-uppercase">No document uploaded</span>
+        </div>
+        
+        <iframe id="scan_preview_pdf" src="" class="w-100 h-100 flex-grow-1" style="border: none; display: none;"></iframe>
+        
+        <div class="w-100 h-100 flex-grow-1 overflow-auto bg-light" id="img_wrapper" style="display: none;">
+            <img id="scan_preview" src="" style="display:none; max-width: 100%; height: auto; object-fit: contain; margin: 0 auto; display: block;" alt="Report Card Scan">
+        </div>
+        
+    </div>
+    
+    <!-- 🚀 SMART UX: Contextual Hint Footer -->
+    <div class="offcanvas-footer bg-white border-top py-3 px-3 text-center mt-auto">
+        <small class="text-muted fw-bold" id="scanHintText"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Upload a document to view controls.</small>
+    </div>
+</div>
+
 <style>
+    /* 🚀 AUTO-EVASION LOGIC: Slides button off-screen when dropdown opens */
+    #fabDesktopScan {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+    #fabDesktopScan:hover:not(.scan-fab-hidden) { 
+        opacity: 1 !important; 
+        transform: translateX(-5px); 
+    }
+    .scan-fab-hidden {
+        transform: translateX(120%) !important;
+        opacity: 0 !important;
+        pointer-events: none;
+    }
+
     .transition-hover {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
@@ -307,44 +372,21 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
         background-color: #fff !important;
     }
-    
-    /* Input Group styling */
-    .input-group-merge .form-control:focus {
-        box-shadow: none;
-        border-color: #dee2e6;
-    }
-    .input-group-merge:focus-within {
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-        border-radius: 0.375rem;
+
+    /* Smart UX Card Focus Logic */
+    .subject-card.is-focused {
+        border-color: #0d6efd !important;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(13,110,253,0.15) !important;
     }
 
-    /* ---------------------------------------------------
-       SMART UX: Preview & Zoom Canvas
-       --------------------------------------------------- */
-    .preview-pane {
-        height: calc(100vh - 340px); /* Smart height based on viewport */
-        min-height: 400px;
-        background-color: #f8f9fa;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        position: relative;
-    }
-    .zoom-image {
-        transition: transform 0.1s ease-out;
-        cursor: crosshair;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        transform-origin: center center;
-    }
-    /* Increase scale dramatically on hover for tiny text */
-    .zoom-image:hover {
-        transform: scale(2.8);
-    }
+    /* SortableJS Ghost UI */
+    .bg-ghost { opacity: 0.4; background-color: #f8f9fa !important; border: 2px dashed #0d6efd !important; border-radius: 0.5rem; }
+    .drag-handle { cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
 
-    /* Mobile specific adjustments */
+    .text-darken { color: #b48600 !important; }
+
     @media (max-width: 767.98px) {
         .native-card {
             border-radius: 0 !important;
@@ -353,16 +395,251 @@
             margin-left: -1rem;
             margin-right: -1rem;
         }
-        .preview-pane {
-            min-height: 300px;
-            height: 300px; /* Shorter on mobile so they can scroll past it quickly */
-        }
     }
 </style>
 {% endblock %}
 
 {% block scripts %}
+<!-- Include SortableJS for Drag-and-Drop capability -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
 <script>
+    // --- 🚀 AUTO-EVASION DROP-DOWN LISTENER ---
+    // Hides the "View Scan" button anytime a dropdown (like user profile) opens
+    document.addEventListener('show.bs.dropdown', function () {
+        const fab = document.getElementById('fabDesktopScan');
+        if (fab && !fab.disabled) {
+            fab.classList.add('scan-fab-hidden');
+        }
+    });
+
+    // Brings it back when the dropdown closes
+    document.addEventListener('hidden.bs.dropdown', function () {
+        const fab = document.getElementById('fabDesktopScan');
+        if (fab && !fab.disabled) {
+            fab.classList.remove('scan-fab-hidden');
+        }
+    });
+
+
+    // --- 🚀 QUICK ADD SUBJECT (AJAX + Auto-Reload) ---
+    document.getElementById('quickAddSubjectForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 1. Manually trigger draft save just to be 100% sure
+        const reportForm = document.getElementById('addReportForm');
+        const formDataReport = new FormData(reportForm);
+        const dataReport = Object.fromEntries(formDataReport.entries());
+        delete dataReport.scanned_document; 
+        localStorage.setItem('eep_draft_report_{{ student.id }}', JSON.stringify(dataReport));
+
+        // 2. Disable button and show spinner
+        const btn = this.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+        btn.disabled = true;
+
+        // 3. Post to settings
+        const formData = new FormData(this);
+        fetch('/settings', {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            // 4. Reload page to fetch new subjects. Draft engine will restore grades.
+            window.location.reload();
+        }).catch(err => {
+            console.error('Error adding subject:', err);
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            alert("An error occurred while adding the subject.");
+        });
+    });
+
+    // --- 🚀 SMART CALENDAR YEAR CALCULATOR ---
+    function updateCalendarYear() {
+        const yearSelect = document.getElementById('academic_year_select');
+        const monthSelect = document.getElementById('month_select');
+        const badge = document.getElementById('calYearBadge');
+        const hiddenInput = document.getElementById('hidden_calendar_year');
+
+        if (yearSelect.value && monthSelect.value) {
+            const years = yearSelect.value.split('-'); 
+            if (years.length === 2) {
+                const startYear = years[0];
+                const endYear = years[1];
+                const month = monthSelect.value;
+                
+                const lateMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
+                const calYear = lateMonths.includes(month) ? endYear : startYear;
+                
+                badge.innerText = "📅 Cal Year: " + calYear;
+                badge.classList.remove('d-none');
+                hiddenInput.value = calYear;
+            }
+        } else {
+            badge.classList.add('d-none');
+            hiddenInput.value = "";
+        }
+    }
+
+    // --- 🚀 SMART UX: Dynamic Focus Engine ---
+    function attachFocusListeners(cardElement) {
+        const inputs = cardElement.querySelectorAll('.grade-input, .form-control');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.select(); 
+                cardElement.classList.add('is-focused');
+            });
+            input.addEventListener('blur', function() {
+                cardElement.classList.remove('is-focused');
+            });
+        });
+    }
+
+    // Attach listeners to all initial subject cards on page load
+    document.querySelectorAll('.subject-card').forEach(card => {
+        attachFocusListeners(card);
+    });
+
+    // --- 🚀 DYNAMIC RE-NUMBERING ENGINE ---
+    function renumberSubjects() {
+        let visibleIndex = 1;
+        document.querySelectorAll('.subject-row').forEach(row => {
+            if (row.style.display !== 'none') {
+                const idxCell = row.querySelector('.subject-index');
+                if (idxCell) idxCell.innerText = visibleIndex++ + ". ";
+            }
+        });
+    }
+    
+    // --- 🚀 DYNAMIC OFFCANVAS POSITION ENGINE ---
+    function adjustOffcanvasPosition() {
+        const scanOffcanvas = document.getElementById('scanViewerOffcanvas');
+        if (!scanOffcanvas) return;
+        
+        if (window.innerWidth < 768) {
+            // Mobile: Slide up from bottom, cover only half screen to allow typing
+            scanOffcanvas.classList.remove('offcanvas-end');
+            scanOffcanvas.classList.add('offcanvas-bottom');
+            scanOffcanvas.style.height = '55vh';
+            scanOffcanvas.style.width = '100%';
+            scanOffcanvas.style.maxWidth = '100%';
+            scanOffcanvas.style.borderTopLeftRadius = '20px';
+            scanOffcanvas.style.borderTopRightRadius = '20px';
+        } else {
+            // PC: Slide from right, limited width so form remains visible
+            scanOffcanvas.classList.remove('offcanvas-bottom');
+            scanOffcanvas.classList.add('offcanvas-end');
+            scanOffcanvas.style.height = '100%';
+            scanOffcanvas.style.width = '100%';
+            scanOffcanvas.style.maxWidth = '500px'; 
+            scanOffcanvas.style.borderTopLeftRadius = '0';
+            scanOffcanvas.style.borderTopRightRadius = '0';
+        }
+    }
+    
+    window.addEventListener('resize', adjustOffcanvasPosition);
+
+    // --- SMART UX: Universal Offcanvas Preview Engine ---
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        adjustOffcanvasPosition(); // Init offcanvas position logic
+        
+        const previewImg = document.getElementById('scan_preview');
+        const previewPdf = document.getElementById('scan_preview_pdf');
+        const placeholder = document.getElementById('placeholder_text');
+        const imgWrapper = document.getElementById('img_wrapper');
+        const desktopBtn = document.getElementById('fabDesktopScan');
+        const scanOffcanvas = document.getElementById('scanViewerOffcanvas');
+        const scanUploadInput = document.getElementById('scan_upload');
+        const scanHintText = document.getElementById('scanHintText');
+
+        // Initialize SortableJS
+        const grid = document.getElementById('subjectsGrid');
+        if (grid) {
+            new Sortable(grid, {
+                handle: '.drag-handle',
+                animation: 200,
+                ghostClass: 'bg-ghost',
+                onEnd: function() {
+                    renumberSubjects();
+                }
+            });
+        }
+
+        function activateScanViewer(url, isPdf) {
+            // Un-hide dynamic UI elements now that we have a file
+            if(desktopBtn) {
+                desktopBtn.disabled = false;
+                desktopBtn.classList.remove('d-none');
+                desktopBtn.classList.add('d-md-flex');
+            }
+            
+            placeholder.style.display = 'none';
+            
+            if (isPdf) {
+                // Render PDF mode
+                // 🚀 SMART FIX: Force the browser's PDF toolbar to appear using URL parameters
+                const finalUrl = url.includes('#') ? url : url + "#toolbar=1&navpanes=0&view=FitH";
+                previewPdf.src = finalUrl;
+                previewPdf.style.display = 'block';
+                imgWrapper.style.display = 'none';
+                previewImg.style.display = 'none';
+                
+                if (scanHintText) {
+                    scanHintText.innerHTML = '<i class="bi bi-file-pdf-fill text-danger me-1"></i> <strong>PDF Viewer:</strong> Use the top menu to zoom, or select the Hand tool (✋) to pan easily.';
+                }
+            } else {
+                // Render Image mode
+                previewImg.src = url;
+                previewImg.style.display = 'block';
+                imgWrapper.style.display = 'flex';
+                previewPdf.style.display = 'none';
+                
+                if (scanHintText) {
+                    scanHintText.innerHTML = '<i class="bi bi-image-fill text-info me-1"></i> <strong>Image Viewer:</strong> Hover your mouse over the document to zoom and pan.';
+                }
+            }
+        }
+
+        // Handle new uploads dynamically detecting Image vs PDF
+        scanUploadInput.addEventListener('change', function(event) {
+            const [file] = event.target.files;
+            if (file) {
+                const objectUrl = URL.createObjectURL(file);
+                activateScanViewer(objectUrl, file.type === 'application/pdf');
+                
+                // Auto-open offcanvas only the first time a user uploads a file
+                if (!scanUploadInput.hasAttribute('data-opened')) {
+                    if (desktopBtn && window.innerWidth >= 768) {
+                        new bootstrap.Offcanvas(scanOffcanvas).show();
+                        desktopBtn.setAttribute('data-opened', 'true');
+                    } else if (window.innerWidth < 768) {
+                        new bootstrap.Offcanvas(scanOffcanvas).show();
+                        // Prevent re-trigger on mobile
+                        scanUploadInput.setAttribute('data-opened', 'true');
+                    }
+                }
+            }
+        });
+
+        // Zoom / Pan logic for images inside offcanvas
+        imgWrapper.addEventListener('mousemove', function(e) {
+            if (previewImg.style.display !== 'none' && previewImg.src) {
+                const rect = imgWrapper.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                previewImg.style.transformOrigin = `${x}% ${y}%`;
+            }
+        });
+
+        imgWrapper.addEventListener('mouseleave', function() {
+            if (previewImg.style.display !== 'none' && previewImg.src) {
+                previewImg.style.transformOrigin = 'center center';
+            }
+        });
+    });
+
     // --- SMART UX: Auto-Save Draft Engine ---
     const draftKey = 'eep_draft_report_{{ student.id }}';
     const reportForm = document.getElementById('addReportForm');
@@ -376,9 +653,7 @@
                 
                 Object.keys(data).forEach(key => {
                     const input = reportForm.elements[key];
-                    // Skip files and standard selects (let defaults run)
-                    if (input && input.type !== 'file' && input.name !== 'academic_year' && input.name !== 'month') {
-                        // Only set if we actually have saved data
+                    if (input && input.type !== 'file' && input.name !== 'academic_year' && input.name !== 'month' && input.name !== 'grade_level') {
                         if (data[key] !== '') {
                             input.value = data[key];
                             restoredCount++;
@@ -393,111 +668,36 @@
                     toast.innerHTML = `<div class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-lg border border-secondary" style="font-size: 0.85rem;"><i class="bi bi-cloud-check text-success me-2"></i>Draft Restored</div>`;
                     document.body.appendChild(toast);
                     setTimeout(() => toast.remove(), 3000);
+                    
+                    updateCalendarYear();
                 }
             } catch(e) { console.error("Draft restore failed", e); }
         }
     }
 
-    // Save Draft on any input change
     reportForm.addEventListener('input', function(e) {
         if(e.target.type === 'file') return;
         const formData = new FormData(reportForm);
         const data = Object.fromEntries(formData.entries());
-        delete data.scanned_document; // Don't save files in localStorage
+        delete data.scanned_document; 
+        
         localStorage.setItem(draftKey, JSON.stringify(data));
     });
 
-    // Clear Draft on Successful Submit
     reportForm.addEventListener('submit', function() {
         if (reportForm.checkValidity()) {
             localStorage.removeItem(draftKey);
         }
     });
 
-    // --- SMART UX: Image & PDF Preview Engine ---
-    document.getElementById('scan_upload').addEventListener('change', function(event) {
-        const [file] = event.target.files;
-        if (file) {
-            const previewImg = document.getElementById('scan_preview');
-            const previewPdf = document.getElementById('scan_preview_pdf');
-            const placeholder = document.getElementById('placeholder_text');
-            
-            const offcanvasImg = document.getElementById('offcanvas_preview_img');
-            const offcanvasPdf = document.getElementById('offcanvas_preview_pdf');
-            
-            const objectUrl = URL.createObjectURL(file);
-
-            if (file.type === 'application/pdf') {
-                previewPdf.src = objectUrl;
-                previewPdf.style.display = 'block';
-                previewImg.style.display = 'none';
-                if(offcanvasPdf) {
-                    offcanvasPdf.src = objectUrl;
-                    offcanvasPdf.style.display = 'block';
-                    if(offcanvasImg) offcanvasImg.style.display = 'none';
-                }
-                if(placeholder) placeholder.style.display = 'none';
-            } else if (file.type.startsWith('image/')) {
-                previewImg.src = objectUrl;
-                previewImg.style.display = 'block';
-                previewPdf.style.display = 'none';
-                if(offcanvasImg) {
-                    offcanvasImg.src = objectUrl;
-                    offcanvasImg.style.display = 'block';
-                    if(offcanvasPdf) offcanvasPdf.style.display = 'none';
-                }
-                if(placeholder) placeholder.style.display = 'none';
-            }
-            
-            // Show the Mobile PiP FAB Button
-            const fab = document.getElementById('fabViewScan');
-            if (fab) {
-                fab.classList.remove('d-none');
-                fab.classList.add('d-flex', 'd-md-none'); // Show only on mobile
-                
-                // Automatically open it the first time they upload on mobile
-                if (window.innerWidth < 768 && !fab.hasAttribute('data-opened')) {
-                    const bsOffcanvas = new bootstrap.Offcanvas(document.getElementById('mobileScanOffcanvas'));
-                    bsOffcanvas.show();
-                    fab.setAttribute('data-opened', 'true');
-                }
-            }
-        }
-    });
-
-    const previewContainer = document.getElementById('preview_container');
-    const scanPreview = document.getElementById('scan_preview');
-
-    previewContainer.addEventListener('mousemove', function(e) {
-        if (scanPreview.style.display !== 'none' && scanPreview.src) {
-            // Get the bounding rectangle of the container
-            const rect = previewContainer.getBoundingClientRect();
-            
-            // Calculate cursor position as a percentage
-            const x = ((e.clientX - rect.left) / rect.width) * 100;
-            const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-            // Move the transform origin to exactly where the mouse is pointing
-            scanPreview.style.transformOrigin = `${x}% ${y}%`;
-        }
-    });
-
-    previewContainer.addEventListener('mouseleave', function() {
-        if (scanPreview.style.display !== 'none' && scanPreview.src) {
-            // Reset to center when mouse leaves the image
-            scanPreview.style.transformOrigin = 'center center';
-        }
-    });
-
     // --- FORM LOGIC: Set default academic year based on current date ---
-    document.addEventListener("DOMContentLoaded", function() {
-        const yearSelect = document.querySelector('select[name="academic_year"]');
+    function setDefaultAcademicYear() {
+        const yearSelect = document.getElementById('academic_year_select');
         if (yearSelect && !yearSelect.value) {
             const today = new Date();
             const year = today.getFullYear();
-            const month = today.getMonth() + 1; // 1-12
+            const month = today.getMonth() + 1; 
             
-            // If we are in August or later, the academic year starts this year. 
             let academicYearStr = "";
             if (month >= 8) {
                 academicYearStr = `${year}-${year + 1}`;
@@ -505,19 +705,15 @@
                 academicYearStr = `${year - 1}-${year}`;
             }
             
-            // Ensure the option exists before setting it
             if (Array.from(yearSelect.options).some(opt => opt.value === academicYearStr)) {
                 yearSelect.value = academicYearStr;
             } else {
                 yearSelect.selectedIndex = 1; 
             }
         }
-        
-        // Restore drafts slightly after initialization to avoid overwriting defaults
-        setTimeout(loadDraft, 300);
-    });
+    }
 
-    // --- SMART SUBJECT FILTER LOGIC ---
+    // --- 🚀 SMART SUBJECT FILTER LOGIC (With Auto-Numbering) ---
     function filterSubjects() {
         const gradeLevel = document.getElementById('grade_level').value;
         const rows = document.querySelectorAll('.subject-row');
@@ -526,35 +722,33 @@
             const category = row.getAttribute('data-category');
             let showRow = false;
 
-            // General subjects ALWAYS show
-            if (category === 'General') {
+            if (!category || category === 'General') {
                 showRow = true;
             } 
-            // If they are in Kg to Grade 6, show Primary/Lower
-            else if ((gradeLevel.includes('Kindergarten') || gradeLevel.includes('Grade 1') || gradeLevel.includes('Grade 2') || gradeLevel.includes('Grade 3') || gradeLevel.includes('Grade 4') || gradeLevel.includes('Grade 5') || gradeLevel.includes('Grade 6')) && category === 'Primary / Lower Grade') {
+            else if ((gradeLevel.includes('Kindergarten') || gradeLevel.match(/Grade [1-6]\b/)) && category === 'Primary / Lower Grade') {
                 showRow = true;
             }
-            // If they are in Grade 7 to 12, show High School
-            else if ((gradeLevel.includes('Grade 7') || gradeLevel.includes('Grade 8') || gradeLevel.includes('Grade 9') || gradeLevel.includes('Grade 10') || gradeLevel.includes('Grade 11') || gradeLevel.includes('Grade 12')) && category === 'High School') {
+            else if (gradeLevel.match(/Grade ([7-9]|1[0-2])\b/) && category === 'High School') {
                 showRow = true;
             }
-            // If they are in University or Voc, show Uni/Voc
             else if ((gradeLevel.includes('University') || gradeLevel.includes('Vocational')) && category === 'University / Vocational') {
                 showRow = true;
             }
 
-            if (showRow) {
-                row.style.display = ''; // Show
-            } else {
-                row.style.display = 'none'; // Hide
-            }
+            row.style.display = showRow ? '' : 'none'; 
         });
+        
+        renumberSubjects();
     }
 
-    // Run the filter immediately when the page loads to clean up the table instantly
-    window.addEventListener('DOMContentLoaded', filterSubjects);
+    // Run the filter & logic immediately when the page loads
+    window.addEventListener('DOMContentLoaded', function() {
+        setDefaultAcademicYear();
+        filterSubjects();
+        updateCalendarYear(); 
+        setTimeout(loadDraft, 300);
+    });
 
-    // Bootstrap Form Validation (Standard block to prevent empty submissions)
     (function () {
         'use strict'
         var forms = document.querySelectorAll('.needs-validation')
@@ -564,7 +758,6 @@
                     if (!form.checkValidity()) {
                         event.preventDefault()
                         event.stopPropagation()
-                        // Scroll to the first invalid element
                         const firstInvalid = form.querySelector(':invalid');
                         if(firstInvalid) {
                             firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
