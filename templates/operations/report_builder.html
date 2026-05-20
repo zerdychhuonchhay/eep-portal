@@ -1,0 +1,369 @@
+{% extends "layout.html" %}
+
+{% block title %}Monthly Report Builder{% endblock %}
+
+{% block head %}
+<!-- Include Quill Rich Text Editor (Lightweight & Modern) -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+<style>
+    /* Styling for the Rich Text Editor to match our UI */
+    .ql-toolbar.ql-snow {
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        background-color: #f8f9fa;
+        border-color: rgba(0,0,0,0.1);
+        padding: 12px;
+    }
+    .ql-container.ql-snow {
+        border-bottom-left-radius: 1rem;
+        border-bottom-right-radius: 1rem;
+        background-color: #fff;
+        border-color: rgba(0,0,0,0.1);
+        min-height: 200px;
+        font-family: 'Kantumruy Pro', 'Inter', sans-serif;
+        font-size: 1rem;
+    }
+    .ql-editor {
+        padding: 1.5rem;
+    }
+    /* Hide the standard textarea inputs */
+    .hidden-textarea { display: none; }
+    
+    .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+    .form-control:focus, .form-select:focus { background-color: #fff !important; border-color: #007AFF !important; box-shadow: 0 0 0 0.25rem rgba(0, 122, 255, 0.1) !important; }
+    @media (max-width: 767.98px) { .native-card { border-radius: 0 !important; margin-left: -1rem; margin-right: -1rem; } }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="container-fluid container-md mt-3 mt-md-4 mb-5 px-0 px-md-3" style="max-width: 1000px;">
+    
+    <div class="mb-4 px-3 px-md-0 d-flex justify-content-between align-items-center">
+        <a href="/dashboard" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem;">
+            <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Dashboard
+        </a>
+    </div>
+
+    <div class="d-flex align-items-center mb-4 px-3 px-md-0">
+        <div>
+            <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-file-earmark-bar-graph-fill text-primary me-2"></i>Official Report Builder</h2>
+            <p class="text-muted small mb-0 fw-bold">The system will automatically count your home visits, meals, and new enrollments.</p>
+        </div>
+    </div>
+
+    <form action="/generate_monthly_report" method="POST" target="_blank" class="needs-validation" id="reportBuilderForm" novalidate>
+        
+        <!-- STEP 1: TIME FRAME -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-primary border-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h6 class="fw-bold text-primary text-uppercase mb-0 tracking-wide" style="font-size: 0.85rem;"><i class="bi bi-calendar3 me-2"></i>1. Select Reporting Period</h6>
+                    <span id="loadStatusBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 d-none shadow-sm"><i class="bi bi-cloud-check-fill me-2"></i>Loaded Previous Draft</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Month *</label>
+                        <select name="report_month" id="report_month" class="form-select form-select-lg bg-light border-0 fw-bold shadow-sm" required>
+                            <option value="" disabled selected>Select Month...</option>
+                            <option value="January">January</option>
+                            <option value="February">February</option>
+                            <option value="March">March</option>
+                            <option value="April">April</option>
+                            <option value="May">May</option>
+                            <option value="June">June</option>
+                            <option value="July">July</option>
+                            <option value="August">August</option>
+                            <option value="September">September</option>
+                            <option value="October">October</option>
+                            <option value="November">November</option>
+                            <option value="December">December</option>
+                        </select>
+                        <div class="invalid-feedback fw-bold small mt-2">Please select a reporting month.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Year *</label>
+                        <input type="number" class="form-control form-control-lg bg-light border-0 fw-bold shadow-sm" name="report_year" id="report_year" value="2025" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 2: NARRATIVES (WITH RICH TEXT EDITORS) -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4 native-card bg-white border-top border-success border-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
+                    <h6 class="fw-bold text-success text-uppercase mb-0 tracking-wide" style="font-size: 0.85rem;"><i class="bi bi-pencil-square me-2"></i>2. Program Narratives</h6>
+                    <span class="badge bg-light text-muted border rounded-pill px-3 py-2 shadow-xs"><i class="bi bi-images text-primary me-2"></i>Supports Image Drag & Drop</span>
+                </div>
+                
+                <div class="mb-5">
+                    <label class="form-label fw-bold text-dark text-uppercase tracking-wide" style="font-size: 0.85rem;">I. Achievements / សកម្មភាពដែលបានអនុវត្តន៍</label>
+                    <p class="small text-muted mb-3 lh-sm">What went well this month? You can format text, add lists, and drag photos directly into the box below.</p>
+                    
+                    <!-- Quill Editor Container -->
+                    <div class="shadow-sm rounded-4">
+                        <div id="editor-achievements"></div>
+                    </div>
+                    <!-- Hidden input to store raw HTML for the backend -->
+                    <textarea name="achievements" id="hidden-achievements" class="hidden-textarea" required></textarea>
+                </div>
+
+                <div class="mb-5">
+                    <label class="form-label fw-bold text-dark text-uppercase tracking-wide" style="font-size: 0.85rem;">II. Goals & Plans / ទិសដៅផែនការអនុវត្តបន្ត</label>
+                    <div class="shadow-sm rounded-4">
+                        <div id="editor-goals"></div>
+                    </div>
+                    <textarea name="goals" id="hidden-goals" class="hidden-textarea"></textarea>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-bold text-danger text-uppercase tracking-wide" style="font-size: 0.85rem;">III. Challenges & Solutions / បញ្ហា និងដំណោះស្រាយ</label>
+                    <div class="shadow-sm rounded-4" style="border: 2px solid rgba(220,53,69,0.15);">
+                        <div id="editor-challenges"></div>
+                    </div>
+                    <textarea name="challenges" id="hidden-challenges" class="hidden-textarea"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="d-flex flex-column flex-md-row justify-content-end gap-3 mb-5">
+            <!-- Background Save Button -->
+            <button type="button" id="btnSaveDraft" class="btn btn-light border fw-bold rounded-pill py-3 px-4 shadow-sm transition-hover fs-6 w-100 w-md-auto text-dark">
+                <i class="bi bi-cloud-arrow-up-fill me-2 text-primary"></i> Save Draft
+            </button>
+            
+            <button type="submit" class="btn btn-primary fw-bold rounded-pill py-3 px-5 shadow-sm transition-hover fs-5 w-100 w-md-auto">
+                <i class="bi bi-printer-fill me-2"></i> Generate & Print Official Report
+            </button>
+        </div>
+
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // --- 1. INITIALIZE RICH TEXT EDITORS (Quill.js) ---
+        const toolbarOptions = [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'], 
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'color': [] }, { 'background': [] }],
+            ['link', 'image'],
+            ['clean'] 
+        ];
+
+        const quillAchievements = new Quill('#editor-achievements', {
+            theme: 'snow',
+            placeholder: 'Type your achievements, create bullet points, or drag and drop photos directly here...',
+            modules: { toolbar: toolbarOptions }
+        });
+
+        const quillGoals = new Quill('#editor-goals', {
+            theme: 'snow',
+            placeholder: 'Detail the plans and goals for the upcoming month...',
+            modules: { toolbar: toolbarOptions }
+        });
+
+        const quillChallenges = new Quill('#editor-challenges', {
+            theme: 'snow',
+            placeholder: 'e.g., "Student X struggled with attendance. We conducted a home visit and discovered..."',
+            modules: { toolbar: toolbarOptions }
+        });
+
+        // --- 2. AJAX DATA LOADING ENGINE & LOCAL DRAFT RECOVERY ---
+        const monthSelect = document.getElementById('report_month');
+        const yearInput = document.getElementById('report_year');
+        const statusBadge = document.getElementById('loadStatusBadge');
+        
+        const draftKey = 'eep_monthly_report_draft';
+        const form = document.getElementById('reportBuilderForm');
+
+        function loadDraftFromLocal() {
+            const saved = localStorage.getItem(draftKey);
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    
+                    if (data.report_month) monthSelect.value = data.report_month;
+                    if (data.report_year) yearInput.value = data.report_year;
+                    
+                    // Securely inject the saved HTML into the rich text editors
+                    if (data.achievements) quillAchievements.clipboard.dangerouslyPasteHTML(data.achievements);
+                    if (data.goals) quillGoals.clipboard.dangerouslyPasteHTML(data.goals);
+                    if (data.challenges) quillChallenges.clipboard.dangerouslyPasteHTML(data.challenges);
+
+                    // Show success badge for local restore
+                    statusBadge.innerHTML = '<i class="bi bi-clock-history me-2"></i>Restored Local Draft';
+                    statusBadge.classList.remove('d-none', 'bg-secondary', 'text-secondary', 'border-secondary', 'bg-success', 'text-success', 'border-success');
+                    statusBadge.classList.add('bg-warning', 'text-darken', 'border-warning');
+
+                    return true;
+                } catch(e) { console.error("Draft failed", e); return false;}
+            }
+            return false;
+        }
+
+        function loadSavedReport() {
+            const month = monthSelect.value;
+            const year = yearInput.value;
+            
+            if (!month || !year) return;
+
+            // Optional: Show loading state
+            statusBadge.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Loading...';
+            statusBadge.classList.remove('d-none', 'bg-success', 'text-success', 'border-success', 'bg-warning', 'text-darken', 'border-warning');
+            statusBadge.classList.add('bg-secondary', 'text-secondary', 'border-secondary');
+
+            fetch(`/api/get_program_report?month=${month}&year=${year}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.report) {
+                        // Securely inject the saved HTML into the rich text editors
+                        quillAchievements.clipboard.dangerouslyPasteHTML(data.report.achievements || '');
+                        quillGoals.clipboard.dangerouslyPasteHTML(data.report.goals || '');
+                        quillChallenges.clipboard.dangerouslyPasteHTML(data.report.challenges || '');
+                        
+                        // Show success badge
+                        statusBadge.innerHTML = '<i class="bi bi-cloud-check-fill me-2"></i>Loaded Previous Draft';
+                        statusBadge.classList.remove('bg-secondary', 'text-secondary', 'border-secondary', 'bg-warning', 'text-darken', 'border-warning');
+                        statusBadge.classList.add('bg-success', 'text-success', 'border-success');
+                    } else {
+                        // Clear editors if no report is found in the DB for that month
+                        quillAchievements.setContents([]);
+                        quillGoals.setContents([]);
+                        quillChallenges.setContents([]);
+                        statusBadge.classList.add('d-none');
+                    }
+                })
+                .catch(err => {
+                    console.error("Error fetching report:", err);
+                    statusBadge.classList.add('d-none');
+                });
+        }
+
+        // Trigger load when month or year changes
+        monthSelect.addEventListener('change', loadSavedReport);
+        yearInput.addEventListener('change', loadSavedReport);
+
+        // Attempt to load from local storage on initial page load
+        if(!loadDraftFromLocal()) {
+           // If no local draft, see if there are URL parameters or defaults we can use to load from DB
+        }
+
+        // --- 3. FORM SYNCHRONIZATION & SUBMISSION ---
+        function syncQuillData() {
+            // Transfer the rich HTML from the editor UI into the hidden form inputs
+            document.getElementById('hidden-achievements').value = quillAchievements.root.innerHTML;
+            document.getElementById('hidden-goals').value = quillGoals.root.innerHTML;
+            document.getElementById('hidden-challenges').value = quillChallenges.root.innerHTML;
+        }
+
+        // Auto-save to Local Storage on input
+        function saveToLocalDraft() {
+             const data = {
+                report_month: monthSelect.value,
+                report_year: yearInput.value,
+                achievements: quillAchievements.root.innerHTML,
+                goals: quillGoals.root.innerHTML,
+                challenges: quillChallenges.root.innerHTML
+            };
+            localStorage.setItem(draftKey, JSON.stringify(data));
+        }
+
+        quillAchievements.on('text-change', saveToLocalDraft);
+        quillGoals.on('text-change', saveToLocalDraft);
+        quillChallenges.on('text-change', saveToLocalDraft);
+        monthSelect.addEventListener('change', saveToLocalDraft);
+        yearInput.addEventListener('input', saveToLocalDraft);
+
+
+        form.addEventListener('submit', function(e) {
+            syncQuillData();
+
+            // 1. Check if Month and Year are actually filled out!
+            if (!monthSelect.value || !yearInput.value) {
+                e.preventDefault();
+                alert("Please select a Month and Year before generating the report.");
+                form.classList.add('was-validated');
+                return;
+            }
+
+            // 2. Validation: Ensure achievements aren't empty (allowing for just images)
+            const textContent = quillAchievements.getText().trim();
+            const hasImages = quillAchievements.root.innerHTML.includes('<img');
+            
+            if (textContent.length === 0 && !hasImages) {
+                e.preventDefault();
+                alert("Please provide at least some text or an image in the Achievements section.");
+            } else {
+                 localStorage.removeItem(draftKey);
+            }
+        });
+
+
+        // --- 4. AJAX: SAVE DRAFT BUTTON ---
+        document.getElementById('btnSaveDraft').addEventListener('click', function() {
+            if (!monthSelect.value || !yearInput.value) {
+                alert("Please select a Month and Year first to save the draft.");
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            syncQuillData();
+            
+            const formData = new FormData(form);
+            const originalText = this.innerHTML;
+            
+            // Visual loading state
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving to Cloud...';
+            this.disabled = true;
+
+            // Background POST request
+            fetch('/generate_monthly_report', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' 
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    this.innerHTML = '<i class="bi bi-check-circle-fill me-2 text-success"></i> Draft Saved';
+                    this.classList.add('border-success', 'text-success');
+                    
+                    // Show the top badge as well
+                    statusBadge.innerHTML = '<i class="bi bi-cloud-check-fill me-2"></i>Draft Saved';
+                    statusBadge.classList.remove('d-none', 'bg-secondary', 'text-secondary', 'border-secondary', 'bg-warning', 'text-darken', 'border-warning');
+                    statusBadge.classList.add('bg-success', 'text-success', 'border-success');
+                    
+                    // Clear local draft since it's safely in the cloud
+                    localStorage.removeItem(draftKey);
+                } else {
+                    throw new Error("Backend reported failure.");
+                }
+            })
+            .catch(error => {
+                console.error('Error saving draft:', error);
+                this.innerHTML = '<i class="bi bi-x-circle-fill text-danger me-2"></i> Save Error';
+                this.classList.add('border-danger', 'text-danger');
+            })
+            .finally(() => {
+                // Reset button state after 2.5 seconds
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                    this.classList.remove('border-success', 'text-success', 'border-danger', 'text-danger');
+                }, 2500);
+            });
+        });
+    });
+</script>
+{% endblock %}

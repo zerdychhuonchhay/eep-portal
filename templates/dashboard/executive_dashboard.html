@@ -235,6 +235,17 @@
                 <div class="card-body p-4">
                     <div class="row g-3">
                         {% if session.get('can_export_data') or session.get('role') == 'Admin' %}
+                        <!-- 🚀 NEW: Official Monthly Report Builder -->
+                        <div class="col-12">
+                            <a href="/report_builder" class="card border-0 bg-primary bg-opacity-10 rounded-4 p-3 text-decoration-none control-card h-100 border-start border-primary border-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-3 shadow-xs" style="width: 36px; height: 36px;"><i class="bi bi-file-earmark-word-fill"></i></div>
+                                    <span class="fw-bold text-primary-emphasis fs-6">Export Official Report (Word / PDF)</span>
+                                </div>
+                                <p class="small text-primary-emphasis mb-0 fw-bold ps-5 ms-1 opacity-75">Auto-calculate monthly stats and generate a formatted Microsoft Word document.</p>
+                            </a>
+                        </div>
+
                         <!-- Data Exports -->
                         <div class="col-md-6">
                             <a href="/export_students" class="card border-0 bg-success bg-opacity-10 rounded-4 p-3 text-decoration-none control-card h-100">
@@ -246,12 +257,12 @@
                             </a>
                         </div>
                         <div class="col-md-6">
-                            <a href="/export_grades" class="card border-0 bg-primary bg-opacity-10 rounded-4 p-3 text-decoration-none control-card h-100">
+                            <a href="/export_grades" class="card border-0 bg-warning bg-opacity-10 rounded-4 p-3 text-decoration-none control-card h-100">
                                 <div class="d-flex align-items-center mb-2">
-                                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center me-3 shadow-xs" style="width: 36px; height: 36px;"><i class="bi bi-mortarboard-fill"></i></div>
-                                    <span class="fw-bold text-primary-emphasis">Export Gradebook</span>
+                                    <div class="bg-white text-warning text-darken rounded-circle d-flex align-items-center justify-content-center me-3 shadow-xs" style="width: 36px; height: 36px;"><i class="bi bi-mortarboard-fill"></i></div>
+                                    <span class="fw-bold text-warning-emphasis text-darken">Export Gradebook</span>
                                 </div>
-                                <p class="small text-primary-emphasis mb-0 fw-bold ps-5 ms-1 opacity-75">Download full academic reporting history.</p>
+                                <p class="small text-warning-emphasis mb-0 fw-bold ps-5 ms-1 opacity-75 text-darken">Download full academic reporting history.</p>
                             </a>
                         </div>
                         {% endif %}

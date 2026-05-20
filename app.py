@@ -790,6 +790,180 @@ def dashboard():
                                academic_alerts=academic_alerts, protection_alerts=protection_alerts,
                                missing_letters=missing_letters, current_quarter=current_quarter, current_year=current_year,
                                timeframe=months, date_now=date_now, recent_activity=recent_activity)
+    
+# =========================================================
+# 🚀 ACADEMIC REVIEW DASHBOARD (NEW TOOL)
+# =========================================================
+@app.route("/academic_review", methods=["GET"])
+@login_required
+@permission_required("can_manage_academics")
+def academic_review():
+    """A powerful query tool to filter students by academic standing."""
+    program_id = session.get("program_id")
+    
+    # Get parameters from URL (e.g. ?academic_year=2025-2026&month=May&threshold=70)
+    sys_settings = get_system_settings()
+    current_year_default = sys_settings.get("current_academic_year", "2025-2026")
+    
+    academic_year = request.args.get("academic_year", current_year_default)
+    month = request.args.get("month", "") # If empty, will pull latest or all
+    threshold_str = request.args.get("threshold", "50") # Default to failing (50%)
+    
+    try:
+        threshold = float(threshold_str)
+    except ValueError:
+        threshold = 50.0
+
+    # Build the dynamic SQL query
+    query = """
+        SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
+               m.id as report_id, m.month, m.academic_year, m.overall_average, m.overall_grade, m.teacher_comment
+        FROM students s
+        JOIN monthly_reports m ON s.id = m.student_id
+        WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ? AND m.overall_average < ?
+    """
+    params = [program_id, academic_year, threshold]
+
+    if month:
+        query += " AND m.month = ?"
+        params.append(month)
+        
+    query += " ORDER BY m.overall_average ASC" # Lowest scores first
+    
+    # Execute the query
+    struggling_students = db.execute(query, *params)
+    
+    # Calculate statistics for the dashboard
+    total_students_raw = db.execute("SELECT COUNT(id) as count FROM students WHERE status='Active' AND program_id = ?", program_id)
+    total_students = total_students_raw[0]['count'] if total_students_raw else 0
+    total_struggling = len(struggling_students)
+    
+    # Also fetch available years and months from DB to populate dropdown filters
+    available_years = [r['academic_year'] for r in db.execute("SELECT DISTINCT academic_year FROM monthly_reports ORDER BY academic_year DESC")]
+    available_months = [r['month'] for r in db.execute("SELECT DISTINCT month FROM monthly_reports")]
+    
+    # Standardize months order
+    academic_order = ['August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July']
+    available_months.sort(key=lambda x: academic_order.index(x) if x in academic_order else 99)
+
+    return render_template("operations/academic_review.html",
+                           students=struggling_students,
+                           total_active=total_students,
+                           total_struggling=total_struggling,
+                           academic_year=academic_year,
+                           month=month,
+                           threshold=threshold,
+                           available_years=available_years,
+                           available_months=available_months)
+
+@app.route("/report_builder", methods=["GET"])
+@login_required
+@permission_required("can_export_data")  # Ensure only authorized people can pull massive stats
+def report_builder():
+    """Renders the UI to build the official monthly NGO report"""
+    return render_template("operations/report_builder.html")
+
+@app.route("/api/get_program_report", methods=["GET"])
+@login_required
+def get_program_report():
+    """API Endpoint to fetch a saved report draft"""
+    month = request.args.get("month")
+    year = request.args.get("year")
+    program_id = session.get("program_id")
+    
+    if not month or not year:
+         return jsonify({"success": False, "error": "Missing parameters"})
+         
+    try:
+        report = db.execute("SELECT achievements, goals, challenges FROM program_reports WHERE month = ? AND year = ? AND program_id = ?", month, year, program_id)
+        if report:
+            return jsonify({"success": True, "report": report[0]})
+        return jsonify({"success": False})
+    except Exception:
+        # Table doesn't exist yet, silently fail
+        return jsonify({"success": False})
+
+@app.route("/generate_monthly_report", methods=["POST"])
+@login_required
+def generate_monthly_report():
+    """Processes the form, calculates DB statistics, and generates the printable A4 report"""
+    
+    program_id = session.get("program_id")
+    month_name = request.form.get("report_month")
+    year = request.form.get("report_year")
+    achievements = request.form.get("achievements")
+    goals = request.form.get("goals")
+    challenges = request.form.get("challenges")
+    
+    # 1. Silently Save the Draft!
+    try:
+        # Check if table exists
+        cursor = sqlite3.connect("eep.db").cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS program_reports (id INTEGER PRIMARY KEY, program_id INTEGER, month TEXT, year TEXT, achievements TEXT, goals TEXT, challenges TEXT)")
+        
+        # Upsert logic
+        existing = db.execute("SELECT id FROM program_reports WHERE month = ? AND year = ? AND program_id = ?", month_name, year, program_id)
+        if existing:
+            db.execute("UPDATE program_reports SET achievements = ?, goals = ?, challenges = ? WHERE id = ?", achievements, goals, challenges, existing[0]['id'])
+        else:
+            db.execute("INSERT INTO program_reports (program_id, month, year, achievements, goals, challenges) VALUES (?, ?, ?, ?, ?, ?)", program_id, month_name, year, achievements, goals, challenges)
+    except Exception as e:
+        print(f"Error saving report draft: {e}")
+
+    # If this was an AJAX background save, return JSON success and stop processing the PDF
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({"success": True})
+        
+    # --- CONTINUE PDF GENERATION LOGIC ---
+    
+    khmer_months = {
+        "January": "មករា", "February": "កុម្ភៈ", "March": "មីនា", "April": "មេសា",
+        "May": "ឧសភា", "June": "មិថុនា", "July": "កក្កដា", "August": "សីហា",
+        "September": "កញ្ញា", "October": "តុលា", "November": "វិច្ឆិកា", "December": "ធ្នូ"
+    }
+    month_kh = khmer_months.get(month_name, month_name)
+
+    month_index = list(calendar.month_name).index(month_name)
+    month_num = str(month_index).zfill(2)
+    search_date_prefix = f"{year}-{month_num}"
+
+    new_kids = db.execute("""
+        SELECT first_name, last_name, khmer_name, gender, dob, grade_level, current_school 
+        FROM students 
+        WHERE strftime('%Y-%m', joined_date) = ? AND program_id = ?
+    """, search_date_prefix, program_id)
+
+    # Use try/except in case the program is entirely new and has no logs
+    try:
+        family_visits = db.execute("""
+            SELECT COUNT(f.id) as count FROM followups f
+            JOIN students s ON f.student_id = s.id
+            WHERE strftime('%Y-%m', f.followup_date) = ? AND f.location = 'Home Visit' AND s.program_id = ?
+        """, search_date_prefix, program_id)[0]['count']
+    except IndexError:
+        family_visits = 0
+
+    try:
+        meal_data = db.execute("""
+            SELECT COUNT(DISTINCT srv.student_id) as count FROM student_services srv
+            JOIN students s ON srv.student_id = s.id
+            WHERE strftime('%Y-%m', srv.service_date) = ? 
+            AND (srv.service_type = 'Monthly Groceries' OR srv.service_type = 'Missed Hot Lunch')
+            AND s.program_id = ?
+        """, search_date_prefix, program_id)[0]['count']
+    except IndexError:
+        meal_data = 0
+        
+    if meal_data == 0:
+        try:
+            meal_data = db.execute("SELECT COUNT(id) as count FROM students WHERE status='Active' AND meal_plan != 'None' AND meal_plan != '' AND program_id = ?", program_id)[0]['count']
+        except IndexError:
+            meal_data = 0
+
+    return render_template("print/monthly_report.html", 
+                           month=month_name, year=year, month_kh=month_kh,
+                           achievements=achievements, goals=goals, challenges=challenges,
+                           new_kids=new_kids, family_visits=family_visits, meal_count=meal_data)
 
 
 # ==============================================================================
@@ -868,7 +1042,7 @@ def add_student():
             db.execute("""
                 INSERT INTO students
                 (ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone_number, slum_area, previous_school, current_school, grade_level, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, program_id, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
             """, ngo_id, status, first_name, last_name, khmer_name, gender, dob, joined_date, guardian_name, phone, slum, previous_school, current_school, grade, meal_plan, comment, household_id, caregiver_relationship, mother_name, father_name, pid)
             
             student_id = db.execute("SELECT id FROM students WHERE ngo_id = ?", ngo_id)[0]['id']
@@ -1721,6 +1895,32 @@ def edit_followup(followup_id):
     student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
     return render_template("social_work/edit_followup.html", student=student, followup=followup)
 
+@app.route("/print/followup/<int:followup_id>")
+@login_required
+@permission_required("can_manage_followups")
+def print_followup(followup_id):
+    """Renders a clean, printer-friendly version of a specific follow-up report."""
+    
+    # 1. Fetch the specific followup
+    followup_data = db.execute("SELECT * FROM followups WHERE id = ?", followup_id)
+    if not followup_data:
+        flash("Record not found.", "danger")
+        return redirect(request.referrer or "/")
+    followup = followup_data[0]
+
+    # 2. Fetch the associated student
+    student_data = db.execute("SELECT * FROM students WHERE id = ?", followup['student_id'])
+    student = student_data[0] if student_data else None
+
+    # Render the print template
+    return render_template("print/followup.html", followup=followup, student=student)
+
+@app.route("/print/blank_followup")
+@login_required
+def print_blank_followup():
+    """Provides a blank, printable PDF/A4 template for field workers."""
+    return render_template("print/blank_followup.html")
+
 # =========================================================
 # BULK OPERATIONS ENGINE
 # =========================================================
@@ -1832,6 +2032,29 @@ def bulk_followup():
             selected_students = db.execute(query, *student_ids)
 
         return render_template("social_work/bulk_followup.html", selected_students=selected_students)
+    
+@app.route("/print_bulk_followups", methods=["GET", "POST"])
+@login_required
+def print_bulk_followups():
+    """Generates pre-filled blank forms for selected students from the Roster."""
+    # 🚀 FIX: Use request.values to catch IDs whether they come from GET or POST
+    student_ids = request.values.getlist("student_ids")
+    
+    if not student_ids:
+        # Fallback to generating 1 blank form if no IDs are passed
+        return render_template("print/blank_followup.html", students=[])
+        
+    placeholders = ','.join('?' for _ in student_ids)
+    query = f"""
+        SELECT s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.slum_area, s.phone_number, 
+               h.guardian_name 
+        FROM students s
+        LEFT JOIN households h ON s.household_id = h.id
+        WHERE s.id IN ({placeholders})
+    """
+    students = db.execute(query, *student_ids)
+    
+    return render_template("print/blank_followup.html", students=students)
 
 # =========================================================
 # SPONSOR LETTER MATRIX (AJAX SPREADSHEET)
@@ -2019,8 +2242,6 @@ def log_expense(student_id):
 
 @app.route("/log_services", methods=["GET", "POST"])
 @login_required
-# Make sure your decorator matches your permissions layout. If you don't have a specific
-# permission for logging services yet, you can leave it out, or use @admin_required.
 def log_services():
     """Log meals, supplies, or absences for multiple students at once"""
     if request.method == "POST":

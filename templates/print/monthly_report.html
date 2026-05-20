@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ month }} {{ year }} Report</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --bs-body-font-family: 'Inter', 'Kantumruy Pro', sans-serif;
+        }
+        body { background-color: #fff; color: #000; font-size: 11pt; line-height: 1.5; font-family: var(--bs-body-font-family); }
+        
+        .khmer-font { font-family: 'Kantumruy Pro', sans-serif; }
+        
+        @page { size: A4 portrait; margin: 15mm; }
+        @media print {
+            .no-print { display: none !important; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .avoid-break { page-break-inside: avoid; }
+            /* Ensure images print sharply */
+            img { max-width: 100% !important; page-break-inside: avoid; }
+        }
+
+        .header-title { text-align: center; font-weight: 700; margin-bottom: 20px; }
+        .section-title { font-weight: 700; font-size: 11.5pt; margin-top: 20px; margin-bottom: 10px; color: #000; }
+        .sub-section-title { font-weight: 600; font-size: 11pt; margin-left: 15px; margin-bottom: 5px;}
+        
+        /* Official Data Tables */
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 10.5pt; }
+        .report-table th, .report-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; }
+        .report-table th { background-color: #f8f9fa; font-weight: 700; text-align: center; }
+        
+        .signature-box { margin-top: 50px; text-align: right; }
+        .signature-line { border-top: 1px dotted #000; width: 200px; display: inline-block; margin-top: 40px; margin-bottom: 5px; }
+        
+        /* 🚀 NARRATIVE RENDERING (Supports Quill.js HTML) */
+        .narrative-box { padding-left: 15px; padding-right: 15px; }
+        .narrative-box p { margin-bottom: 0.5rem; }
+        .narrative-box ul, .narrative-box ol { margin-bottom: 0.5rem; padding-left: 20px; }
+        .narrative-box img { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+            margin-bottom: 10px; 
+            display: block; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ON-SCREEN CONTROLS -->
+    <div class="no-print bg-light border-bottom p-3 mb-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <button onclick="window.close()" class="btn btn-outline-secondary fw-bold rounded-pill px-4 shadow-sm"><i class="bi bi-x-lg me-1"></i> Close</button>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary fw-bold rounded-pill px-5 shadow-sm transition-hover">
+                <i class="bi bi-printer-fill me-2"></i> Print Official Report
+            </button>
+        </div>
+    </div>
+
+    <!-- DOCUMENT CONTAINER -->
+    <div id="reportContent" class="container-fluid px-4 px-md-5" style="max-width: 900px; margin: 0 auto;">
+        
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div class="text-center" style="width: 250px;">
+                <h6 class="khmer-font fw-bold mb-0" style="font-size: 11pt;">អង្គការប្រតិបត្តិការយុត្តិធម៌កម្ពុជា</h6>
+                <span class="small fw-bold">គម្រោងការពង្រឹងការអប់រំ</span>
+            </div>
+            <div class="text-center" style="width: 250px;">
+                <h6 class="khmer-font fw-bold mb-0" style="font-size: 12pt;">ព្រះរាជាណាចក្រកម្ពុជា</h6>
+                <span class="khmer-font fw-bold">ជាតិ សាសនា ព្រះមហាក្សត្រ</span>
+            </div>
+        </div>
+
+        <div class="header-title">
+            <h5 class="khmer-font fw-bold mb-1">របាយការណ៍</h5>
+            <h6 class="khmer-font fw-bold mb-1">ស្តីពីលទ្ធផលការងារ ប្រចាំខែ{{ month_kh }} ឆ្នាំ{{ year }}</h6>
+            <span class="fst-italic" style="font-size: 10pt;">Education Empowerment Project ({{ month }}), year {{ year }} report.</span>
+        </div>
+
+        <!-- I. ACHIEVEMENTS -->
+        <div class="section-title">I. សកម្មភាពដែលបានអនុវត្តន៍ / Achievements</div>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No</th>
+                    <th style="width: 95%;">បរិយាយ / Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-center fw-bold">1</td>
+                    <!-- 🚀 |safe filter allows HTML rendering -->
+                    <td class="narrative-box khmer-font">{{ achievements|safe }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- II. GOALS -->
+        <div class="section-title avoid-break">II. ទិសដៅផែនការអនុវត្តបន្ត / Goals & Plans</div>
+        <div class="sub-section-title avoid-break">a. ទិសដៅផែនការអនុវត្តសម្រាប់ខែបន្ទាប់ / Goals for next month</div>
+        <table class="report-table avoid-break">
+            <tbody>
+                <tr>
+                    <!-- 🚀 |safe filter allows HTML rendering -->
+                    <td class="narrative-box khmer-font">{{ goals|safe }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- III. CHALLENGES -->
+        <div class="section-title avoid-break">III. បញ្ហា និងដំណោះស្រាយ / Challenges and Solutions</div>
+        <table class="report-table avoid-break">
+            <tbody>
+                <tr>
+                    <!-- 🚀 |safe filter allows HTML rendering -->
+                    <td class="narrative-box khmer-font">{{ challenges|safe }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- IV. UPDATE INFO (AUTO-FILLED) -->
+        <div class="section-title avoid-break">IV. ព័ត៌មានបច្ចុប្បន្នភាព / Update Information</div>
+        
+        <div class="sub-section-title avoid-break">a. ព័ត៌មានកុមារ / Kids Info (If any)</div>
+        <span class="d-block mb-1 ms-3 fw-bold small">i. កុមារចូលថ្មី / New Kid(s)</span>
+        <table class="report-table avoid-break">
+            <thead>
+                <tr>
+                    <th>ល.រ</th>
+                    <th>គោត្តនាម-នាម<br><small>Name</small></th>
+                    <th>ភេទ<br><small>Sex</small></th>
+                    <th>ថ្ងៃខែឆ្នាំកំណើត<br><small>DOB</small></th>
+                    <th>ថ្នាក់/កម្រិត<br><small>Grade</small></th>
+                    <th>គ្រឹះស្ថានសិក្សា<br><small>Institution</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if new_kids %}
+                    {% for kid in new_kids %}
+                    <tr>
+                        <td class="text-center">{{ loop.index }}</td>
+                        <td>{{ kid.khmer_name if kid.khmer_name else kid.first_name ~ ' ' ~ kid.last_name }}</td>
+                        <td class="text-center">{{ 'ប' if kid.gender == 'Male' else 'ស' }}</td>
+                        <td class="text-center">{{ kid.dob }}</td>
+                        <td class="text-center">{{ kid.grade_level }}</td>
+                        <td>{{ kid.current_school }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6" class="text-center text-muted fst-italic">N/A</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <div class="avoid-break mt-3">
+            <span class="d-block mb-1 ms-3 fw-bold small">b. ព័ត៌មានបច្ចុប្បន្នភាពបុគ្គលិក / Staff Update Information</span>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>ល.រ</th>
+                        <th>គោត្តនាម-នាម</th>
+                        <th>ភេទ</th>
+                        <th>តួនាទីក្នុងអង្គការ</th>
+                        <th>ផ្សេងៗ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5" class="text-center text-muted fst-italic">N/A</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- V. SOCIAL WORK STATS (AUTO-FILLED) -->
+        <div class="section-title avoid-break mt-4">V. របាយការណ៍ករណីសង្គមកិច្ច / Casework report</div>
+        <table class="report-table avoid-break">
+            <thead>
+                <tr>
+                    <th style="width: 60%; text-align: left;">២. ការផ្តល់ការសម្របសម្រួលសរុប / Assistance Provided</th>
+                    <th style="width: 20%;">សរុប / Total</th>
+                    <th style="width: 20%;">ផ្សេងៗ / Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>• ការទៅសួរសុខទុក្ខគ្រួសារ / Family Home Visits</td>
+                    <td class="text-center fw-bold">{{ family_visits }}</td>
+                    <td class="text-center">Visits</td>
+                </tr>
+                <tr>
+                    <td>• ជំនួយអាហារ / Meal Assistance / Food Outreach</td>
+                    <td class="text-center fw-bold">{{ meal_count }}</td>
+                    <td class="text-center">Students</td>
+                </tr>
+                <tr>
+                    <td>• ជំនួយប្រឹក្សាយោបល់ / Counselling</td>
+                    <td class="text-center">n/a</td>
+                    <td class="text-center"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="signature-box avoid-break">
+            <div class="khmer-font fw-bold">រាជធានីភ្នំពេញ, ថ្ងៃទី....... ខែ{{ month_kh }} ឆ្នាំ{{ year }}</div>
+            <div class="khmer-font fw-bold mt-1">អង្គការប្រតិបត្តិការយុត្តិធម៌កម្ពុជា</div>
+            <div class="khmer-font mt-1">ប្រធានគម្រោង</div>
+            <span class="signature-line"></span><br>
+            <div class="khmer-font fw-bold">{{ session.get('username') }}</div>
+        </div>
+
+    </div>
+</body>
+</html>

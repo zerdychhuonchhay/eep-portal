@@ -356,17 +356,31 @@
                                         </div>
 
                                         <!-- Action Footer -->
-                                        <div class="card-footer bg-transparent border-top border-secondary border-opacity-10 py-3 px-3 px-md-4 d-flex justify-content-end gap-2">
-                                            {% if session.get('can_update_followups') or session.get('can_manage_followups') %}
-                                            <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-primary fw-bold py-1 px-4 shadow-sm rounded-pill transition-hover flex-fill flex-sm-grow-0 text-center">Edit Record</a>
-                                            {% endif %}
+                                        <div class="card-footer bg-light bg-opacity-50 border-top border-secondary border-opacity-10 py-3 px-3 px-md-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                                            <div class="w-100 w-sm-auto d-flex align-items-center">
+                                                <div class="bg-secondary bg-opacity-10 rounded-circle d-flex justify-content-center align-items-center me-2 flex-shrink-0" style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person-badge-fill text-secondary small"></i>
+                                                </div>
+                                                <span class="small text-muted fw-bold">{{ note.completed_by }}</span>
+                                            </div>
+                                            
+                                            <div class="d-flex gap-2 w-100 w-sm-auto justify-content-sm-end">
+                                                <!-- 🚀 ADDED PRINT BUTTON HERE -->
+                                                <a href="/print/followup/{{ note.id }}" target="_blank" class="btn btn-sm btn-white border text-primary fw-bold py-2 py-sm-1 px-3 shadow-sm rounded-pill transition-hover flex-fill flex-sm-grow-0 text-center" title="Print Official Report">
+                                                    <i class="bi bi-printer-fill d-sm-none d-md-inline me-1"></i> Print
+                                                </a>
 
-                                            <!-- 🛡️ SECURITY CONTROL: Admins Only Delete Note -->
-                                            {% if session.get('role') == 'Admin' %}
-                                            <form action="/delete_followup/{{ note.id }}" method="post" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to permanently delete this follow-up note?');">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0;" title="Delete Note"><i class="bi bi-trash-fill"></i></button>
-                                            </form>
-                                            {% endif %}
+                                                {% if session.get('can_update_followups') or session.get('can_manage_followups') %}
+                                                <a href="/edit_followup/{{ note.id }}" class="btn btn-sm btn-white border text-dark fw-bold py-2 py-sm-1 px-4 shadow-sm rounded-pill transition-hover flex-fill flex-sm-grow-0 text-center">Edit Note</a>
+                                                {% endif %}
+
+                                                <!-- 🛡️ SECURITY CONTROL: Admins Only Delete Note -->
+                                                {% if session.get('role') == 'Admin' %}
+                                                <form action="/delete_followup/{{ note.id }}" method="post" class="m-0 flex-shrink-0" onsubmit="return confirm('Are you sure you want to permanently delete this follow-up note?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold shadow-sm transition-hover rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; padding: 0;" title="Delete Note"><i class="bi bi-trash-fill"></i></button>
+                                                </form>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

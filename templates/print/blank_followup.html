@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Assessment Forms</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        /* ========================================== */
+        /* PRINT-SPECIFIC CSS ENGINE                  */
+        /* ========================================== */
+        :root {
+            --bs-body-font-family: 'Inter', sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa; /* Light grey on screen for contrast */
+            color: #000;
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+
+        .khmer-font { font-family: 'Kantumruy Pro', sans-serif; }
+
+        /* A4 Page Setup */
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+
+        .form-page-container {
+            background-color: #fff;
+            max-width: 850px;
+            margin: 20px auto;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Hide UI elements when printing & enforce page breaks */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .form-page-container { margin: 0; padding: 0; box-shadow: none; max-width: 100%; }
+            .page-break-after { page-break-after: always; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+
+        /* Official Document Styling */
+        .doc-header { border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .box-section { border: 1px solid #000; border-radius: 4px; padding: 12px; margin-bottom: 15px; }
+        .section-title { font-weight: 700; text-transform: uppercase; font-size: 10pt; color: #000; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 10px; background-color: #f8f9fa; padding-left: 5px;}
+        
+        .data-label { font-size: 9pt; font-weight: 700; margin-bottom: 2px; color: #495057; }
+        
+        /* Writing Lines & Checkboxes */
+        .write-line { border-bottom: 1px solid #000; height: 18px; width: 100%; margin-top: 5px; display: inline-block; }
+        .write-line-dotted { border-bottom: 1px dotted #000; height: 22px; width: 100%; margin-top: 5px; }
+        .check-box { width: 14px; height: 14px; border: 1px solid #000; display: inline-block; vertical-align: middle; margin-right: 5px; border-radius: 2px;}
+        
+        .signature-line { border-top: 1px solid #000; margin-top: 40px; width: 250px; text-align: center; padding-top: 5px; font-size: 9pt; }
+        
+        .risk-scale { border: 1px solid #000; padding: 5px; text-align: center; font-weight: bold; width: 18%; display: inline-block;}
+    </style>
+</head>
+<body>
+
+    <!-- ON-SCREEN CONTROLS (Hidden during actual print) -->
+    <div class="no-print bg-white border-bottom p-3 mb-4 d-flex justify-content-between align-items-center shadow-sm sticky-top">
+        <button onclick="window.close();" class="btn btn-outline-secondary fw-bold rounded-pill px-4 shadow-sm"><i class="bi bi-x-lg me-1"></i> Close</button>
+        <div class="text-center d-none d-md-block">
+            <h6 class="fw-bold mb-0 text-dark">Print Preview</h6>
+            <small class="text-muted">{% if students %}{{ students|length }} pre-filled forms generated.{% else %}1 blank form generated.{% endif %}</small>
+        </div>
+        <button onclick="window.print()" class="btn btn-dark shadow-sm fw-bold rounded-pill px-4"><i class="bi bi-printer-fill me-2"></i> Print Forms</button>
+    </div>
+
+    <!-- 🚀 DYNAMIC LOOP ENGINE -->
+    <!-- Sets up an array with either the provided students, or a single empty dictionary for a blank form -->
+    {% set print_list = students if students and students|length > 0 else [{}] %}
+    
+    {% for s in print_list %}
+    <!-- DOCUMENT CONTAINER (Page Break applied to all but the last item) -->
+    <div class="container-fluid form-page-container {% if not loop.last %}page-break-after{% endif %}">
+        
+        <!-- HEADER -->
+        <div class="doc-header d-flex justify-content-between align-items-end">
+            <div class="d-flex align-items-center">
+                <img src="{{ url_for('static', filename='images/elm-icon.png') }}" alt="Logo" style="height: 50px; filter: grayscale(100%); margin-right: 15px;">
+                <div>
+                    <h4 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 1px;">Field Visit & Assessment Form</h4>
+                    <p class="mb-0 fw-bold small">Educational Lifeline Framework</p>
+                </div>
+            </div>
+            <div class="text-end" style="width: 250px;">
+                <div class="data-label d-flex align-items-end">Date of Visit: <span class="write-line ms-2 flex-grow-1"></span></div>
+                <div class="data-label mt-2 d-flex align-items-end">Case Worker: <span class="write-line ms-2 flex-grow-1"></span></div>
+            </div>
+        </div>
+
+        <!-- SECTION 1: LOGISTICS & IDENTITY -->
+        <div class="box-section avoid-break bg-light bg-opacity-50">
+            <div class="section-title">1. Client Identity & Logistics</div>
+            <div class="row g-3">
+                <!-- Smart Injection: Names -->
+                <div class="col-8">
+                    <div class="data-label d-flex align-items-end">Student Name: 
+                        {% if s.first_name %}
+                            <span class="fs-6 fw-bold ms-2 text-dark">{{ s.first_name }} {{ s.last_name }} {% if s.khmer_name %}<span class="khmer-font fw-normal">({{ s.khmer_name }})</span>{% endif %}</span>
+                        {% else %}
+                            <span class="write-line ms-2 flex-grow-1"></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Smart Injection: NGO ID -->
+                <div class="col-4">
+                    <div class="data-label d-flex align-items-end">NGO ID: 
+                        {% if s.ngo_id %}
+                            <span class="fs-6 fw-bold ms-2 text-dark font-monospace">{{ s.ngo_id }}</span>
+                        {% else %}
+                            <span class="write-line ms-2 flex-grow-1"></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Smart Injection: Guardian -->
+                <div class="col-6">
+                    <div class="data-label d-flex align-items-end">Guardian & Contact: 
+                        {% if s.guardian_name %}
+                            <span class="fw-bold ms-2 text-dark">{{ s.guardian_name }} {% if s.phone_number %}({{ s.phone_number }}){% endif %}</span>
+                        {% else %}
+                            <span class="write-line ms-2 flex-grow-1"></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Smart Injection: Location -->
+                <div class="col-6">
+                    <div class="data-label d-flex align-items-end">Location / Area: 
+                        {% if s.slum_area %}
+                            <span class="fw-bold ms-2 text-dark khmer-font">{{ s.slum_area }}</span>
+                        {% else %}
+                            <span class="write-line ms-2 flex-grow-1"></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <!-- Visit Types (Always blank for worker to check) -->
+                <div class="col-12 mt-3 pt-2 border-top border-secondary border-opacity-25">
+                    <span class="data-label me-3">Visit Type:</span>
+                    <span class="me-3 text-dark fw-bold"><span class="check-box"></span> Home Visit</span>
+                    <span class="me-3 text-dark fw-bold"><span class="check-box"></span> School Visit</span>
+                    <span class="me-3 text-dark fw-bold"><span class="check-box"></span> Office Visit</span>
+                    <span class="text-dark fw-bold"><span class="check-box"></span> Phone Call</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: ROUTINE WELL-BEING -->
+        <div class="box-section avoid-break">
+            <div class="section-title">2. Routine Well-Being & Education</div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="data-label mb-1">Physical Health:</div>
+                    <div class="text-dark"><span class="check-box"></span> Good &nbsp;&nbsp; <span class="check-box"></span> Average &nbsp;&nbsp; <span class="check-box"></span> Poor</div>
+                </div>
+                <div class="col-6">
+                    <div class="data-label mb-1">Social Interaction:</div>
+                    <div class="text-dark"><span class="check-box"></span> Good &nbsp;&nbsp; <span class="check-box"></span> Isolated &nbsp;&nbsp; <span class="check-box"></span> Aggressive</div>
+                </div>
+                <div class="col-6">
+                    <div class="data-label mb-1">Behavior in Class:</div>
+                    <div class="text-dark"><span class="check-box"></span> Good &nbsp;&nbsp; <span class="check-box"></span> Average &nbsp;&nbsp; <span class="check-box"></span> Poor/Disruptive</div>
+                </div>
+                <div class="col-6">
+                    <div class="data-label mb-1">Condition of Home:</div>
+                    <div class="text-dark"><span class="check-box"></span> Good &nbsp;&nbsp; <span class="check-box"></span> Average &nbsp;&nbsp; <span class="check-box"></span> Poor/Unsafe</div>
+                </div>
+                <div class="col-12 mt-2">
+                    <div class="data-label text-danger">Evidence of Drugs, Alcohol, or Violence? &nbsp;&nbsp; <span class="check-box border-danger"></span> No &nbsp;&nbsp; <span class="check-box border-danger"></span> Yes</div>
+                    <div class="write-line-dotted"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: RISK CHECKLIST -->
+        <div class="box-section avoid-break">
+            <div class="section-title">3. Specialized Risk Factors (Check all that apply)</div>
+            <div class="row g-2 text-dark" style="font-size: 9pt;">
+                <div class="col-4">
+                    <strong>Abuse & Neglect</strong><br>
+                    <div class="mt-1"><span class="check-box"></span> Abandonment</div>
+                    <div class="mt-1"><span class="check-box"></span> Emotional Abuse</div>
+                    <div class="mt-1"><span class="check-box"></span> Physical Abuse</div>
+                    <div class="mt-1"><span class="check-box"></span> Sexual Abuse / Grooming</div>
+                    <div class="mt-1"><span class="check-box"></span> Neglect</div>
+                </div>
+                <div class="col-4">
+                    <strong>Family & Household</strong><br>
+                    <div class="mt-1"><span class="check-box"></span> Family Debt</div>
+                    <div class="mt-1"><span class="check-box"></span> Housing Insecurity / Eviction</div>
+                    <div class="mt-1"><span class="check-box"></span> Parent in Jail</div>
+                    <div class="mt-1"><span class="check-box"></span> Marital Change / Divorce</div>
+                    <div class="mt-1"><span class="check-box"></span> Parent Addiction / Drugs</div>
+                </div>
+                <div class="col-4">
+                    <strong>Child Vulnerability</strong><br>
+                    <div class="mt-1"><span class="check-box"></span> Child Labor / Jobs</div>
+                    <div class="mt-1"><span class="check-box"></span> Forced Begging / Scavenging</div>
+                    <div class="mt-1"><span class="check-box"></span> Gang Involvement</div>
+                    <div class="mt-1"><span class="check-box"></span> Severe Mental Health</div>
+                    <div class="mt-1"><span class="check-box"></span> Severe Physical Health</div>
+                </div>
+                <div class="col-12 mt-3 pt-2 border-top border-secondary border-opacity-25">
+                    <div class="data-label text-danger">Risk Details / Specifics:</div>
+                    <div class="write-line-dotted"></div>
+                    <div class="write-line-dotted"></div>
+                    <div class="write-line-dotted"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: ASSESSMENT & PROTECTION -->
+        <div class="box-section avoid-break" style="border: 2px solid #000;">
+            <div class="section-title" style="border-bottom: 2px solid #000;">4. Final Assessment & Protection Flags</div>
+            
+            <div class="mb-3 text-center">
+                <div class="data-label mb-2 text-start">Overall Risk Rating (Circle One):</div>
+                <div class="d-flex justify-content-between text-dark">
+                    <div class="risk-scale">1 - Safe</div>
+                    <div class="risk-scale">2 - Stable</div>
+                    <div class="risk-scale">3 - Concern</div>
+                    <div class="risk-scale" style="background-color: #e9ecef;">4 - Urgent</div>
+                    <div class="risk-scale" style="background-color: #000; color: #fff;">5 - Crisis</div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-12">
+                    <div class="data-label text-danger">Child Protection Concerns? (Requires Immediate Escalation)</div>
+                    <div class="text-dark fw-bold"><span class="check-box border-danger"></span> No &nbsp;&nbsp;&nbsp;&nbsp; <span class="check-box border-danger"></span> Yes (Explain below)</div>
+                    <div class="write-line-dotted"></div>
+                    <div class="write-line-dotted"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 5: NARRATIVE -->
+        <div class="box-section">
+            <div class="section-title">5. General Narrative & Staff Notes</div>
+            <div class="data-label mb-1">Interview notes, home condition observations, and family quotes:</div>
+            
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+
+            <div class="data-label mt-3 mb-1">Recommended Action Plan / Next Steps:</div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+            <div class="write-line-dotted"></div>
+        </div>
+
+        <!-- FOOTER & SIGNATURE -->
+        <div class="avoid-break mt-4 pt-2">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <div class="signature-line">
+                        Case Worker Signature
+                    </div>
+                </div>
+                <div>
+                    <div class="signature-line">
+                        Reviewer / Supervisor Signature (If applicable)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    {% endfor %}
+
+    <!-- Auto-trigger print dialogue logic -->
+    <script>
+        window.addEventListener('load', function() {
+            // Uncomment the next line if you want the print menu to open automatically when the page loads
+            // window.print();
+        });
+    </script>
+</body>
+</html>

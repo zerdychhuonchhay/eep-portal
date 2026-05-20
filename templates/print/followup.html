@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Report - {{ student.first_name }} {{ student.last_name }}</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <style>
+        /* ========================================== */
+        /* PRINT-SPECIFIC CSS ENGINE                  */
+        /* ========================================== */
+        :root {
+            --bs-body-font-family: 'Inter', 'Kantumruy Pro', sans-serif;
+        }
+        
+        body {
+            background-color: #fff;
+            color: #000;
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+
+        .khmer-font { font-family: 'Kantumruy Pro', sans-serif; }
+
+        /* A4 Page Setup */
+        @page {
+            size: A4 portrait;
+            margin: 15mm;
+        }
+
+        /* Hide UI elements when printing */
+        @media print {
+            .no-print { display: none !important; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .page-break { page-break-before: always; }
+            .avoid-break { page-break-inside: avoid; }
+            
+            /* Ensure borders and backgrounds print sharply */
+            .box-section { border: 1px solid #000 !important; }
+            .bg-shaded { background-color: #f8f9fa !important; }
+        }
+
+        /* Official Document Styling */
+        .doc-header { border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .box-section { border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .section-title { font-weight: 700; text-transform: uppercase; font-size: 9pt; color: #495057; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; margin-bottom: 10px; }
+        
+        .data-label { font-size: 8pt; text-transform: uppercase; font-weight: 700; color: #6c757d; margin-bottom: 2px; }
+        .data-value { font-weight: 600; font-size: 11pt; }
+        
+        /* Risk Scale Visuals */
+        .risk-box { border: 2px solid #000; padding: 5px 15px; text-align: center; font-weight: bold; border-radius: 4px; }
+        .risk-active { background-color: #000 !important; color: #fff !important; }
+        
+        .signature-line { border-top: 1px solid #000; margin-top: 50px; width: 250px; text-align: center; padding-top: 5px; font-size: 9pt; }
+    </style>
+</head>
+<body>
+
+    <!-- ON-SCREEN CONTROLS (Hidden during actual print) -->
+    <div class="no-print bg-light border-bottom p-3 mb-4 d-flex justify-content-between align-items-center">
+        <a href="/student/{{ student.id }}/timeline" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Timeline</a>
+        <button onclick="window.print()" class="btn btn-primary shadow-sm"><i class="bi bi-printer-fill me-2"></i> Print Document</button>
+    </div>
+
+    <!-- DOCUMENT CONTAINER -->
+    <div class="container-fluid px-4 px-md-5" style="max-width: 900px; margin: 0 auto;">
+        
+        <!-- HEADER -->
+        <div class="doc-header d-flex justify-content-between align-items-end">
+            <div class="d-flex align-items-center">
+                <!-- Org Logo -->
+                <img src="{{ url_for('static', filename='images/elm-icon.png') }}" alt="Logo" style="height: 50px; filter: grayscale(100%); margin-right: 15px;">
+                <div>
+                    <h4 class="fw-bold mb-0 text-uppercase" style="letter-spacing: 1px;">Official Case Report</h4>
+                    <p class="mb-0 fw-bold text-muted small">Educational Lifeline Framework</p>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="data-label">Report ID</div>
+                <div class="font-monospace fw-bold">FR-{{ followup.id }}-{{ student.ngo_id }}</div>
+            </div>
+        </div>
+
+        <!-- ROW 1: LOGISTICS & IDENTITY -->
+        <div class="row g-3 mb-2 avoid-break">
+            <div class="col-8">
+                <div class="box-section bg-shaded h-100 mb-0">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="data-label">Student Name</div>
+                            <div class="data-value">{{ student.first_name }} {{ student.last_name }} {% if student.khmer_name %}({{ student.khmer_name }}){% endif %}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="data-label">NGO ID / Grade</div>
+                            <div class="data-value">{{ student.ngo_id }} • {{ student.grade_level }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="data-label">Guardian / Kinship</div>
+                            <div class="data-value">{{ student.guardian_name }} ({{ student.caregiver_relationship if student.caregiver_relationship else 'Guardian' }})</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="data-label">Slum Area / Village</div>
+                            <div class="data-value khmer-font">{{ student.slum_area if student.slum_area else 'N/A' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="box-section h-100 mb-0">
+                    <div class="data-label">Date of Visit</div>
+                    <div class="data-value mb-3">{{ followup.followup_date }}</div>
+                    
+                    <div class="data-label">Visit Type / Location</div>
+                    <div class="data-value mb-3">{{ followup.location }}</div>
+                    
+                    <div class="data-label">Case Worker</div>
+                    <div class="data-value">{{ followup.completed_by }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: OVERALL RISK RATING -->
+        <div class="box-section text-center avoid-break">
+            <div class="data-label mb-2">Overall Risk Assessment Level</div>
+            <div class="d-flex justify-content-center gap-2">
+                <div class="risk-box {% if followup.risk_level == 1 %}risk-active{% endif %}">1 - Safe</div>
+                <div class="risk-box {% if followup.risk_level == 2 %}risk-active{% endif %}">2 - Stable</div>
+                <div class="risk-box {% if followup.risk_level == 3 %}risk-active{% endif %}">3 - Concern</div>
+                <div class="risk-box {% if followup.risk_level == 4 %}risk-active{% endif %}">4 - Urgent</div>
+                <div class="risk-box {% if followup.risk_level == 5 %}risk-active{% endif %}">5 - Crisis</div>
+            </div>
+        </div>
+
+        <!-- ROW 3: VITAL METRICS -->
+        <div class="box-section avoid-break">
+            <div class="section-title">Routine Well-being & Education</div>
+            <div class="row g-3">
+                <div class="col-3">
+                    <div class="data-label">Physical Health</div>
+                    <div class="data-value">{{ followup.physical_health if followup.physical_health else 'N/A' }}</div>
+                </div>
+                <div class="col-3">
+                    <div class="data-label">Social Interaction</div>
+                    <div class="data-value">{{ followup.social_interaction if followup.social_interaction else 'N/A' }}</div>
+                </div>
+                <div class="col-3">
+                    <div class="data-label">School Behavior</div>
+                    <div class="data-value">{{ followup.behavior_in_class if followup.behavior_in_class else 'N/A' }}</div>
+                </div>
+                <div class="col-3">
+                    <div class="data-label">Home Condition</div>
+                    <div class="data-value">{{ followup.home_life if followup.home_life else 'N/A' }}</div>
+                </div>
+            </div>
+            
+            {% if followup.child_jobs and followup.child_jobs != 'No' %}
+            <div class="mt-3 pt-2 border-top">
+                <span class="data-label text-danger">Child Labor Warning:</span>
+                <span class="data-value fw-bold ms-2">{{ followup.child_jobs }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ROW 4: ESCALATED RISKS (Only prints if there are risks) -->
+        {% if followup.risk_factors or followup.child_protection_concerns or followup.trafficking_risk == 'Yes' or followup.evidence_drugs_violence %}
+        <div class="box-section avoid-break" style="border: 2px solid #000 !important;">
+            <div class="section-title" style="color: #000; border-color: #000;">⚠️ Escalation & Protection Flags</div>
+            <ul class="mb-0 ps-3">
+                {% if followup.risk_factors %}
+                    <li class="fw-bold mb-1">Identified Risk Factors: <span class="fw-normal">{{ followup.risk_factors }}</span></li>
+                    {% if followup.risk_details %}
+                        <li class="list-unstyled fst-italic mb-2 ps-2 border-start border-2 border-dark khmer-font">"{{ followup.risk_details }}"</li>
+                    {% endif %}
+                {% endif %}
+                
+                {% if followup.child_protection_concerns %}
+                    <li class="fw-bold mb-1">Protection Concerns: <span class="fw-normal khmer-font">{{ followup.child_protection_concerns }}</span></li>
+                {% endif %}
+                
+                {% if followup.evidence_drugs_violence %}
+                    <li class="fw-bold mb-1">Drugs/Violence Evidence: <span class="fw-normal khmer-font">{{ followup.evidence_drugs_violence }}</span></li>
+                {% endif %}
+                
+                {% if followup.trafficking_risk == 'Yes' %}
+                    <li class="fw-bold">Trafficking Risk Flag: <span class="fw-normal">YES - Escalate immediately</span></li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- ROW 5: NARRATIVE -->
+        <div class="box-section">
+            <div class="section-title">Case Narrative & Observations</div>
+            
+            <div class="mb-4">
+                <div class="data-label">General Visit Notes</div>
+                <div class="khmer-font" style="white-space: pre-line;">{{ followup.general_notes }}</div>
+            </div>
+
+            {% if followup.parent_working_notes %}
+            <div class="mb-4">
+                <div class="data-label">Family Work & Income Context</div>
+                <div class="khmer-font" style="white-space: pre-line;">{{ followup.parent_working_notes }}</div>
+            </div>
+            {% endif %}
+
+            {% if followup.student_story %}
+            <div class="mb-4">
+                <div class="data-label">Student Quote / Story</div>
+                <div class="khmer-font fst-italic border-start border-3 ps-3">"{{ followup.student_story }}"</div>
+            </div>
+            {% endif %}
+
+            {% if followup.staff_notes %}
+            <div>
+                <div class="data-label">Recommendations / Next Steps</div>
+                <div class="khmer-font fw-bold" style="white-space: pre-line;">{{ followup.staff_notes }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- FOOTER & SIGNATURE -->
+        <div class="avoid-break mt-5">
+            <p class="small text-muted mb-0 fst-italic">This document contains sensitive social work data and is strictly confidential. Unauthorized distribution is prohibited.</p>
+            
+            <div class="d-flex justify-content-end">
+                <div class="signature-line">
+                    <span class="fw-bold d-block">{{ followup.completed_by }}</span>
+                    <span class="text-muted">Case Worker / Authorized Staff</span>
+                    <div class="mt-1" style="font-size: 7pt;">Date: ____ / ____ / ________</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Optional: Auto-trigger print dialogue when page loads
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>
