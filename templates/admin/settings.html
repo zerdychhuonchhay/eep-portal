@@ -5,6 +5,70 @@
 {% block head %}
 <!-- Premium Branding Font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+    .nav-pills .nav-link {
+        color: #495057;
+        transition: all 0.2s ease-in-out;
+    }
+    .nav-pills .nav-link:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd;
+        color: white;
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+    }
+    .settings-card {
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    }
+    
+    .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.08) !important; }
+    .transition-style { transition: background-color 0.3s ease; }
+    .hover-primary:hover { color: #0d6efd !important; }
+    
+    /* 🚀 PREMIUM MATRIX LOCK STYLES */
+    .drag-handle { 
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), cursor 0.2s ease; 
+    }
+    
+    /* SortableJS Ghost UI */
+    .bg-ghost { background-color: #f8f9fa !important; border: 2px dashed #0d6efd !important; opacity: 0.6; }
+    
+    .cursor-pointer { cursor: pointer; }
+    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .text-darken { color: #b48600 !important; }
+    
+    .form-control:focus, .form-select:focus { border-color: #86b7fe !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; background-color: #fff !important; }
+    
+    /* Mobile-Specific Refinements */
+    @media (max-width: 991.98px) {
+        .custom-scrollbar::-webkit-scrollbar { display: none; }
+        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Transform sidebar to sticky glass header */
+        .settings-nav-wrapper { margin-left: -1rem; margin-right: -1rem; }
+        .settings-nav-wrapper .card { 
+            border-radius: 0 !important; 
+            background: rgba(255,255,255,0.85) !important; 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            border-bottom: 1px solid rgba(0,0,0,0.05) !important; 
+            padding: 0.75rem 1rem !important; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+        }
+        
+        .nav-pills-container .nav-link { 
+            background-color: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            font-size: 0.85rem; 
+        }
+        .nav-pills-container .nav-link.active { background-color: #005a9c !important; color: white !important; border-color: #005a9c !important; }
+        .nav-pills-container .text-danger-hover.active { background-color: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
+        .nav-pills-container .text-warning-hover.active { background-color: #b48600 !important; color: white !important; border-color: #b48600 !important; }
+    }
+</style>
 {% endblock %}
 
 {% block main %}
@@ -13,7 +77,7 @@
     <!-- PAGE TITLE -->
     <div class="d-flex justify-content-between align-items-center mb-4 px-3 px-md-0">
         <div>
-            <h2 class="mb-0 fw-bold text-dark lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1.5px;"><i class="bi bi-gear-fill text-secondary me-2"></i>System Settings</h2>
+            <h2 class="mb-0 fw-bold text-dark lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-gear-fill text-secondary me-2"></i>System Settings</h2>
             <p class="text-muted small mb-0 mt-1 fw-bold">Manage system preferences, academic standards, and security.</p>
         </div>
     </div>
@@ -137,7 +201,7 @@
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                         <div>
                             <h4 class="fw-bold text-dark mb-1">Curriculum Matrix</h4>
-                            <p class="text-muted small fw-bold mb-0">Drag and drop using the <i class="bi bi-grip-vertical"></i> handle to arrange the exact input order. You can drag subjects between different tiers!</p>
+                            <p class="text-muted small fw-bold mb-0">Toggle the <strong>Safety Lock</strong> to arrange list order. You can drag subjects between different tiers!</p>
                         </div>
                         <button class="btn btn-success fw-bold rounded-pill shadow-sm transition-hover" data-bs-toggle="collapse" data-bs-target="#addSubjectCard">
                             <i class="bi bi-plus-lg me-1"></i> Add Subject
@@ -175,9 +239,17 @@
                     <form action="/settings" method="post" id="updateSubjectsForm">
                         <input type="hidden" name="action" value="update_subjects">
                         
-                        <!-- 🚀 STICKY SAVE BUTTON FOR LONG LISTS -->
-                        <div class="position-sticky d-flex justify-content-end mb-3" style="top: 80px; z-index: 1010; pointer-events: none;">
-                            <button type="submit" class="btn btn-dark shadow-lg fw-bold rounded-pill px-4 py-2 transition-hover" style="pointer-events: auto;">
+                        <!-- 🚀 STICKY CONTROL PANEL FOR MATRIX LOCKING & SAVING -->
+                        <div class="position-sticky d-flex justify-content-between align-items-center mb-3 p-2 bg-white rounded-pill border shadow-lg" style="top: 80px; z-index: 1010; pointer-events: auto;">
+                            <!-- Smart Lock Toggle -->
+                            <div class="form-check form-switch mb-0 ms-3 d-flex align-items-center gap-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="lockMatrixToggle" checked style="width: 2.5em; height: 1.25em;">
+                                <label class="form-check-label fw-bold small text-muted cursor-pointer" id="lockLabel" for="lockMatrixToggle">
+                                    <i class="bi bi-lock-fill text-danger me-1"></i> Matrix Locked
+                                </label>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-dark btn-sm shadow-sm fw-bold rounded-pill px-4 py-2 transition-hover">
                                 <i class="bi bi-save2-fill me-2"></i> Save Matrix Order
                             </button>
                         </div>
@@ -198,14 +270,14 @@
                                     </h2>
                                     <div id="cat-{{ loop.index }}" class="accordion-collapse collapse show" data-bs-parent="#subjectsAccordion">
                                         <div class="accordion-body p-0 bg-light border-top border-light">
-                                            <!-- 🚀 ADDED data-category-name for cross-list moving -->
+                                            <!-- 🚀 data-category-name is used for cross-list moving -->
                                             <div class="list-group list-group-flush sortable-list" data-category-name="{{ cat }}" style="min-height: 50px;">
                                                 {% for subject in cat_subs %}
                                                 <div class="list-group-item bg-white p-3 border-bottom border-light subject-item transition-style" style="position: relative;">
                                                     <div class="row align-items-center g-2 g-md-3">
                                                         
-                                                        <!-- DRAG AND DROP HANDLE -->
-                                                        <div class="col-auto d-flex flex-column align-items-center justify-content-center pe-2 pe-md-3 ps-1 border-end border-light drag-handle" style="cursor: grab;" title="Drag to reorder or move to another tier">
+                                                        <!-- 🚀 DRAG AND DROP HANDLE (Locked with Default Cursors & Faded Opacity initially) -->
+                                                        <div class="col-auto d-flex flex-column align-items-center justify-content-center pe-2 pe-md-3 ps-1 border-end border-light drag-handle" style="cursor: default; opacity: 0.35;" title="Unlock matrix to reorder">
                                                             <i class="bi bi-grip-vertical text-muted fs-4 hover-primary transition-hover"></i>
                                                             <input type="hidden" class="subject-sort-input" name="sort_{{ subject.id }}" value="{{ subject.sort_order }}">
                                                         </div>
@@ -251,7 +323,7 @@
                     
                     <div class="mb-4">
                         <h4 class="fw-bold text-dark mb-1">Global Workspaces</h4>
-                        <p class="text-muted small fw-bold">Separate instances of your database for different projects or branches.</p>
+                        <p class="text-muted small fw-bold">Separate instances of your database for different programs or branches.</p>
                     </div>
 
                     <!-- Add Workspace -->
@@ -601,59 +673,6 @@
     <input type="hidden" name="translation_key" id="delete_translation_key">
 </form>
 
-<style>
-    /* Premium Nav Pill Styling (Desktop) */
-    .nav-pills-container .nav-link { color: #6c757d; border: 1px solid transparent; background: transparent; }
-    .nav-pills-container .nav-link.active { 
-        background-color: #f0f7ff; 
-        color: #005a9c !important; 
-        border-color: rgba(0, 90, 156, 0.1);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-    .nav-pills-container .text-danger-hover:hover, .nav-pills-container .text-danger-hover.active { color: #dc3545 !important; background-color: rgba(220, 53, 69, 0.05); }
-    .nav-pills-container .text-warning-hover:hover, .nav-pills-container .text-warning-hover.active { color: #b48600 !important; background-color: rgba(255, 193, 7, 0.05); }
-    
-    .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
-    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.05) !important; }
-    .transition-style { transition: background-color 0.3s ease; }
-    .hover-primary:hover { color: #0d6efd !important; }
-    
-    /* SortableJS Ghost UI */
-    .bg-ghost { background-color: #f8f9fa !important; border: 2px dashed #0d6efd !important; opacity: 0.6; }
-    
-    .cursor-pointer { cursor: pointer; }
-    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-    .text-darken { color: #b48600 !important; }
-    
-    .form-control:focus, .form-select:focus { border-color: #86b7fe !important; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important; }
-    
-    /* Mobile-Specific Refinements */
-    @media (max-width: 991.98px) {
-        .custom-scrollbar::-webkit-scrollbar { display: none; }
-        .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Transform sidebar to sticky glass header */
-        .settings-nav-wrapper { margin-left: -1rem; margin-right: -1rem; }
-        .settings-nav-wrapper .card { 
-            border-radius: 0 !important; 
-            background: rgba(255,255,255,0.85) !important; 
-            backdrop-filter: blur(12px); 
-            -webkit-backdrop-filter: blur(12px); 
-            border-bottom: 1px solid rgba(0,0,0,0.05) !important; 
-            padding: 0.75rem 1rem !important; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
-        }
-        
-        .nav-pills-container .nav-link { 
-            background-color: #f8f9fa; 
-            border: 1px solid #dee2e6; 
-            font-size: 0.85rem; 
-        }
-        .nav-pills-container .nav-link.active { background-color: #005a9c !important; color: white !important; border-color: #005a9c !important; }
-        .nav-pills-container .text-danger-hover.active { background-color: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
-        .nav-pills-container .text-warning-hover.active { background-color: #b48600 !important; color: white !important; border-color: #b48600 !important; }
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}
@@ -674,15 +693,30 @@
             });
         }
 
+        const sortableInstances = [];
+
         // Initialize SortableJS on all subject tier lists
         document.querySelectorAll('.sortable-list').forEach(function(list) {
-            new Sortable(list, {
-                group: 'shared-subjects', // 🚀 NEW: Allows dragging subjects BETWEEN different school tiers
+            const instance = new Sortable(list, {
+                group: 'shared-subjects', // Allows dragging subjects BETWEEN different school tiers
                 handle: '.drag-handle',
+                filter: '.empty-state-msg', // Don't allow dragging the "empty state" message
                 animation: 200,
                 ghostClass: 'bg-ghost',
+                disabled: true, // 🚀 Locked by default to prevent accidental trackpad slips!
+                onAdd: function(evt) {
+                    // Hide empty state message when an item is dropped in
+                    const emptyMsg = evt.to.querySelector('.empty-state-msg');
+                    if(emptyMsg) emptyMsg.style.display = 'none';
+                },
+                onRemove: function(evt) {
+                    // Show empty state message if list is now empty
+                    const items = evt.from.querySelectorAll('.subject-item');
+                    const emptyMsg = evt.from.querySelector('.empty-state-msg');
+                    if(emptyMsg && items.length === 0) emptyMsg.style.display = '';
+                },
                 onEnd: function(evt) {
-                    // 🚀 NEW: If moved to a different category list, update its internal <select> dropdown automatically
+                    // If moved to a different category list, update its internal <select> dropdown automatically
                     const toList = evt.to;
                     const newCategory = toList.getAttribute('data-category-name');
                     
@@ -707,7 +741,57 @@
                     }
                 }
             });
+            sortableInstances.push(instance);
         });
+
+        // 🚀 SMART MATRIX SAFETY LOCK TOGGLE
+        const lockToggle = document.getElementById('lockMatrixToggle');
+        const lockLabel = document.getElementById('lockLabel');
+
+        if (lockToggle) {
+            lockToggle.addEventListener('change', function() {
+                const isLocked = this.checked;
+                
+                // Toggle SortableJS disabled option on all instances
+                sortableInstances.forEach(inst => {
+                    inst.option("disabled", isLocked);
+                });
+
+                // Update visual design tokens, cursors, and helper tags
+                document.querySelectorAll('.drag-handle').forEach(el => {
+                    if (isLocked) {
+                        el.style.cursor = 'default';
+                        el.style.opacity = '0.35';
+                        el.setAttribute('title', 'Unlock matrix to reorder');
+                    } else {
+                        el.style.cursor = 'grab';
+                        el.style.opacity = '1';
+                        el.setAttribute('title', 'Drag to reorder or move to another tier');
+                    }
+                });
+
+                if (isLocked) {
+                    lockLabel.innerHTML = '<i class="bi bi-lock-fill text-danger me-1"></i> Matrix Locked';
+                    lockLabel.classList.remove('text-success');
+                    lockLabel.classList.add('text-muted');
+                } else {
+                    lockLabel.innerHTML = '<i class="bi bi-unlock-fill text-success me-1"></i> Matrix Unlocked';
+                    lockLabel.classList.remove('text-muted');
+                    lockLabel.classList.add('text-success');
+                    
+                    // Show a quick, premium auto-save feedback notification to guide the user
+                    const toastMsg = document.getElementById('toastMsg');
+                    if (toastMsg) {
+                        toastMsg.innerText = "Matrix Unlocked. Grab handles to drag & drop!";
+                        const toastEl = document.getElementById('saveToast');
+                        if (toastEl && window.bootstrap) {
+                            const toastInstance = new bootstrap.Toast(toastEl, { delay: 2500 });
+                            toastInstance.show();
+                        }
+                    }
+                }
+            });
+        }
 
         // ---------------------------------------------------------
         // RBAC MATRIX: TOGGLE ALL BUTTON

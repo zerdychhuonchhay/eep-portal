@@ -11,8 +11,8 @@
     
     <div class="mb-4 px-3 px-md-0 d-flex flex-column flex-md-row justify-content-between align-items-md-end gap-3">
         <div>
-            <a href="/student/{{ student.id }}/academics" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
-                <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Back to Academics
+            <a href="{{ request.referrer if request.referrer else '/student/' ~ student.id ~ '/academics' }}" class="text-decoration-none text-muted fw-bold d-inline-flex align-items-center mb-3 transition-hover" style="font-size: 0.9rem;">
+                <i class="bi bi-arrow-left-short fs-4 me-1" style="margin-left: -5px;"></i> Go Back
             </a>
             <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Academic Report</h2>
             <p class="text-muted small fw-bold mb-0">Updating grades for <span class="text-primary">{{ student.first_name }} {{ student.last_name }}</span></p>
@@ -22,13 +22,14 @@
     <!-- Auto-saving form -->
     <form id="editReportForm" action="/edit_report/{{ report.id }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         
-        <input type="hidden" name="source_url" value="{{ request.referrer if request.referrer else '' }}">
+        <!-- 🚀 DYNAMIC ROUTING ENGINE: JavaScript updates this hidden field before submission -->
+        <input type="hidden" name="source_url" id="sourceUrlInput" value="{{ request.referrer if request.referrer else '' }}">
         <input type="hidden" name="calendar_year" id="hidden_calendar_year" value="">
 
         <!-- ========================================== -->
         <!-- 1. ACADEMIC TERM & DOCUMENT UPLOAD         -->
         <!-- ========================================== -->
-        <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+        <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
             <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                 <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>1. Term & Document</h5>
             </div>
@@ -128,7 +129,7 @@
         <!-- ========================================== -->
         <!-- 2. PERFORMANCE OVERVIEW                    -->
         <!-- ========================================== -->
-        <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+        <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
             <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                 <h5 class="fw-bold text-dark mb-0"><i class="bi bi-bar-chart-fill me-2 text-success"></i>2. Performance Overview</h5>
             </div>
@@ -179,17 +180,10 @@
         <!-- ========================================== -->
         <!-- 3. DETAILED SUBJECTS (COMPACT DRAG & DROP) -->
         <!-- ========================================== -->
-        <div class="card shadow-sm border rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+        <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
             
             <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center rounded-top-4">
                 <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>3. Detailed Subjects</h5>
-                
-                <!-- 🚀 QUICK ADD MODAL TRIGGER -->
-                {% if session.get('role') == 'Admin' or session.get('program_id') == 1 %}
-                <button type="button" class="btn btn-sm btn-light border fw-bold text-secondary rounded-pill px-3 shadow-sm transition-hover d-inline-flex align-items-center" data-bs-toggle="modal" data-bs-target="#quickAddSubjectModal">
-                    <i class="bi bi-gear-fill me-1"></i> Edit Default Matrix
-                </button>
-                {% endif %}
             </div>
 
             <div class="card-body p-3 p-md-4 pt-2 bg-light bg-opacity-50">
@@ -202,7 +196,7 @@
                     </span>
                 </div>
 
-                <!-- 🚀 UPGRADED: High-Speed Sortable Grid -->
+                <!-- High-Speed Sortable Grid -->
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3" id="subjectsGrid">
                     
                     {% for subject in subjects %}
@@ -231,13 +225,40 @@
                         </div>
                     </div>
                     {% endfor %}
-
+                    
+                    <!-- 🚀 RENDER EXISTING 1-OFF CUSTOM SUBJECTS -->
+                    {% for cg in custom_grades %}
+                    <div class="col subject-row custom-subject-row" data-category="General">
+                        <div class="p-2 bg-white border border-primary border-opacity-50 rounded-3 shadow-sm h-100 subject-card transition-hover d-flex flex-column justify-content-between" style="background: linear-gradient(to bottom right, #ffffff, #f0f7ff);">
+                            <div class="d-flex justify-content-between align-items-start mb-2 px-1 gap-2">
+                                <i class="bi bi-grip-vertical text-primary opacity-50 mt-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
+                                <input type="text" class="form-control form-control-sm border-0 border-bottom border-primary border-opacity-25 bg-transparent px-1 khmer-font text-dark shadow-none fw-bold w-100 custom-name-input" name="custom_subject_name[]" value="{{ cg.custom_subject_name }}" placeholder="Type Subject Name..." required>
+                                <button type="button" class="btn btn-sm text-danger p-0 ms-1 opacity-50 transition-hover" onclick="this.closest('.col').remove(); renumberSubjects();"><i class="bi bi-x-circle-fill fs-5"></i></button>
+                            </div>
+                            <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-primary border-opacity-25 focus-group mt-auto">
+                                <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
+                                <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="custom_max_score[]" value="{{ cg.max_score if cg.max_score else '100' }}" style="max-width: 55px;">
+                                <span class="input-group-text bg-primary text-white border-0 fw-bold border-start px-2" style="font-size: 0.8rem;">Score</span>
+                                <input type="text" class="form-control bg-white border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="custom_score[]" value="{{ cg.score if cg.score else '' }}" placeholder="-" tabindex="1">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                </div>
+                
+                <!-- 🚀 BUTTON: ADD 1-OFF CUSTOM SUBJECT -->
+                <div class="mt-4 pt-3 border-top text-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-4 shadow-sm transition-hover bg-white" onclick="addCustomSubject()">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Add 1-Off Custom Subject
+                    </button>
+                    <p class="text-muted small mt-2 mb-0">Need to record a grade that isn't on the official matrix? Add it here.</p>
                 </div>
 
             </div>
         </div>
 
-        <div class="card shadow-sm border rounded-4 mb-5 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
+        <div class="card shadow-sm border-0 rounded-4 mb-5 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
             <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 rounded-top-4">
                 <h5 class="fw-bold text-dark mb-0"><i class="bi bi-chat-left-text me-2 text-secondary"></i>4. Additional Notes</h5>
             </div>
@@ -249,134 +270,119 @@
             </div>
         </div>
 
-        <!-- Desktop-only bottom action bar (Static, non-sticky) -->
+        <!-- 🚀 DESKTOP ACTION BAR (SPLIT BUTTON WORKFLOW) -->
         <div class="d-none d-md-flex justify-content-between align-items-center bg-white p-4 rounded-4 shadow-sm border mt-4 mb-3">
-            <a href="/student/{{ student.id }}/academics" class="btn btn-light border fw-bold px-4 py-2 rounded-pill text-dark transition-hover">Cancel</a>
-            <button type="submit" class="btn btn-primary fw-bold px-5 py-2 rounded-pill shadow-sm transition-hover fs-6">
-                <i class="bi bi-cloud-arrow-up-fill me-2"></i>Update Report Card
-            </button>
+            <a href="{{ request.referrer if request.referrer else '/student/' ~ student.id ~ '/academics' }}" class="btn btn-light border fw-bold px-4 py-2 rounded-pill text-dark transition-hover">Cancel</a>
+            
+            <div class="btn-group dropup shadow-sm rounded-pill transition-hover">
+                <button type="submit" class="btn btn-primary fw-bold px-4 py-2 fs-6 rounded-start-pill border-end-0" onclick="setSaveAction('{{ request.referrer if request.referrer else '/student/' ~ student.id ~ '/academics' }}')">
+                    <i class="bi bi-cloud-arrow-up-fill me-2"></i>Update & Return
+                </button>
+                <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split rounded-end-pill px-3 border-start border-white border-opacity-25" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2 mb-2">
+                    <li>
+                        <button type="submit" class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-primary" onclick="setSaveAction('/student/{{ student.id }}/academics')">
+                            <i class="bi bi-person-vcard me-2"></i>Save & View Academic Profile
+                        </button>
+                    </li>
+                    <li>
+                        <button type="submit" class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-success" onclick="setSaveAction('/add_report/{{ student.id }}')">
+                            <i class="bi bi-calendar-plus me-2"></i>Save & Add Another Month
+                        </button>
+                    </li>
+                    <li>
+                        <button type="submit" class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-info" onclick="setSaveAction('/academics')">
+                            <i class="bi bi-list-columns-reverse me-2"></i>Save to Master Gradebook
+                        </button>
+                    </li>
+                </ul>
+            </div>
         </div>
     </form>
 
-    <!-- 🚀 MOBILE FLOATING SAVE BUTTON (FAB) -->
-    <button type="submit" form="editReportForm" class="btn btn-primary text-white fw-bold shadow-lg position-fixed transition-hover d-flex d-md-none align-items-center justify-content-center rounded-pill px-4 border border-2 border-white" style="bottom: 90px; right: 20px; height: 55px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
-        <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Update</span>
-    </button>
+    <!-- 🚀 MOBILE FLOATING SAVE BUTTON (DROPUP WORKFLOW) -->
+    <div class="btn-group dropup position-fixed d-flex d-md-none shadow-lg rounded-pill" style="bottom: 90px; right: 20px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+        <button type="submit" form="editReportForm" class="btn btn-primary text-white fw-bold transition-hover rounded-start-pill px-4 border-2 border-white border-end-0" style="height: 55px;" onclick="setSaveAction('{{ request.referrer if request.referrer else '/student/' ~ student.id ~ '/academics' }}')">
+            <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Update & Return</span>
+        </button>
+        <button type="button" class="btn btn-primary text-white fw-bold transition-hover rounded-end-pill px-3 border-2 border-white border-start-0" style="height: 55px;" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-chevron-up"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-2 mb-2">
+            <li>
+                <button type="submit" form="editReportForm" class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-primary" onclick="setSaveAction('/student/{{ student.id }}/academics')">
+                    <i class="bi bi-person-vcard me-2"></i>Save & View Academic Profile
+                </button>
+            </li>
+            <li>
+                <button type="submit" form="editReportForm" class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-success" onclick="setSaveAction('/add_report/{{ student.id }}')">
+                    <i class="bi bi-calendar-plus me-2"></i>Save & Add Another Month
+                </button>
+            </li>
+            <li>
+                <button type="submit" form="editReportForm" class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-info" onclick="setSaveAction('/academics')">
+                    <i class="bi bi-list-columns-reverse me-2"></i>Save to Master Gradebook
+                </button>
+            </li>
+        </ul>
+    </div>
     
-    <!-- 🚀 DESKTOP FLOATING SCAN VIEWER BUTTON (Side Tab - Hidden by default) -->
-    <!-- Appears only on PC to allow side-by-side grading. Safely positioned and layered. -->
-    <button type="button" class="btn btn-info text-white fw-bold shadow-lg position-fixed transition-hover d-none align-items-center justify-content-center px-4 py-3 border border-end-0 border-white" id="fabDesktopScan" data-bs-toggle="offcanvas" data-bs-target="#scanViewerOffcanvas" style="top: 50%; margin-top: -28px; right: 0; z-index: 990; border-radius: 50rem 0 0 50rem; opacity: 0.9;">
+    <!-- 🚀 DESKTOP FLOATING SCAN VIEWER BUTTON -->
+    <button type="button" class="btn btn-info text-white fw-bold shadow-lg position-fixed transition-hover d-none align-items-center justify-content-center px-4 py-3 border border-end-0 border-white" id="fabDesktopScan" onclick="openViewer()" style="top: 50%; margin-top: -28px; right: 0; z-index: 990; border-radius: 50rem 0 0 50rem; opacity: 0.9;">
         <i class="bi bi-file-earmark-image fs-5 me-2"></i> View Scan
     </button>
 
 </div>
 
-<!-- 🚀 QUICK ADD SUBJECT MODAL -->
-{% if session.get('role') == 'Admin' or session.get('program_id') == 1 %}
-<div class="modal fade" id="quickAddSubjectModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header bg-dark text-white border-bottom-0 pt-4 pb-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="bi bi-journal-plus me-2 text-warning"></i>Quick Add Subject</h5>
-                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="quickAddSubjectForm">
-                <div class="modal-body p-4 bg-light">
-                    <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info-emphasis rounded-3 small mb-3">
-                        <i class="bi bi-info-circle-fill me-2"></i> Your currently typed grades are auto-saved. Adding a subject will refresh the page and instantly restore your progress!
-                    </div>
-                    <input type="hidden" name="action" value="add_subject">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Subject Name</label>
-                        <input type="text" class="form-control bg-white border-0 shadow-sm py-2 fw-bold" name="new_subject" placeholder="e.g. Advanced Physics" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase mb-1">Target School Tier</label>
-                        <select class="form-select bg-white border-0 shadow-sm py-2 fw-bold" name="category" required>
-                            <option value="Primary / Lower Grade">Primary / Lower Grade</option>
-                            <option value="High School">High School</option>
-                            <option value="University / Vocational">University / Vocational</option>
-                            <option value="General" selected>General (All)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer bg-white border-top-0 px-4 py-3 d-flex justify-content-between">
-                    <button type="button" class="btn btn-light border fw-bold text-dark rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm transition-hover">
-                        <i class="bi bi-plus-lg me-1"></i> Add to Matrix
-                    </button>
-                </div>
-            </form>
+<!-- 🚀 DRAGGABLE FLOATING SCAN VIEWER (Replaces Offcanvas) -->
+<div id="floatingScanViewer" class="shadow-lg border border-secondary border-opacity-25 rounded-4 bg-white d-none flex-column" style="position: fixed; top: 80px; right: 20px; width: 450px; height: 80vh; z-index: 1060; resize: both; overflow: hidden; min-width: 300px; min-height: 300px;">
+    
+    <!-- Drag Handle & Controls -->
+    <div id="viewerDragHandle" class="bg-dark text-white border-bottom-0 py-3 px-3 d-flex justify-content-between align-items-center" style="cursor: grab;">
+        <h6 class="fw-bold small text-uppercase tracking-wide mb-0 d-flex align-items-center" style="user-select: none;">
+            <i class="bi bi-arrows-move me-2 text-info fs-5"></i>
+            <span>Reference Document</span>
+        </h6>
+        <div class="d-flex gap-2 align-items-center">
+            <!-- Snapping Buttons -->
+            <button type="button" class="btn btn-sm btn-outline-light border-0 rounded-circle py-0 px-1 d-none d-md-block" onclick="snapViewer('left')" title="Snap to Left"><i class="bi bi-box-arrow-in-left fs-6"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-light border-0 rounded-circle py-0 px-1 d-none d-md-block" onclick="snapViewer('right')" title="Snap to Right"><i class="bi bi-box-arrow-in-right fs-6"></i></button>
+            <div class="vr bg-white opacity-25 mx-1 d-none d-md-block" style="width: 2px;"></div>
+            <!-- Close Button -->
+            <button type="button" class="btn btn-sm btn-light text-dark border-0 rounded-circle py-0 px-1 ms-1" onclick="closeViewer()" title="Close Viewer"><i class="bi bi-x-lg fw-bold"></i></button>
         </div>
     </div>
-</div>
-{% endif %}
-
-<!-- 🚀 UNIVERSAL OFFCANVAS SCAN VIEWER (Smart Fluid Width/Height) -->
-<div class="offcanvas shadow-lg border-0" tabindex="-1" id="scanViewerOffcanvas" data-bs-scroll="true" data-bs-backdrop="false" style="z-index: 1060;">
-    <div class="offcanvas-header bg-dark text-white border-bottom-0 py-3 px-4">
-        <h6 class="offcanvas-title fw-bold small text-uppercase tracking-wide"><i class="bi bi-camera-fill me-2 text-info"></i>Reference Document</h6>
-        <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body p-0 bg-secondary bg-opacity-10 d-flex flex-column h-100">
-        
+    
+    <!-- Viewer Content Body -->
+    <div class="p-0 bg-secondary bg-opacity-10 d-flex flex-column flex-grow-1" style="overflow: hidden;">
         <div id="placeholder_text" class="text-muted text-center m-auto p-5">
             <i class="bi bi-file-earmark-text fs-1 d-block mb-2 opacity-25"></i>
             <span class="fw-bold small text-uppercase">No document uploaded</span>
         </div>
-        
-        <iframe id="scan_preview_pdf" src="" class="w-100 h-100 flex-grow-1" style="border: none; display: none;"></iframe>
-        
-        <div class="w-100 h-100 flex-grow-1 overflow-auto bg-light" id="img_wrapper" style="display: none;">
+        <iframe id="scan_preview_pdf" src="" class="w-100 flex-grow-1" style="border: none; display: none; height: 100%;"></iframe>
+        <div class="w-100 flex-grow-1 overflow-auto bg-light" id="img_wrapper" style="display: none; height: 100%;">
             <img id="scan_preview" src="" style="display:none; max-width: 100%; height: auto; object-fit: contain; margin: 0 auto; display: block;" alt="Report Card Scan">
         </div>
-        
     </div>
     
-    <!-- 🚀 SMART UX: Contextual Hint Footer -->
-    <div class="offcanvas-footer bg-white border-top py-3 px-3 text-center mt-auto">
-        <small class="text-muted fw-bold" id="scanHintText"><i class="bi bi-lightbulb-fill text-warning me-1"></i> Upload a document to view controls.</small>
+    <!-- Native Resize Hint -->
+    <div class="bg-white border-top py-1 px-2 text-end mt-auto d-none d-md-block" style="cursor: se-resize; user-select: none;">
+        <i class="bi bi-arrows-angle-expand text-muted opacity-50" style="font-size: 0.75rem;"></i>
     </div>
 </div>
 
 <style>
-    /* 🚀 AUTO-EVASION LOGIC: Slides button off-screen when dropdown opens */
-    #fabDesktopScan {
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-    }
-    #fabDesktopScan:hover:not(.scan-fab-hidden) { 
-        opacity: 1 !important; 
-        transform: translateX(-5px); 
-    }
-    .scan-fab-hidden {
-        transform: translateX(120%) !important;
-        opacity: 0 !important;
-        pointer-events: none;
-    }
-
-    .transition-hover {
-        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    }
-    .transition-hover:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
-    }
+    /* 🚀 AUTO-EVASION & FLOATING VIEWER LOGIC */
+    .scan-fab-hidden { transform: translateX(120%) !important; opacity: 0 !important; pointer-events: none; }
+    .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+    .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
     
-    /* Clean input focus states */
-    .form-control:focus, .form-select:focus {
-        border-color: #86b7fe;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-        background-color: #fff !important;
-    }
+    .form-control:focus, .form-select:focus { border-color: #86b7fe; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); background-color: #fff !important; }
 
-    /* Smart UX Card Focus Logic */
-    .subject-card.is-focused {
-        border-color: #0d6efd !important;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(13,110,253,0.15) !important;
-    }
+    .subject-card.is-focused { border-color: #0d6efd !important; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(13,110,253,0.15) !important; }
 
-    /* SortableJS Ghost UI */
     .bg-ghost { opacity: 0.4; background-color: #f8f9fa !important; border: 2px dashed #0d6efd !important; border-radius: 0.5rem; }
     .drag-handle { cursor: grab; }
     .drag-handle:active { cursor: grabbing; }
@@ -384,13 +390,18 @@
     .text-darken { color: #b48600 !important; }
 
     @media (max-width: 767.98px) {
-        .native-card {
-            border-radius: 0 !important;
-            border-left: 0 !important;
-            border-right: 0 !important;
-            margin-left: -1rem;
-            margin-right: -1rem;
+        .native-card { border-radius: 0 !important; margin-left: -1rem; margin-right: -1rem; }
+        #floatingScanViewer {
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 60vh !important;
+            border-radius: 20px 20px 0 0 !important;
+            resize: none !important;
         }
+        #viewerDragHandle { cursor: default !important; }
     }
 </style>
 {% endblock %}
@@ -400,55 +411,43 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 <script>
-    // --- 🚀 AUTO-EVASION DROP-DOWN LISTENER ---
-    // Hides the "View Scan" button anytime a dropdown (like user profile) opens
-    document.addEventListener('show.bs.dropdown', function () {
-        const fab = document.getElementById('fabDesktopScan');
-        if (fab && !fab.disabled) {
-            fab.classList.add('scan-fab-hidden');
-        }
-    });
+    // --- 🚀 SMART ROUTING ENGINE ---
+    window.setSaveAction = function(url) {
+        const input = document.getElementById('sourceUrlInput');
+        if (input) input.value = url;
+    };
 
-    // Brings it back when the dropdown closes
-    document.addEventListener('hidden.bs.dropdown', function () {
-        const fab = document.getElementById('fabDesktopScan');
-        if (fab && !fab.disabled) {
-            fab.classList.remove('scan-fab-hidden');
-        }
-    });
-
-    // --- 🚀 QUICK ADD SUBJECT (AJAX + Auto-Reload) ---
-    document.getElementById('quickAddSubjectForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
+    // --- 🚀 1-OFF CUSTOM SUBJECT ENGINE ---
+    window.addCustomSubject = function(name = '', max = '100', score = '') {
+        const grid = document.getElementById('subjectsGrid');
+        const newCol = document.createElement('div');
+        newCol.className = 'col subject-row custom-subject-row';
+        newCol.setAttribute('data-category', 'General'); 
         
-        // 1. Manually trigger draft save just to be 100% sure
-        const reportForm = document.getElementById('editReportForm');
-        const formDataReport = new FormData(reportForm);
-        const dataReport = Object.fromEntries(formDataReport.entries());
-        delete dataReport.scanned_document; 
-        localStorage.setItem('eep_draft_edit_report_{{ report.id }}', JSON.stringify(dataReport));
-
-        // 2. Disable button and show spinner
-        const btn = this.querySelector('button[type="submit"]');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
-        btn.disabled = true;
-
-        // 3. Post to settings
-        const formData = new FormData(this);
-        fetch('/settings', {
-            method: 'POST',
-            body: formData
-        }).then(response => {
-            // 4. Reload page to fetch new subjects. Draft engine will restore grades.
-            window.location.reload();
-        }).catch(err => {
-            console.error('Error adding subject:', err);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            alert("An error occurred while adding the subject.");
-        });
-    });
+        newCol.innerHTML = `
+            <div class="p-2 bg-white border border-primary border-opacity-50 rounded-3 shadow-sm h-100 subject-card transition-hover d-flex flex-column justify-content-between" style="background: linear-gradient(to bottom right, #ffffff, #f0f7ff);">
+                <div class="d-flex justify-content-between align-items-start mb-2 px-1 gap-2">
+                    <i class="bi bi-grip-vertical text-primary opacity-50 mt-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
+                    <input type="text" class="form-control form-control-sm border-0 border-bottom border-primary border-opacity-25 bg-transparent px-1 khmer-font text-dark shadow-none fw-bold w-100 custom-name-input" name="custom_subject_name[]" value="${name}" placeholder="Type Subject Name..." required>
+                    <button type="button" class="btn btn-sm text-danger p-0 ms-1 opacity-50 transition-hover" onclick="this.closest('.col').remove(); renumberSubjects();"><i class="bi bi-x-circle-fill fs-5"></i></button>
+                </div>
+                <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-primary border-opacity-25 focus-group mt-auto">
+                    <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
+                    <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="custom_max_score[]" value="${max}" style="max-width: 55px;">
+                    <span class="input-group-text bg-primary text-white border-0 fw-bold border-start px-2" style="font-size: 0.8rem;">Score</span>
+                    <input type="text" class="form-control bg-white border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="custom_score[]" value="${score}" placeholder="-" tabindex="1">
+                </div>
+            </div>
+        `;
+        
+        grid.appendChild(newCol);
+        attachFocusListeners(newCol.querySelector('.subject-card'));
+        renumberSubjects();
+        
+        if (name === '') {
+            newCol.querySelector('.custom-name-input').focus();
+        }
+    };
 
     // --- 🚀 SMART CALENDAR YEAR CALCULATOR ---
     function updateCalendarYear() {
@@ -491,7 +490,6 @@
         });
     }
 
-    // Attach listeners to all initial subject cards on page load
     document.querySelectorAll('.subject-card').forEach(card => {
         attachFocusListeners(card);
     });
@@ -506,50 +504,106 @@
             }
         });
     }
-    
-    // --- 🚀 DYNAMIC OFFCANVAS POSITION ENGINE ---
-    function adjustOffcanvasPosition() {
-        const scanOffcanvas = document.getElementById('scanViewerOffcanvas');
-        if (!scanOffcanvas) return;
-        
-        if (window.innerWidth < 768) {
-            // Mobile: Slide up from bottom, cover only half screen to allow typing
-            scanOffcanvas.classList.remove('offcanvas-end');
-            scanOffcanvas.classList.add('offcanvas-bottom');
-            scanOffcanvas.style.height = '55vh';
-            scanOffcanvas.style.width = '100%';
-            scanOffcanvas.style.maxWidth = '100%';
-            scanOffcanvas.style.borderTopLeftRadius = '20px';
-            scanOffcanvas.style.borderTopRightRadius = '20px';
-        } else {
-            // PC: Slide from right, limited width so form remains visible
-            scanOffcanvas.classList.remove('offcanvas-bottom');
-            scanOffcanvas.classList.add('offcanvas-end');
-            scanOffcanvas.style.height = '100%';
-            scanOffcanvas.style.width = '100%';
-            scanOffcanvas.style.maxWidth = '500px'; 
-            scanOffcanvas.style.borderTopLeftRadius = '0';
-            scanOffcanvas.style.borderTopRightRadius = '0';
-        }
-    }
-    
-    window.addEventListener('resize', adjustOffcanvasPosition);
 
-    // --- SMART UX: Universal Offcanvas Preview Engine ---
     document.addEventListener("DOMContentLoaded", function() {
         
-        adjustOffcanvasPosition(); // Init offcanvas position logic
-        
+        // --- 🚀 DRAGGABLE FLOATING VIEWER ENGINE ---
+        const floatingViewer = document.getElementById('floatingScanViewer');
+        const dragHandle = document.getElementById('viewerDragHandle');
+        const desktopBtn = document.getElementById('fabDesktopScan');
+        const scanUploadInput = document.getElementById('scan_upload');
+
+        window.openViewer = function() {
+            floatingViewer.classList.remove('d-none');
+            floatingViewer.classList.add('d-flex');
+            if(desktopBtn) desktopBtn.classList.add('scan-fab-hidden');
+        };
+
+        window.closeViewer = function() {
+            floatingViewer.classList.add('d-none');
+            floatingViewer.classList.remove('d-flex');
+            if(desktopBtn && !desktopBtn.disabled) desktopBtn.classList.remove('scan-fab-hidden');
+        };
+
+        window.snapViewer = function(side) {
+            floatingViewer.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            floatingViewer.style.top = '20px';
+            floatingViewer.style.height = 'calc(100vh - 40px)';
+            
+            let optimizedWidth = window.innerWidth * 0.40;
+            if(optimizedWidth < 400) optimizedWidth = 400; 
+            if(optimizedWidth > 700) optimizedWidth = 700; 
+            floatingViewer.style.width = optimizedWidth + 'px';
+            
+            if (side === 'left') {
+                floatingViewer.style.left = '20px';
+                floatingViewer.style.right = 'auto';
+            } else {
+                floatingViewer.style.left = 'auto';
+                floatingViewer.style.right = '20px';
+            }
+            setTimeout(() => floatingViewer.style.transition = '', 300);
+        };
+
+        let isViewerDragging = false, vStartX, vStartY, vInitialLeft, vInitialTop;
+        if (dragHandle) {
+            dragHandle.addEventListener('mousedown', function(e) {
+                if(window.innerWidth < 768) return; 
+                if(e.target.closest('button')) return; 
+                
+                isViewerDragging = true;
+                vStartX = e.clientX;
+                vStartY = e.clientY;
+                
+                const rect = floatingViewer.getBoundingClientRect();
+                vInitialLeft = rect.left;
+                vInitialTop = rect.top;
+                
+                floatingViewer.style.transition = 'none';
+                dragHandle.style.cursor = 'grabbing';
+                document.body.style.userSelect = 'none'; 
+                
+                floatingViewer.style.width = rect.width + 'px';
+                floatingViewer.style.height = rect.height + 'px';
+                floatingViewer.style.right = 'auto';
+                floatingViewer.style.bottom = 'auto';
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (!isViewerDragging) return;
+                e.preventDefault();
+                
+                let newLeft = vInitialLeft + (e.clientX - vStartX);
+                let newTop = vInitialTop + (e.clientY - vStartY);
+                
+                if (newLeft < 0) newLeft = 0;
+                if (newTop < 0) newTop = 0;
+                if (newLeft + floatingViewer.offsetWidth > window.innerWidth) newLeft = window.innerWidth - floatingViewer.offsetWidth;
+                if (newTop + 50 > window.innerHeight) newTop = window.innerHeight - 50;
+
+                floatingViewer.style.left = newLeft + 'px';
+                floatingViewer.style.top = newTop + 'px';
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (isViewerDragging) {
+                    isViewerDragging = false;
+                    dragHandle.style.cursor = 'grab';
+                    document.body.style.userSelect = '';
+                    
+                    const rect = floatingViewer.getBoundingClientRect();
+                    const screenW = window.innerWidth;
+                    if (rect.left < 50) snapViewer('left');
+                    else if (rect.right > screenW - 50 || rect.left + rect.width > screenW - 50) snapViewer('right');
+                }
+            });
+        }
+
         const previewImg = document.getElementById('scan_preview');
         const previewPdf = document.getElementById('scan_preview_pdf');
         const placeholder = document.getElementById('placeholder_text');
         const imgWrapper = document.getElementById('img_wrapper');
-        const desktopBtn = document.getElementById('fabDesktopScan');
-        const scanOffcanvas = document.getElementById('scanViewerOffcanvas');
-        const scanUploadInput = document.getElementById('scan_upload');
-        const scanHintText = document.getElementById('scanHintText');
 
-        // Initialize SortableJS
         const grid = document.getElementById('subjectsGrid');
         if (grid) {
             new Sortable(grid, {
@@ -563,7 +617,6 @@
         }
 
         function activateScanViewer(url, isPdf) {
-            // Un-hide dynamic UI elements now that we have a file
             if(desktopBtn) {
                 desktopBtn.disabled = false;
                 desktopBtn.classList.remove('d-none');
@@ -573,27 +626,16 @@
             placeholder.style.display = 'none';
             
             if (isPdf) {
-                // Render PDF mode
-                // 🚀 SMART FIX: Force the browser's PDF toolbar to appear using URL parameters
                 const finalUrl = url.includes('#') ? url : url + "#toolbar=1&navpanes=0&view=FitH";
                 previewPdf.src = finalUrl;
                 previewPdf.style.display = 'block';
                 imgWrapper.style.display = 'none';
                 previewImg.style.display = 'none';
-                
-                if (scanHintText) {
-                    scanHintText.innerHTML = '<i class="bi bi-file-pdf-fill text-danger me-1"></i> <strong>PDF Viewer:</strong> Use the top menu to zoom, or select the Hand tool (✋) to pan easily.';
-                }
             } else {
-                // Render Image mode
                 previewImg.src = url;
                 previewImg.style.display = 'block';
                 imgWrapper.style.display = 'flex';
                 previewPdf.style.display = 'none';
-                
-                if (scanHintText) {
-                    scanHintText.innerHTML = '<i class="bi bi-image-fill text-info me-1"></i> <strong>Image Viewer:</strong> Hover your mouse over the document to zoom and pan.';
-                }
             }
         }
 
@@ -603,35 +645,21 @@
             const docExt = "{{ report.scanned_document.split('.')[-1]|lower }}";
             activateScanViewer(existingDocUrl, docExt === 'pdf');
             
-            // On PC, automatically show the button if there's a pre-existing doc
             if (desktopBtn && window.innerWidth >= 768) {
                 desktopBtn.classList.remove('d-none');
                 desktopBtn.classList.add('d-md-flex');
             }
         {% endif %}
 
-        // Handle new uploads dynamically detecting Image vs PDF
         scanUploadInput.addEventListener('change', function(event) {
             const [file] = event.target.files;
             if (file) {
                 const objectUrl = URL.createObjectURL(file);
                 activateScanViewer(objectUrl, file.type === 'application/pdf');
-                
-                // Auto-open offcanvas only the first time a user uploads a file
-                if (!scanUploadInput.hasAttribute('data-opened')) {
-                    if (desktopBtn && window.innerWidth >= 768) {
-                        new bootstrap.Offcanvas(scanOffcanvas).show();
-                        desktopBtn.setAttribute('data-opened', 'true');
-                    } else if (window.innerWidth < 768) {
-                        new bootstrap.Offcanvas(scanOffcanvas).show();
-                        // Prevent re-trigger on mobile
-                        scanUploadInput.setAttribute('data-opened', 'true');
-                    }
-                }
+                openViewer(); 
             }
         });
 
-        // Zoom / Pan logic for images inside offcanvas
         imgWrapper.addEventListener('mousemove', function(e) {
             if (previewImg.style.display !== 'none' && previewImg.src) {
                 const rect = imgWrapper.getBoundingClientRect();
@@ -648,7 +676,7 @@
         });
     });
 
-    // --- SMART UX: Auto-Save Draft Engine ---
+    // --- 🚀 UPGRADED ARRAY-SAFE AUTO-SAVE DRAFT ENGINE ---
     const draftKey = 'eep_draft_edit_report_{{ report.id }}';
     const reportForm = document.getElementById('editReportForm');
     
@@ -659,7 +687,21 @@
                 const data = JSON.parse(saved);
                 let restoredCount = 0;
                 
+                if (data['custom_subject_name[]']) {
+                    const names = Array.isArray(data['custom_subject_name[]']) ? data['custom_subject_name[]'] : [data['custom_subject_name[]']];
+                    const scores = Array.isArray(data['custom_score[]']) ? data['custom_score[]'] : [data['custom_score[]']];
+                    const maxes = Array.isArray(data['custom_max_score[]']) ? data['custom_max_score[]'] : [data['custom_max_score[]']];
+                    
+                    document.querySelectorAll('.custom-subject-row').forEach(e => e.remove());
+                    
+                    for(let i=0; i<names.length; i++) {
+                        addCustomSubject(names[i] || '', maxes[i] || '100', scores[i] || '');
+                        restoredCount++;
+                    }
+                }
+                
                 Object.keys(data).forEach(key => {
+                    if (key.endsWith('[]')) return; 
                     const input = reportForm.elements[key];
                     if (input && input.type !== 'file' && input.name !== 'academic_year' && input.name !== 'month' && input.name !== 'grade_level') {
                         if (data[key] !== '') {
@@ -686,8 +728,17 @@
     reportForm.addEventListener('input', function(e) {
         if(e.target.type === 'file') return;
         const formData = new FormData(reportForm);
-        const data = Object.fromEntries(formData.entries());
-        delete data.scanned_document; 
+        const data = {};
+        
+        for(let [key, value] of formData.entries()) {
+            if (key === 'scanned_document') continue;
+            if (key.endsWith('[]')) {
+                if(!data[key]) data[key] = [];
+                data[key].push(value);
+            } else {
+                data[key] = value;
+            }
+        }
         
         localStorage.setItem(draftKey, JSON.stringify(data));
     });
@@ -726,7 +777,6 @@
         renumberSubjects();
     }
 
-    // Run the filter & logic immediately when the page loads
     window.addEventListener('DOMContentLoaded', function() {
         filterSubjects();
         updateCalendarYear(); 
