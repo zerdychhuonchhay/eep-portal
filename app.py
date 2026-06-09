@@ -15,6 +15,7 @@ import os
 import time
 import json
 import calendar
+import sqlite3
 from datetime import datetime, timedelta
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory, jsonify
@@ -802,8 +803,8 @@ def academic_review():
     program_id = session.get("program_id")
     
     # Get parameters from URL (e.g. ?academic_year=2025-2026&month=May&threshold=70)
-    sys_settings = get_system_settings()
-    current_year_default = sys_settings.get("current_academic_year", "2025-2026")
+    sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
+    current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
     
     academic_year = request.args.get("academic_year", current_year_default)
     month = request.args.get("month", "") # If empty, will pull latest or all

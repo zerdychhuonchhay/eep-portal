@@ -60,7 +60,7 @@
     <div class="sticky-top pt-2 pb-3 mx-n3 mx-md-0 px-3 px-md-0" style="top: 65px; z-index: 10; background: linear-gradient(180deg, var(--app-bg) 85%, transparent 100%);">
         <div class="d-flex flex-column gap-2">
             
-            <!-- 🚀 ROW 1: SEARCH & SORT (Isolated and Clean) -->
+            <!-- ROW 1: SEARCH & SORT (Isolated and Clean) -->
             <div class="d-flex flex-row gap-2 w-100 mb-1">
                 <!-- Search Bar -->
                 <div class="input-group shadow-sm rounded-pill overflow-hidden border-0 bg-white" style="flex: 1;">
@@ -79,7 +79,7 @@
                     </select>
                 </div>
 
-                <!-- 🚀 UNIVERSAL FILTERS TOGGLE -->
+                <!-- UNIVERSAL FILTERS TOGGLE -->
                 <button class="btn btn-white border rounded-pill fw-bold text-primary shadow-sm transition-hover d-flex align-items-center px-3 px-md-4 flex-shrink-0 position-relative" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas">
                     <i class="bi bi-sliders me-md-2"></i> <span class="d-none d-md-inline">Filters</span>
                     <!-- Smart Active Dot -->
@@ -232,19 +232,15 @@
 
                             <!-- Semantic Action Buttons -->
                             <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end gap-2 mt-3 mt-md-0 pt-3 pt-md-0 border-top border-md-0 border-light border-opacity-50">
-                                {% if session.get('can_edit_profiles') or session.get('can_update_profiles') %}
-                                <a href="/edit_student/{{ student.id }}" class="btn btn-sm bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Edit Profile">
-                                    <i class="bi bi-pencil-square fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Edit</span>
-                                </a>
-                                {% else %}
+                                
                                 <a href="/student/{{ student.id }}" class="btn btn-sm bg-light border text-dark fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="View Profile">
-                                    <i class="bi bi-eye-fill fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">View</span>
+                                    <i class="bi bi-person-vcard fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Profile</span>
                                 </a>
-                                {% endif %}
                                 
                                 {% if session.get('can_manage_academics') or session.get('can_create_academics') %}
-                                <a href="/add_report/{{ student.id }}" class="btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Add Report">
-                                    <i class="bi bi-journal-plus fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Grades</span>
+                                <!-- 🚀 FIX: Now routes directly to the Academic History Hub -->
+                                <a href="/student/{{ student.id }}/academics" class="btn btn-sm bg-success bg-opacity-10 text-success border border-success border-opacity-25 fw-bold rounded-pill flex-fill flex-md-grow-0 py-2 py-md-1 shadow-xs transition-hover d-flex align-items-center justify-content-center" title="Academic History">
+                                    <i class="bi bi-mortarboard-fill fs-6 d-md-none d-lg-inline me-lg-1"></i> <span class="d-none d-md-inline">Grades</span>
                                 </a>
                                 {% endif %}
                                 
@@ -325,7 +321,7 @@
 </div>
 
 <!-- ========================================== -->
-<!-- 🚀 OFFCANVAS: THE ADVANCED FILTER PANEL    -->
+<!-- OFFCANVAS: THE ADVANCED FILTER PANEL       -->
 <!-- ========================================== -->
 <div class="offcanvas offcanvas-end shadow-lg border-0" tabindex="-1" id="filterOffcanvas" style="width: 340px;">
     <div class="offcanvas-header bg-light border-bottom py-3 px-4">
@@ -807,7 +803,7 @@
                 noResults.classList.toggle('d-none', visibleCount > 0);
             }
 
-            // 🚀 Notification Dot Logic for Offcanvas Filter Button
+            // 噫 Notification Dot Logic for Offcanvas Filter Button
             if (filterActiveDot) {
                 const hasActiveFilters = (grdVal !== 'all' || locVal !== 'all' || schVal !== 'all' || famVal !== 'all' || activeFilters.edu !== null || activeFilters.gender !== null || activeFilters.age !== null || activeFilters.meal !== null);
                 filterActiveDot.classList.toggle('d-none', !hasActiveFilters);
