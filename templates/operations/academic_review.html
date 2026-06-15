@@ -16,20 +16,18 @@
         @page { size: A4 portrait; margin: 15mm; }
         body { background-color: white !important; font-family: 'Inter', sans-serif; }
         
-        /* 🚀 HIDE ALL APP CHROME (Fixes the floating button issue) */
+        /* 🚀 HIDE ALL APP CHROME */
         .navbar, nav, header, footer, .sidebar, .offcanvas, .modal-backdrop, 
         .d-print-none, form, button, a.btn, .mobile-bottom-nav, .floating-btn, .fab,
         .btn-group.position-fixed { 
             display: none !important; 
         }
         
-        /* Reset containers to span full width of the paper */
+        /* Reset containers */
         main, .container-fluid, .container-xl { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
-        
-        /* Expand Print Elements */
         .d-print-block { display: block !important; }
         
-        /* Typography & Layout Reset */
+        /* Typography */
         .print-header { text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem; }
         .print-title { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 24pt; margin-bottom: 5px; }
         .print-meta { font-size: 11pt; color: #555; }
@@ -45,6 +43,16 @@
         .print-danger { border-left-color: #dc3545 !important; }
         .print-warning { border-left-color: #ffc107 !important; }
         .print-success { border-left-color: #198754 !important; }
+
+        /* 🚀 TARGETED PRINT LOGIC */
+        body.print-only-critical #print-section-risk,
+        body.print-only-critical #print-section-pass { display: none !important; }
+
+        body.print-only-risk #print-section-critical,
+        body.print-only-risk #print-section-pass { display: none !important; }
+
+        body.print-only-pass #print-section-critical,
+        body.print-only-pass #print-section-risk { display: none !important; }
     }
 </style>
 {% endblock %}
@@ -67,9 +75,20 @@
                 <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Academic Summary</h2>
                 <p class="text-muted small mb-0 fw-bold">Distribution report for: <span class="text-primary">{{ timeframe_label }} ({{ academic_year }})</span></p>
             </div>
-            <button onclick="window.print()" class="btn btn-dark text-white fw-bold rounded-pill shadow-sm px-4 py-2 transition-hover">
-                <i class="bi bi-printer-fill me-2"></i> Print Official Report
-            </button>
+            
+            <!-- 🚀 NEW: SPLIT PRINT BUTTON -->
+            <div class="dropdown">
+                <button class="btn btn-dark text-white fw-bold rounded-pill shadow-sm px-4 py-2 transition-hover dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-printer-fill me-2"></i> Print Report
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2">
+                    <li><button class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-dark" onclick="printReport('all', 'All Categories')"><i class="bi bi-file-earmark-text-fill text-primary me-2"></i>Full Summary (All)</button></li>
+                    <li><hr class="dropdown-divider opacity-25"></li>
+                    <li><button class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-danger" onclick="printReport('critical', 'Critical Intervention / Failing (< 50%)')"><i class="bi bi-exclamation-octagon-fill me-2"></i>Failing Only</button></li>
+                    <li><button class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-warning text-darken" onclick="printReport('risk', 'At Risk / Under C (50% - 69%)')"><i class="bi bi-exclamation-triangle-fill me-2"></i>Under C Only</button></li>
+                    <li><button class="dropdown-item fw-bold py-2 rounded-3 transition-hover text-success" onclick="printReport('pass', 'On Track / C to A (70% - 100%)')"><i class="bi bi-check-circle-fill me-2"></i>C to A Only</button></li>
+                </ul>
+            </div>
         </div>
 
         <!-- Metric Cards -->
@@ -177,7 +196,7 @@
                                         <div class="d-flex flex-column lh-sm ps-5 ps-md-0">
                                             <span class="fw-bold text-dark mb-1" style="font-size: 0.85rem;"><i class="bi bi-calendar-event me-2 text-muted"></i>Report: {{ s.month }} {{ academic_year }}</span>
                                             
-                                            <!-- 🚀 SUBJECT BADGES INJECTED HERE -->
+                                            <!-- SUBJECT BADGES -->
                                             <div class="d-flex gap-2 flex-wrap mb-2">
                                                 {% if s.poor_raw %}
                                                     <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.65rem;"><i class="bi bi-arrow-down-circle-fill me-1"></i>Failing: {{ s.poor_str }}</span>
@@ -235,106 +254,134 @@
         
         <div class="print-header">
             <div class="print-title">{{ session.get('organization_name', 'NGO Education Program') }}</div>
-            <div class="print-title" style="font-size: 18pt;">Academic Distribution Summary</div>
+            <div class="print-title" style="font-size: 18pt;">Academic Summary Report</div>
             <div class="print-meta mt-2">
                 <strong>Scope:</strong> {{ timeframe_label }} | <strong>Academic Year:</strong> {{ academic_year }}<br>
+                <strong>Category:</strong> <span id="printCategoryDisplay" style="color: #0d6efd; font-weight: bold;">All Categories</span><br>
                 <strong>Generated On:</strong> <span id="printDate"></span>
             </div>
         </div>
 
         <!-- Critical Section -->
-        <h3 class="print-category-title print-danger">Critical Intervention / Failing (&lt; 50%)</h3>
-        <table class="print-table">
-            <thead>
-                <tr>
-                    <th style="width: 10%;">ID</th>
-                    <th style="width: 20%;">Student Name</th>
-                    <th style="width: 15%;">Grade</th>
-                    <th style="width: 20%;">Struggling In (&lt;50%)</th>
-                    <th style="width: 25%;">Latest Teacher Comment</th>
-                    <th style="width: 10%; text-align: right;">Average</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in critical %}
-                <tr>
-                    <td>{{ s.ngo_id }}</td>
-                    <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
-                    <td>{{ s.grade_level }}</td>
-                    <td style="color: #dc3545; font-weight: bold;">{{ s.poor_str }}</td>
-                    <td style="font-style: italic; font-size: 9pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
-                    <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div id="print-section-critical">
+            <h3 class="print-category-title print-danger">Critical Intervention / Failing (&lt; 50%)</h3>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">ID</th>
+                        <th style="width: 20%;">Student Name</th>
+                        <th style="width: 15%;">Grade</th>
+                        <th style="width: 20%;">Struggling In (&lt;50%)</th>
+                        <th style="width: 25%;">Latest Teacher Comment</th>
+                        <th style="width: 10%; text-align: right;">Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in critical %}
+                    <tr>
+                        <td>{{ s.ngo_id }}</td>
+                        <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                        <td>{{ s.grade_level }}</td>
+                        <td style="color: #dc3545; font-weight: bold;">{{ s.poor_str }}</td>
+                        <td style="font-style: italic; font-size: 9pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
+                        <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <!-- At Risk Section -->
-        <h3 class="print-category-title print-warning">At Risk / Under C (50% - 69%)</h3>
-        <table class="print-table">
-            <thead>
-                <tr>
-                    <th style="width: 10%;">ID</th>
-                    <th style="width: 20%;">Student Name</th>
-                    <th style="width: 15%;">Grade</th>
-                    <th style="width: 20%;">Struggling In (&lt;50%)</th>
-                    <th style="width: 25%;">Latest Teacher Comment</th>
-                    <th style="width: 10%; text-align: right;">Average</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in at_risk %}
-                <tr>
-                    <td>{{ s.ngo_id }}</td>
-                    <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
-                    <td>{{ s.grade_level }}</td>
-                    <td style="color: #dc3545; font-weight: bold;">{{ s.poor_str }}</td>
-                    <td style="font-style: italic; font-size: 9pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
-                    <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div id="print-section-risk">
+            <h3 class="print-category-title print-warning">At Risk / Under C (50% - 69%)</h3>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">ID</th>
+                        <th style="width: 20%;">Student Name</th>
+                        <th style="width: 15%;">Grade</th>
+                        <th style="width: 20%;">Struggling In (&lt;50%)</th>
+                        <th style="width: 25%;">Latest Teacher Comment</th>
+                        <th style="width: 10%; text-align: right;">Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in at_risk %}
+                    <tr>
+                        <td>{{ s.ngo_id }}</td>
+                        <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                        <td>{{ s.grade_level }}</td>
+                        <td style="color: #dc3545; font-weight: bold;">{{ s.poor_str }}</td>
+                        <td style="font-style: italic; font-size: 9pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
+                        <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         
         <!-- Good Standing Section -->
-        <h3 class="print-category-title print-success" style="page-break-before: auto;">On Track / C to A (70% - 100%)</h3>
-        <table class="print-table">
-            <thead>
-                <tr>
-                    <th style="width: 10%;">ID</th>
-                    <th style="width: 25%;">Student Name</th>
-                    <th style="width: 15%;">Grade</th>
-                    <th style="width: 25%;">Excelling In (80%+)</th>
-                    <th style="width: 15%; text-align: center;">Month</th>
-                    <th style="width: 10%; text-align: right;">Average</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in passing %}
-                <tr>
-                    <td>{{ s.ngo_id }}</td>
-                    <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
-                    <td>{{ s.grade_level }}</td>
-                    <td style="color: #198754; font-weight: bold;">{{ s.good_str }}</td>
-                    <td style="text-align: center;">{{ s.month }}</td>
-                    <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
-                </tr>
-                {% else %}
-                <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div id="print-section-pass">
+            <h3 class="print-category-title print-success" style="page-break-before: auto;">On Track / C to A (70% - 100%)</h3>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">ID</th>
+                        <th style="width: 25%;">Student Name</th>
+                        <th style="width: 15%;">Grade</th>
+                        <th style="width: 25%;">Excelling In (80%+)</th>
+                        <th style="width: 15%; text-align: center;">Month</th>
+                        <th style="width: 10%; text-align: right;">Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in passing %}
+                    <tr>
+                        <td>{{ s.ngo_id }}</td>
+                        <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                        <td>{{ s.grade_level }}</td>
+                        <td style="color: #198754; font-weight: bold;">{{ s.good_str }}</td>
+                        <td style="text-align: center;">{{ s.month }}</td>
+                        <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
     </div> <!-- End Print UI -->
 
 </div>
 
 <script>
-    // Set dynamic print date
+    // 🚀 SMART PRINTING LOGIC
+    function printReport(category, label) {
+        // Update the visible label on the printed document
+        document.getElementById('printCategoryDisplay').innerText = label;
+        
+        // Remove old specific print classes
+        document.body.classList.remove('print-only-critical', 'print-only-risk', 'print-only-pass');
+        
+        // Apply the targeted isolation class
+        if (category !== 'all') {
+            document.body.classList.add('print-only-' + category);
+        }
+        
+        // Trigger OS Print Dialog
+        window.print();
+        
+        // Reset after printing just in case
+        setTimeout(() => {
+            document.body.classList.remove('print-only-critical', 'print-only-risk', 'print-only-pass');
+        }, 1000);
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         const dateElement = document.getElementById('printDate');
         if (dateElement) {
@@ -366,7 +413,3 @@
 </script>
 {% endblock %}
 ```eof
-
-The printout will now look incredibly sharp, professional, and entirely free of any random app buttons, with actionable subject analysis for every student!
-
-http://googleusercontent.com/interactive_content_block/0
