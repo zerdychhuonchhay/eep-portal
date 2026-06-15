@@ -1528,9 +1528,36 @@ def academics():
         if not record['grade_level']:
             record['grade_level'] = record['student_grade']
 
-    active_students = db.execute("SELECT id, first_name, last_name, ngo_id FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
+    active_students = db.execute("SELECT id, first_name, last_name, ngo_id, profile_picture, grade_level FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
 
-    return render_template("academics/academics.html", academic_records=academic_records_raw, active_students=active_students)
+    # 🚀 NEW: MISSING DATA AUDIT ENGINE
+    today = datetime.now()
+    first_of_this_month = today.replace(day=1)
+    last_month_date = first_of_this_month - timedelta(days=1)
+    last_month_name = last_month_date.strftime('%B')
+
+    sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
+    current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
+
+    missing_audit = db.execute("""
+        SELECT id, first_name, last_name, ngo_id, profile_picture, grade_level
+        FROM students
+        WHERE status = 'Active' AND (program_id = ? OR ? = 0)
+        AND grade_level NOT LIKE '%University%'
+        AND grade_level NOT LIKE '%Vocational%'
+        AND id NOT IN (
+            SELECT student_id FROM monthly_reports
+            WHERE month = ? AND academic_year = ?
+        )
+        ORDER BY first_name ASC
+    """, pid, pid, last_month_name, current_year_default)
+
+    return render_template("academics/academics.html", 
+                           academic_records=academic_records_raw, 
+                           active_students=active_students,
+                           missing_audit=missing_audit,
+                           audit_month=last_month_name,
+                           audit_year=current_year_default)
 
 @app.route("/add_report/<int:student_id>", methods=["GET", "POST"])
 @login_required
