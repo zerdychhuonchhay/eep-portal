@@ -829,13 +829,13 @@ def dashboard():
                                timeframe=months, date_now=date_now, recent_activity=recent_activity)
     
 # =========================================================
-# 🚀 ACADEMIC REVIEW DASHBOARD (TIERED & PRINTABLE)
+# 🚀 ACADEMIC REVIEW DASHBOARD (TIERED, PRINTABLE, ANALYZED)
 # =========================================================
 @app.route("/academic_review", methods=["GET"])
 @login_required
 @permission_required("can_manage_academics")
 def academic_review():
-    """A powerful query tool to filter and tier students by academic standing."""
+    """A powerful query tool to filter, tier, and analyze students by academic standing."""
     program_id = session.get("program_id")
     
     # 1. Get System Defaults
@@ -859,7 +859,7 @@ def academic_review():
     available_months = [r['month'] for r in months_raw]
     available_months.sort(key=lambda x: academic_order.index(x) if x in academic_order else 99)
 
-    # 3. Fetch EXACT Report Data (No Averaging!)
+    # 3. Fetch EXACT Report Data
     if timeframe == "latest":
         query = """
             SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
@@ -889,15 +889,56 @@ def academic_review():
         raw_reports = db.execute(query, program_id, academic_year, timeframe)
         timeframe_label = f"{timeframe} Report"
 
-    # 4. Tiering Engine
+    # 🚀 4. NEW: SUBJECT ANALYSIS ENGINE
+    report_ids = [r['report_id'] for r in raw_reports if r['report_id']]
+    grades_by_report = {}
+    
+    if report_ids:
+        placeholders = ','.join(['?'] * len(report_ids))
+        grades_raw = db.execute(f"""
+            SELECT g.report_id, g.score, g.max_score, COALESCE(s.name, g.custom_subject_name) as subject_name
+            FROM grades g
+            LEFT JOIN subjects s ON g.subject_id = s.id
+            WHERE g.report_id IN ({placeholders})
+        """, *report_ids)
+        
+        for g in grades_raw:
+            try:
+                score = float(g['score'])
+                max_score = float(g['max_score']) if g['max_score'] else 100.0
+                pct = (score / max_score) * 100
+                rid = g['report_id']
+                
+                if rid not in grades_by_report:
+                    grades_by_report[rid] = {'poor': [], 'good': []}
+                    
+                s_name = g['subject_name'] if g['subject_name'] else 'Unknown'
+                
+                # Flag failing subjects (< 50%) and excelling subjects (>= 80%)
+                if pct < 50:
+                    grades_by_report[rid]['poor'].append(s_name)
+                elif pct >= 80:
+                    grades_by_report[rid]['good'].append(s_name)
+            except (ValueError, TypeError):
+                pass
+
+    # 5. Tiering & Formatting Engine
     critical = [] # < 50
     at_risk = []  # 50 - 69.99
     passing = []  # 70 - 100
     
     for r in raw_reports:
-        # We use the exact score from the report, no math involved!
         avg = float(r['overall_average'])
         r['overall_average'] = round(avg, 1)
+        
+        # Attach Subject Analysis Strings
+        rid = r['report_id']
+        poor_list = grades_by_report.get(rid, {}).get('poor', [])
+        good_list = grades_by_report.get(rid, {}).get('good', [])
+        r['poor_str'] = ", ".join(poor_list) if poor_list else "None"
+        r['good_str'] = ", ".join(good_list) if good_list else "None"
+        r['poor_raw'] = poor_list
+        r['good_raw'] = good_list
         
         if avg < 50:
             r['category'] = 'Critical'

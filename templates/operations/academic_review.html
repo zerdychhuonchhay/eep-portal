@@ -11,13 +11,20 @@
     .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .text-darken { color: #b48600 !important; }
     
-    /* 🖨️ SMART PRINT ENGINE */
+    /* 🖨️ AGGRESSIVE PRINT ENGINE */
     @media print {
         @page { size: A4 portrait; margin: 15mm; }
         body { background-color: white !important; font-family: 'Inter', sans-serif; }
         
-        /* Hide UI Chrome */
-        .navbar, .sidebar, .d-print-none, form, button, a.btn { display: none !important; }
+        /* 🚀 HIDE ALL APP CHROME (Fixes the floating button issue) */
+        .navbar, nav, header, footer, .sidebar, .offcanvas, .modal-backdrop, 
+        .d-print-none, form, button, a.btn, .mobile-bottom-nav, .floating-btn, .fab,
+        .btn-group.position-fixed { 
+            display: none !important; 
+        }
+        
+        /* Reset containers to span full width of the paper */
+        main, .container-fluid, .container-xl { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
         
         /* Expand Print Elements */
         .d-print-block { display: block !important; }
@@ -30,7 +37,7 @@
         /* Data Tables */
         .print-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; page-break-inside: auto; }
         .print-table th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; padding: 8px; border-bottom: 2px solid #000; text-align: left; font-size: 10pt; text-transform: uppercase; }
-        .print-table td { border-bottom: 1px solid #dee2e6; padding: 8px; font-size: 11pt; }
+        .print-table td { border-bottom: 1px solid #dee2e6; padding: 8px; font-size: 10pt; vertical-align: top; }
         .print-table tr { page-break-inside: avoid; page-break-after: auto; }
         
         /* Category Headers */
@@ -155,7 +162,7 @@
                             {% for s in student_list %}
                             <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom transition-hover">
                                 <div class="row align-items-center gx-3 gy-2">
-                                    <div class="col-12 col-md-5 d-flex align-items-center mb-2 mb-md-0">
+                                    <div class="col-12 col-md-4 d-flex align-items-center mb-2 mb-md-0">
                                         {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ s.first_name ~ "+" ~ s.last_name ~ "&background=random&color=fff&size=50" %}
                                         <img src="{{ url_for('static', filename='uploads/profiles/' + s.profile_picture) if s.profile_picture and s.profile_picture != 'default.png' else thumb_url }}" class="rounded-circle border border-2 border-white shadow-sm me-3 flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
                                         <div class="min-w-0">
@@ -166,10 +173,21 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                    <div class="col-12 col-md-5 mb-2 mb-md-0">
                                         <div class="d-flex flex-column lh-sm ps-5 ps-md-0">
                                             <span class="fw-bold text-dark mb-1" style="font-size: 0.85rem;"><i class="bi bi-calendar-event me-2 text-muted"></i>Report: {{ s.month }} {{ academic_year }}</span>
-                                            <span class="text-muted small fst-italic khmer-font text-truncate d-block" style="max-width: 250px;">
+                                            
+                                            <!-- 🚀 SUBJECT BADGES INJECTED HERE -->
+                                            <div class="d-flex gap-2 flex-wrap mb-2">
+                                                {% if s.poor_raw %}
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25" style="font-size: 0.65rem;"><i class="bi bi-arrow-down-circle-fill me-1"></i>Failing: {{ s.poor_str }}</span>
+                                                {% endif %}
+                                                {% if s.good_raw %}
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size: 0.65rem;"><i class="bi bi-star-fill me-1"></i>Excelling: {{ s.good_str }}</span>
+                                                {% endif %}
+                                            </div>
+
+                                            <span class="text-muted small fst-italic khmer-font text-truncate d-block" style="max-width: 300px;">
                                                 {% if s.teacher_comment %}<i class="bi bi-chat-left-quote me-1"></i>{{ s.teacher_comment }}{% else %}No teacher comments{% endif %}
                                             </span>
                                         </div>
@@ -229,10 +247,11 @@
         <table class="print-table">
             <thead>
                 <tr>
-                    <th style="width: 15%;">NGO ID</th>
-                    <th style="width: 25%;">Student Name</th>
+                    <th style="width: 10%;">ID</th>
+                    <th style="width: 20%;">Student Name</th>
                     <th style="width: 15%;">Grade</th>
-                    <th style="width: 35%;">Latest Teacher Comment</th>
+                    <th style="width: 20%;">Struggling In (&lt;50%)</th>
+                    <th style="width: 25%;">Latest Teacher Comment</th>
                     <th style="width: 10%; text-align: right;">Average</th>
                 </tr>
             </thead>
@@ -242,11 +261,12 @@
                     <td>{{ s.ngo_id }}</td>
                     <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
                     <td>{{ s.grade_level }}</td>
-                    <td style="font-style: italic; font-size: 10pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
+                    <td style="color: #dc3545; font-weight: bold;">{{ s.poor_str }}</td>
+                    <td style="font-style: italic; font-size: 9pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
                     <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -256,10 +276,11 @@
         <table class="print-table">
             <thead>
                 <tr>
-                    <th style="width: 15%;">NGO ID</th>
-                    <th style="width: 25%;">Student Name</th>
+                    <th style="width: 10%;">ID</th>
+                    <th style="width: 20%;">Student Name</th>
                     <th style="width: 15%;">Grade</th>
-                    <th style="width: 35%;">Latest Teacher Comment</th>
+                    <th style="width: 20%;">Struggling In (&lt;50%)</th>
+                    <th style="width: 25%;">Latest Teacher Comment</th>
                     <th style="width: 10%; text-align: right;">Average</th>
                 </tr>
             </thead>
@@ -269,11 +290,12 @@
                     <td>{{ s.ngo_id }}</td>
                     <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
                     <td>{{ s.grade_level }}</td>
-                    <td style="font-style: italic; font-size: 10pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
+                    <td style="color: #dc3545; font-weight: bold;">{{ s.poor_str }}</td>
+                    <td style="font-style: italic; font-size: 9pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
                     <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -283,11 +305,12 @@
         <table class="print-table">
             <thead>
                 <tr>
-                    <th style="width: 15%;">NGO ID</th>
-                    <th style="width: 30%;">Student Name</th>
-                    <th style="width: 20%;">Grade</th>
-                    <th style="width: 20%; text-align: center;">Month</th>
-                    <th style="width: 15%; text-align: right;">Average</th>
+                    <th style="width: 10%;">ID</th>
+                    <th style="width: 25%;">Student Name</th>
+                    <th style="width: 15%;">Grade</th>
+                    <th style="width: 25%;">Excelling In (80%+)</th>
+                    <th style="width: 15%; text-align: center;">Month</th>
+                    <th style="width: 10%; text-align: right;">Average</th>
                 </tr>
             </thead>
             <tbody>
@@ -296,11 +319,12 @@
                     <td>{{ s.ngo_id }}</td>
                     <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
                     <td>{{ s.grade_level }}</td>
+                    <td style="color: #198754; font-weight: bold;">{{ s.good_str }}</td>
                     <td style="text-align: center;">{{ s.month }}</td>
                     <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                <tr><td colspan="6" style="text-align: center; color: #666;">No students in this category.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -325,7 +349,6 @@
                 tabLinks.forEach(l => {
                     l.classList.remove('text-white');
                 });
-                // Find the badge color from the border class
                 if(this.classList.contains('border-danger')) this.classList.remove('text-danger');
                 if(this.classList.contains('border-warning')) this.classList.remove('text-warning', 'text-darken');
                 if(this.classList.contains('border-success')) this.classList.remove('text-success');
@@ -334,7 +357,6 @@
             });
         });
         
-        // Setup initial active state colors correctly
         const activeTab = document.querySelector('#reportTabs .nav-link.active');
         if(activeTab) {
             activeTab.classList.remove('text-danger', 'text-warning', 'text-success', 'text-darken');
@@ -343,3 +365,8 @@
     });
 </script>
 {% endblock %}
+```eof
+
+The printout will now look incredibly sharp, professional, and entirely free of any random app buttons, with actionable subject analysis for every student!
+
+http://googleusercontent.com/interactive_content_block/0
