@@ -108,8 +108,7 @@
                     <div class="col-sm-5">
                         <label class="form-label small fw-bold text-muted text-uppercase">Timeframe Scope</label>
                         <select name="timeframe" class="form-select bg-light border-0 fw-bold shadow-sm">
-                            <option value="last_3" {% if timeframe == 'last_3' %}selected{% endif %}>Auto-Average Last 3 Months</option>
-                            <option value="all" {% if timeframe == 'all' or timeframe == '' %}selected{% endif %}>Year-to-Date Average</option>
+                            <option value="latest" {% if timeframe == 'latest' %}selected{% endif %}>Latest Report (Current Status)</option>
                             <optgroup label="Specific Month Only">
                                 {% for m in available_months %}
                                     <option value="{{ m }}" {% if m == timeframe %}selected{% endif %}>{{ m }}</option>
@@ -169,9 +168,9 @@
                                     </div>
                                     <div class="col-12 col-md-4 mb-2 mb-md-0">
                                         <div class="d-flex flex-column lh-sm ps-5 ps-md-0">
-                                            <span class="fw-bold text-dark mb-1" style="font-size: 0.85rem;"><i class="bi bi-clock-history me-2 text-muted"></i>Aggregated from {{ s.months_calculated }} month(s)</span>
+                                            <span class="fw-bold text-dark mb-1" style="font-size: 0.85rem;"><i class="bi bi-calendar-event me-2 text-muted"></i>Report: {{ s.month }} {{ academic_year }}</span>
                                             <span class="text-muted small fst-italic khmer-font text-truncate d-block" style="max-width: 250px;">
-                                                {% if s.latest_comment %}<i class="bi bi-chat-left-quote me-1"></i>{{ s.latest_comment }}{% else %}No recent comments{% endif %}
+                                                {% if s.teacher_comment %}<i class="bi bi-chat-left-quote me-1"></i>{{ s.teacher_comment }}{% else %}No teacher comments{% endif %}
                                             </span>
                                         </div>
                                     </div>
@@ -243,7 +242,7 @@
                     <td>{{ s.ngo_id }}</td>
                     <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
                     <td>{{ s.grade_level }}</td>
-                    <td style="font-style: italic; font-size: 10pt;">{{ s.latest_comment if s.latest_comment else '-' }}</td>
+                    <td style="font-style: italic; font-size: 10pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
                     <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
                 </tr>
                 {% else %}
@@ -270,7 +269,7 @@
                     <td>{{ s.ngo_id }}</td>
                     <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
                     <td>{{ s.grade_level }}</td>
-                    <td style="font-style: italic; font-size: 10pt;">{{ s.latest_comment if s.latest_comment else '-' }}</td>
+                    <td style="font-style: italic; font-size: 10pt;">{{ s.teacher_comment if s.teacher_comment else '-' }}</td>
                     <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
                 </tr>
                 {% else %}
@@ -287,7 +286,7 @@
                     <th style="width: 15%;">NGO ID</th>
                     <th style="width: 30%;">Student Name</th>
                     <th style="width: 20%;">Grade</th>
-                    <th style="width: 20%; text-align: center;">Months Logged</th>
+                    <th style="width: 20%; text-align: center;">Month</th>
                     <th style="width: 15%; text-align: right;">Average</th>
                 </tr>
             </thead>
@@ -297,7 +296,7 @@
                     <td>{{ s.ngo_id }}</td>
                     <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
                     <td>{{ s.grade_level }}</td>
-                    <td style="text-align: center;">{{ s.months_calculated }}</td>
+                    <td style="text-align: center;">{{ s.month }}</td>
                     <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
                 </tr>
                 {% else %}
@@ -344,7 +343,3 @@
     });
 </script>
 {% endblock %}
-```eof
-
-### Try it out! 
-Head back to your Master Gradebook and click the **Query Tool** (or the red Active Risk card). You will see the brand new tabbed layout grouping everyone cleanly. Once you are satisfied with the timeline filters, hit the **"Print Official Report"** button in the top right to see the magic happen!

@@ -807,7 +807,7 @@ def academic_review():
     current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
     
     academic_year = request.args.get("academic_year", current_year_default)
-    timeframe = request.args.get("timeframe", "") # Month string or 'last_3'
+    timeframe = request.args.get("timeframe", "latest") 
     
     # 2. Fetch Available Metadata for Dropdowns
     available_years = [r['academic_year'] for r in db.execute("SELECT DISTINCT academic_year FROM monthly_reports ORDER BY academic_year DESC")]
@@ -823,31 +823,24 @@ def academic_review():
     available_months = [r['month'] for r in months_raw]
     available_months.sort(key=lambda x: academic_order.index(x) if x in academic_order else 99)
 
-    # 3. Determine Timeframe Scope
-    months_to_query = []
-    timeframe_label = "All Year Average"
-    
-    if timeframe == 'last_3':
-        months_to_query = available_months[-3:] if available_months else []
-        timeframe_label = f"Last 3 Months ({', '.join(months_to_query)})" if months_to_query else "Last 3 Months (No Data)"
-    elif timeframe and timeframe != 'all':
-        months_to_query = [timeframe]
-        timeframe_label = f"{timeframe} Only"
-        
-    # 4. Fetch Raw Data Based on Scope
-    if months_to_query:
-        placeholders = ','.join(['?'] * len(months_to_query))
-        query = f"""
+    # 3. Fetch EXACT Report Data (No Averaging!)
+    if timeframe == "latest":
+        query = """
             SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
                    m.month, m.overall_average, m.overall_grade, m.teacher_comment, m.id as report_id
             FROM students s
             JOIN monthly_reports m ON s.id = m.student_id
-            WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ? 
-            AND m.month IN ({placeholders})
+            INNER JOIN (
+                SELECT student_id, MAX(id) as max_id 
+                FROM monthly_reports 
+                WHERE academic_year = ? 
+                GROUP BY student_id
+            ) latest ON m.id = latest.max_id
+            WHERE s.status = 'Active' AND s.program_id = ?
             AND m.overall_average IS NOT NULL
         """
-        params = [program_id, academic_year] + months_to_query
-        raw_reports = db.execute(query, *params)
+        raw_reports = db.execute(query, academic_year, program_id)
+        timeframe_label = "Latest Report (Current Status)"
     else:
         query = """
             SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
@@ -855,57 +848,33 @@ def academic_review():
             FROM students s
             JOIN monthly_reports m ON s.id = m.student_id
             WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ?
-            AND m.overall_average IS NOT NULL
+            AND m.month = ? AND m.overall_average IS NOT NULL
         """
-        params = [program_id, academic_year]
-        raw_reports = db.execute(query, *params)
-        
-    # 5. Aggregate and Average by Student
-    student_agg = {}
-    for r in raw_reports:
-        sid = r['id']
-        if sid not in student_agg:
-            student_agg[sid] = {
-                'id': sid, 'first_name': r['first_name'], 'last_name': r['last_name'], 
-                'ngo_id': r['ngo_id'], 'grade_level': r['grade_level'], 'profile_picture': r['profile_picture'],
-                'scores': [], 'latest_comment': r['teacher_comment'], 'report_id': r['report_id'], 'month': r['month']
-            }
-        
-        try:
-            student_agg[sid]['scores'].append(float(r['overall_average']))
-        except (ValueError, TypeError):
-            pass
-            
-        # Overwrite with latest comment (SQL naturally orders older to newer if ID increments)
-        if r['teacher_comment']:
-            student_agg[sid]['latest_comment'] = r['teacher_comment']
-            student_agg[sid]['report_id'] = r['report_id']
-            
-    # 6. Tiering Engine
+        raw_reports = db.execute(query, program_id, academic_year, timeframe)
+        timeframe_label = f"{timeframe} Report"
+
+    # 4. Tiering Engine
     critical = [] # < 50
     at_risk = []  # 50 - 69.99
     passing = []  # 70 - 100
     
-    for sid, data in student_agg.items():
-        if not data['scores']:
-            continue
-            
-        avg = sum(data['scores']) / len(data['scores'])
-        data['overall_average'] = round(avg, 1)
-        data['months_calculated'] = len(data['scores'])
+    for r in raw_reports:
+        # We use the exact score from the report, no math involved!
+        avg = float(r['overall_average'])
+        r['overall_average'] = round(avg, 1)
         
         if avg < 50:
-            data['category'] = 'Critical'
-            data['badge'] = 'danger'
-            critical.append(data)
+            r['category'] = 'Critical'
+            r['badge'] = 'danger'
+            critical.append(r)
         elif avg < 70:
-            data['category'] = 'At Risk'
-            data['badge'] = 'warning'
-            at_risk.append(data)
+            r['category'] = 'At Risk'
+            r['badge'] = 'warning'
+            at_risk.append(r)
         else:
-            data['category'] = 'On Track'
-            data['badge'] = 'success'
-            passing.append(data)
+            r['category'] = 'On Track'
+            r['badge'] = 'success'
+            passing.append(r)
             
     # Sort worst to best for risks, best to worst for honors
     critical.sort(key=lambda x: x['overall_average'])
