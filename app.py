@@ -632,7 +632,7 @@ def index():
                     "link": "/manage_staff"
                 })
 
-        # 🚀 5. NEW: Missing Reports (Previous Month Fail-Safe)
+        # 🚀 5. NEW: Missing Reports (Previous Month Fail-Safe - Excludes Uni/Voc)
         first_of_this_month = today.replace(day=1)
         last_month_date = first_of_this_month - timedelta(days=1)
         last_month_name = last_month_date.strftime('%B')
@@ -640,19 +640,31 @@ def index():
         sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
         current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
         
-        missing_reports_count = db.execute("""
-            SELECT COUNT(id) as count FROM students 
+        missing_reports = db.execute("""
+            SELECT first_name, last_name, ngo_id FROM students 
             WHERE status = 'Active' AND program_id = ? 
+            AND grade_level NOT LIKE '%University%' 
+            AND grade_level NOT LIKE '%Vocational%'
             AND id NOT IN (
                 SELECT student_id FROM monthly_reports 
                 WHERE month = ? AND academic_year = ?
             )
-        """, program_id, last_month_name, current_year_default)[0]['count']
+            ORDER BY first_name ASC
+        """, program_id, last_month_name, current_year_default)
 
-        if missing_reports_count > 0:
+        if missing_reports:
+            count = len(missing_reports)
+            
+            # Format the names beautifully for the alert card
+            names_list = [f"{s['first_name']} {s['last_name']}" for s in missing_reports]
+            if count > 5:
+                names_str = ", ".join(names_list[:5]) + f", and {count - 5} more."
+            else:
+                names_str = ", ".join(names_list)
+
             alerts.append({
-                "title": f"Missing Reports: {last_month_name}",
-                "message": f"{missing_reports_count} active student(s) are missing their {last_month_name} report card.",
+                "title": f"Action Required: Missing {last_month_name} Reports",
+                "message": f"{count} student(s) are missing their {last_month_name} grades: {names_str}",
                 "icon": "bi-journal-x",
                 "color": "danger",
                 "category": "ACADEMICS",
