@@ -548,7 +548,6 @@ def index():
     
     if program_id == 0:
         staff_members = db.execute("SELECT * FROM staff ORDER BY role ASC, username ASC")
-        # Restored the correct subfolder path: "directory/hr_roster.html"
         return render_template("directory/hr_roster.html", staff_members=staff_members, title="Global HR Directory")
         
     elif program_id > 0:
@@ -633,12 +632,37 @@ def index():
                     "link": "/manage_staff"
                 })
 
-        # Restored the correct subfolder path: "dashboard/index.html"
+        # 🚀 5. NEW: Missing Reports (Previous Month Fail-Safe)
+        first_of_this_month = today.replace(day=1)
+        last_month_date = first_of_this_month - timedelta(days=1)
+        last_month_name = last_month_date.strftime('%B')
+        
+        sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
+        current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
+        
+        missing_reports_count = db.execute("""
+            SELECT COUNT(id) as count FROM students 
+            WHERE status = 'Active' AND program_id = ? 
+            AND id NOT IN (
+                SELECT student_id FROM monthly_reports 
+                WHERE month = ? AND academic_year = ?
+            )
+        """, program_id, last_month_name, current_year_default)[0]['count']
+
+        if missing_reports_count > 0:
+            alerts.append({
+                "title": f"Missing Reports: {last_month_name}",
+                "message": f"{missing_reports_count} active student(s) are missing their {last_month_name} report card.",
+                "icon": "bi-journal-x",
+                "color": "danger",
+                "category": "ACADEMICS",
+                "link": "/academics"
+            })
+
         return render_template("dashboard/index.html", 
                                username=username, 
                                students=all_active_students,
                                alerts=alerts)
-
 
 
 @app.route("/dashboard")
