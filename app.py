@@ -793,67 +793,136 @@ def dashboard():
                                timeframe=months, date_now=date_now, recent_activity=recent_activity)
     
 # =========================================================
-# 🚀 ACADEMIC REVIEW DASHBOARD (NEW TOOL)
+# 🚀 ACADEMIC REVIEW DASHBOARD (TIERED & PRINTABLE)
 # =========================================================
 @app.route("/academic_review", methods=["GET"])
 @login_required
 @permission_required("can_manage_academics")
 def academic_review():
-    """A powerful query tool to filter students by academic standing."""
+    """A powerful query tool to filter and tier students by academic standing."""
     program_id = session.get("program_id")
     
-    # Get parameters from URL (e.g. ?academic_year=2025-2026&month=May&threshold=70)
+    # 1. Get System Defaults
     sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
     current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
     
     academic_year = request.args.get("academic_year", current_year_default)
-    month = request.args.get("month", "") # If empty, will pull latest or all
-    threshold_str = request.args.get("threshold", "50") # Default to failing (50%)
+    timeframe = request.args.get("timeframe", "") # Month string or 'last_3'
     
-    try:
-        threshold = float(threshold_str)
-    except ValueError:
-        threshold = 50.0
-
-    # Build the dynamic SQL query
-    query = """
-        SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
-               m.id as report_id, m.month, m.academic_year, m.overall_average, m.overall_grade, m.teacher_comment
-        FROM students s
-        JOIN monthly_reports m ON s.id = m.student_id
-        WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ? AND m.overall_average < ?
-    """
-    params = [program_id, academic_year, threshold]
-
-    if month:
-        query += " AND m.month = ?"
-        params.append(month)
-        
-    query += " ORDER BY m.overall_average ASC" # Lowest scores first
-    
-    # Execute the query
-    struggling_students = db.execute(query, *params)
-    
-    # Calculate statistics for the dashboard
-    total_students_raw = db.execute("SELECT COUNT(id) as count FROM students WHERE status='Active' AND program_id = ?", program_id)
-    total_students = total_students_raw[0]['count'] if total_students_raw else 0
-    total_struggling = len(struggling_students)
-    
-    # Also fetch available years and months from DB to populate dropdown filters
+    # 2. Fetch Available Metadata for Dropdowns
     available_years = [r['academic_year'] for r in db.execute("SELECT DISTINCT academic_year FROM monthly_reports ORDER BY academic_year DESC")]
-    available_months = [r['month'] for r in db.execute("SELECT DISTINCT month FROM monthly_reports")]
     
-    # Standardize months order
+    months_raw = db.execute("""
+        SELECT DISTINCT m.month 
+        FROM monthly_reports m
+        JOIN students s ON m.student_id = s.id
+        WHERE m.academic_year = ? AND s.program_id = ?
+    """, academic_year, program_id)
+    
     academic_order = ['August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July']
+    available_months = [r['month'] for r in months_raw]
     available_months.sort(key=lambda x: academic_order.index(x) if x in academic_order else 99)
 
+    # 3. Determine Timeframe Scope
+    months_to_query = []
+    timeframe_label = "All Year Average"
+    
+    if timeframe == 'last_3':
+        months_to_query = available_months[-3:] if available_months else []
+        timeframe_label = f"Last 3 Months ({', '.join(months_to_query)})" if months_to_query else "Last 3 Months (No Data)"
+    elif timeframe and timeframe != 'all':
+        months_to_query = [timeframe]
+        timeframe_label = f"{timeframe} Only"
+        
+    # 4. Fetch Raw Data Based on Scope
+    if months_to_query:
+        placeholders = ','.join(['?'] * len(months_to_query))
+        query = f"""
+            SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
+                   m.month, m.overall_average, m.overall_grade, m.teacher_comment, m.id as report_id
+            FROM students s
+            JOIN monthly_reports m ON s.id = m.student_id
+            WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ? 
+            AND m.month IN ({placeholders})
+            AND m.overall_average IS NOT NULL
+        """
+        params = [program_id, academic_year] + months_to_query
+        raw_reports = db.execute(query, *params)
+    else:
+        query = """
+            SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
+                   m.month, m.overall_average, m.overall_grade, m.teacher_comment, m.id as report_id
+            FROM students s
+            JOIN monthly_reports m ON s.id = m.student_id
+            WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ?
+            AND m.overall_average IS NOT NULL
+        """
+        params = [program_id, academic_year]
+        raw_reports = db.execute(query, *params)
+        
+    # 5. Aggregate and Average by Student
+    student_agg = {}
+    for r in raw_reports:
+        sid = r['id']
+        if sid not in student_agg:
+            student_agg[sid] = {
+                'id': sid, 'first_name': r['first_name'], 'last_name': r['last_name'], 
+                'ngo_id': r['ngo_id'], 'grade_level': r['grade_level'], 'profile_picture': r['profile_picture'],
+                'scores': [], 'latest_comment': r['teacher_comment'], 'report_id': r['report_id'], 'month': r['month']
+            }
+        
+        try:
+            student_agg[sid]['scores'].append(float(r['overall_average']))
+        except (ValueError, TypeError):
+            pass
+            
+        # Overwrite with latest comment (SQL naturally orders older to newer if ID increments)
+        if r['teacher_comment']:
+            student_agg[sid]['latest_comment'] = r['teacher_comment']
+            student_agg[sid]['report_id'] = r['report_id']
+            
+    # 6. Tiering Engine
+    critical = [] # < 50
+    at_risk = []  # 50 - 69.99
+    passing = []  # 70 - 100
+    
+    for sid, data in student_agg.items():
+        if not data['scores']:
+            continue
+            
+        avg = sum(data['scores']) / len(data['scores'])
+        data['overall_average'] = round(avg, 1)
+        data['months_calculated'] = len(data['scores'])
+        
+        if avg < 50:
+            data['category'] = 'Critical'
+            data['badge'] = 'danger'
+            critical.append(data)
+        elif avg < 70:
+            data['category'] = 'At Risk'
+            data['badge'] = 'warning'
+            at_risk.append(data)
+        else:
+            data['category'] = 'On Track'
+            data['badge'] = 'success'
+            passing.append(data)
+            
+    # Sort worst to best for risks, best to worst for honors
+    critical.sort(key=lambda x: x['overall_average'])
+    at_risk.sort(key=lambda x: x['overall_average'])
+    passing.sort(key=lambda x: x['overall_average'], reverse=True)
+    
+    total_active_raw = db.execute("SELECT COUNT(id) as count FROM students WHERE status='Active' AND program_id = ?", program_id)
+    total_active = total_active_raw[0]['count'] if total_active_raw else 0
+    
     return render_template("operations/academic_review.html",
-                           students=struggling_students,
-                           total_active=total_students,
-                           total_struggling=total_struggling,
+                           critical=critical, 
+                           at_risk=at_risk, 
+                           passing=passing,
+                           total_active=total_active,
                            academic_year=academic_year,
-                           month=month,
-                           threshold=threshold,
+                           timeframe=timeframe,
+                           timeframe_label=timeframe_label,
                            available_years=available_years,
                            available_months=available_months)
 

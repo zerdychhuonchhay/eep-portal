@@ -1,16 +1,43 @@
 {% extends "layout.html" %}
 
-{% block title %}Academic Review Dashboard{% endblock %}
+{% block title %}Academic Summary Report{% endblock %}
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
+    /* Screen Styles */
     .transition-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
     .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .text-darken { color: #b48600 !important; }
-    @media (max-width: 767.98px) {
-        .native-card { border-radius: 0 !important; margin-left: -1rem; margin-right: -1rem; border-left: 0 !important; border-right: 0 !important; }
+    
+    /* 🖨️ SMART PRINT ENGINE */
+    @media print {
+        @page { size: A4 portrait; margin: 15mm; }
+        body { background-color: white !important; font-family: 'Inter', sans-serif; }
+        
+        /* Hide UI Chrome */
+        .navbar, .sidebar, .d-print-none, form, button, a.btn { display: none !important; }
+        
+        /* Expand Print Elements */
+        .d-print-block { display: block !important; }
+        
+        /* Typography & Layout Reset */
+        .print-header { text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 1rem; }
+        .print-title { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 24pt; margin-bottom: 5px; }
+        .print-meta { font-size: 11pt; color: #555; }
+        
+        /* Data Tables */
+        .print-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; page-break-inside: auto; }
+        .print-table th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; padding: 8px; border-bottom: 2px solid #000; text-align: left; font-size: 10pt; text-transform: uppercase; }
+        .print-table td { border-bottom: 1px solid #dee2e6; padding: 8px; font-size: 11pt; }
+        .print-table tr { page-break-inside: avoid; page-break-after: auto; }
+        
+        /* Category Headers */
+        .print-category-title { font-family: 'Poppins', sans-serif; font-size: 16pt; margin-top: 1.5rem; margin-bottom: 0.5rem; border-left: 5px solid #000; padding-left: 10px; }
+        .print-danger { border-left-color: #dc3545 !important; }
+        .print-warning { border-left-color: #ffc107 !important; }
+        .print-success { border-left-color: #198754 !important; }
     }
 </style>
 {% endblock %}
@@ -18,154 +45,306 @@
 {% block main %}
 <div class="container-fluid container-xl mt-3 mt-md-4 mb-5 pb-5 px-3 px-md-4 mx-auto" style="max-width: 1200px;">
     
-    <!-- HEADER -->
-    <div class="mb-4 d-flex justify-content-between align-items-center">
-        <a href="/academics" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem;">
-            <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Master Gradebook
-        </a>
-    </div>
-
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
-        <div>
-            <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-funnel-fill text-danger me-2"></i>Academic Review Tool</h2>
-            <p class="text-muted small mb-0 fw-bold">Query the database to find students who need immediate intervention.</p>
+    <!-- ========================================== -->
+    <!-- SCREEN UI: HEADER & CONTROLS               -->
+    <!-- ========================================== -->
+    <div class="d-print-none">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <a href="/academics" class="text-decoration-none fw-bold d-inline-flex align-items-center transition-hover" style="color: #007AFF; font-size: 0.95rem;">
+                <i class="bi bi-chevron-left fs-5 me-1" style="margin-top: -2px;"></i> Master Gradebook
+            </a>
         </div>
-    </div>
 
-    <!-- METRICS & QUERY CONTROLS -->
-    <div class="row g-4 mb-4">
-        
-        <!-- Summary Stats -->
-        <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-top border-danger border-4">
-                <div class="card-body p-4 d-flex flex-column justify-content-center text-center">
-                    <span class="text-muted fw-bold text-uppercase d-block mb-1 tracking-wide" style="font-size: 0.65rem;">Students Below Threshold</span>
-                    <h1 class="fw-bold text-danger mb-0 display-4" style="font-family: 'Poppins', sans-serif; letter-spacing: -2px;">{{ total_struggling }}</h1>
-                    <span class="text-muted small fw-bold mt-2">Out of {{ total_active }} active students</span>
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+            <div>
+                <h2 class="fw-bold text-dark mb-1 lh-1" style="font-family: 'Poppins', sans-serif; letter-spacing: -1px;"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Academic Summary</h2>
+                <p class="text-muted small mb-0 fw-bold">Distribution report for: <span class="text-primary">{{ timeframe_label }} ({{ academic_year }})</span></p>
+            </div>
+            <button onclick="window.print()" class="btn btn-dark text-white fw-bold rounded-pill shadow-sm px-4 py-2 transition-hover">
+                <i class="bi bi-printer-fill me-2"></i> Print Official Report
+            </button>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-top border-danger border-4 transition-hover">
+                    <div class="card-body p-3 text-center">
+                        <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem;">Failing (&lt;50%)</span>
+                        <h2 class="fw-bold text-danger mb-0">{{ critical|length }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-top border-warning border-4 transition-hover">
+                    <div class="card-body p-3 text-center">
+                        <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem;">Under C (50-69%)</span>
+                        <h2 class="fw-bold text-warning text-darken mb-0">{{ at_risk|length }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-top border-success border-4 transition-hover">
+                    <div class="card-body p-3 text-center">
+                        <span class="text-muted fw-bold text-uppercase d-block mb-1" style="font-size: 0.65rem;">C to A (70%+)</span>
+                        <h2 class="fw-bold text-success mb-0">{{ passing|length }}</h2>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Query Form -->
-        <div class="col-12 col-md-8">
-            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
-                    <h6 class="fw-bold text-dark text-uppercase tracking-wide mb-0" style="font-size: 0.75rem;"><i class="bi bi-sliders text-primary me-2"></i>Adjust Query Parameters</h6>
-                </div>
-                <div class="card-body p-4 pt-2">
-                    <form action="/academic_review" method="GET" class="row g-3 align-items-end">
-                        
-                        <div class="col-sm-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Academic Year</label>
-                            <select name="academic_year" class="form-select bg-light border-0 fw-bold shadow-sm">
-                                {% for year in available_years %}
-                                    <option value="{{ year }}" {% if year == academic_year %}selected{% endif %}>{{ year }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="col-sm-4">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Month</label>
-                            <select name="month" class="form-select bg-light border-0 fw-bold shadow-sm">
-                                <option value="">All Year Average</option>
+        <div class="card border-0 shadow-sm rounded-4 mb-5 bg-white">
+            <div class="card-body p-4">
+                <form action="/academic_review" method="GET" class="row g-3 align-items-end">
+                    <div class="col-sm-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Academic Year</label>
+                        <select name="academic_year" class="form-select bg-light border-0 fw-bold shadow-sm">
+                            {% for year in available_years %}
+                                <option value="{{ year }}" {% if year == academic_year %}selected{% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-5">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Timeframe Scope</label>
+                        <select name="timeframe" class="form-select bg-light border-0 fw-bold shadow-sm">
+                            <option value="last_3" {% if timeframe == 'last_3' %}selected{% endif %}>Auto-Average Last 3 Months</option>
+                            <option value="all" {% if timeframe == 'all' or timeframe == '' %}selected{% endif %}>Year-to-Date Average</option>
+                            <optgroup label="Specific Month Only">
                                 {% for m in available_months %}
-                                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ m }}</option>
+                                    <option value="{{ m }}" {% if m == timeframe %}selected{% endif %}>{{ m }}</option>
                                 {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="col-sm-4">
-                            <label class="form-label small fw-bold text-danger text-uppercase">Threshold Avg (%)</label>
-                            <div class="input-group shadow-sm rounded-3 overflow-hidden">
-                                <span class="input-group-text bg-danger bg-opacity-10 text-danger border-0 fw-bold">&lt;</span>
-                                <input type="number" step="1" name="threshold" class="form-control bg-light border-0 fw-bold text-danger" value="{{ threshold }}">
-                            </div>
-                        </div>
-
-                        <div class="col-12 mt-3">
-                            <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm transition-hover">
-                                <i class="bi bi-search me-2"></i> Run Query
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm transition-hover py-2">
+                            <i class="bi bi-arrow-repeat me-1"></i> Update Data
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
-    </div>
 
-    <!-- QUERY RESULTS LIST -->
-    <h6 class="fw-bold text-muted text-uppercase mb-2 ms-3 d-block tracking-wide" style="font-size: 0.75rem;">Query Results</h6>
-    <div class="card shadow-sm border-0 native-card rounded-4 bg-white border-top border-primary border-4 overflow-hidden">
-        <div class="list-group list-group-flush rounded-bottom-4">
-            {% if students %}
-                {% for s in students %}
-                <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom transition-hover">
-                    <div class="row align-items-center gx-3 gy-2">
-                        
-                        <!-- Identity -->
-                        <div class="col-12 col-md-5 d-flex align-items-center mb-2 mb-md-0">
-                            {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ s.first_name ~ "+" ~ s.last_name ~ "&background=random&color=fff&size=50" %}
-                            <img src="{{ url_for('static', filename='uploads/profiles/' + s.profile_picture) if s.profile_picture and s.profile_picture != 'default.png' else thumb_url }}" class="rounded-circle border border-2 border-white shadow-sm me-3 flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
-                            
-                            <div class="min-w-0">
-                                <a href="/student/{{ s.id }}/academics" class="fw-bold text-dark fs-6 text-decoration-none d-block text-truncate hover-primary">{{ s.first_name }} {{ s.last_name }}</a>
-                                <div class="d-flex align-items-center gap-2 mt-1">
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-0 font-monospace" style="font-size: 0.65rem;">{{ s.ngo_id }}</span>
-                                    <span class="badge bg-light text-muted border px-2 py-0" style="font-size: 0.65rem;">{{ s.grade_level }}</span>
+        <!-- ========================================== -->
+        <!-- SCREEN UI: TABBED LISTS                    -->
+        <!-- ========================================== -->
+        <ul class="nav nav-pills mb-3 gap-2" id="reportTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active rounded-pill fw-bold text-danger border border-danger border-opacity-25 bg-danger bg-opacity-10 px-4" data-bs-toggle="pill" data-bs-target="#tab-critical" type="button">
+                    <i class="bi bi-exclamation-octagon-fill me-1"></i> Failing ({{ critical|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill fw-bold text-warning text-darken border border-warning border-opacity-25 bg-warning bg-opacity-10 px-4" data-bs-toggle="pill" data-bs-target="#tab-risk" type="button">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i> Under C ({{ at_risk|length }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill fw-bold text-success border border-success border-opacity-25 bg-success bg-opacity-10 px-4" data-bs-toggle="pill" data-bs-target="#tab-pass" type="button">
+                    <i class="bi bi-check-circle-fill me-1"></i> C to A ({{ passing|length }})
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="reportTabsContent">
+            <!-- Macro for generating the screen lists -->
+            {% macro render_screen_list(student_list, empty_msg) %}
+                <div class="card shadow-sm border-0 rounded-4 bg-white overflow-hidden">
+                    <div class="list-group list-group-flush">
+                        {% if student_list %}
+                            {% for s in student_list %}
+                            <div class="list-group-item bg-white py-3 px-3 px-md-4 border-bottom transition-hover">
+                                <div class="row align-items-center gx-3 gy-2">
+                                    <div class="col-12 col-md-5 d-flex align-items-center mb-2 mb-md-0">
+                                        {% set thumb_url = "https://ui-avatars.com/api/?name=" ~ s.first_name ~ "+" ~ s.last_name ~ "&background=random&color=fff&size=50" %}
+                                        <img src="{{ url_for('static', filename='uploads/profiles/' + s.profile_picture) if s.profile_picture and s.profile_picture != 'default.png' else thumb_url }}" class="rounded-circle border border-2 border-white shadow-sm me-3 flex-shrink-0" style="width: 50px; height: 50px; object-fit: cover;" onerror="this.onerror=null; this.src='{{ thumb_url }}';">
+                                        <div class="min-w-0">
+                                            <a href="/student/{{ s.id }}/academics" class="fw-bold text-dark fs-6 text-decoration-none d-block text-truncate hover-primary">{{ s.first_name }} {{ s.last_name }}</a>
+                                            <div class="d-flex align-items-center gap-2 mt-1">
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-0 font-monospace" style="font-size: 0.65rem;">{{ s.ngo_id }}</span>
+                                                <span class="badge bg-light text-muted border px-2 py-0" style="font-size: 0.65rem;">{{ s.grade_level }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-4 mb-2 mb-md-0">
+                                        <div class="d-flex flex-column lh-sm ps-5 ps-md-0">
+                                            <span class="fw-bold text-dark mb-1" style="font-size: 0.85rem;"><i class="bi bi-clock-history me-2 text-muted"></i>Aggregated from {{ s.months_calculated }} month(s)</span>
+                                            <span class="text-muted small fst-italic khmer-font text-truncate d-block" style="max-width: 250px;">
+                                                {% if s.latest_comment %}<i class="bi bi-chat-left-quote me-1"></i>{{ s.latest_comment }}{% else %}No recent comments{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end align-items-center gap-3 ps-5 ps-md-0 mt-2 mt-md-0 pt-2 pt-md-0 border-top border-md-0 border-light">
+                                        <div class="text-end">
+                                            <h4 class="fw-bold text-{{ s.badge }} mb-0 lh-1" style="font-family: 'Poppins', sans-serif;">{{ s.overall_average }}%</h4>
+                                            <span class="badge bg-{{ s.badge }} rounded-pill" style="font-size: 0.6rem;">{{ s.category }}</span>
+                                        </div>
+                                        {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
+                                        <a href="/add_followup/{{ s.id }}" class="btn btn-light border rounded-circle shadow-sm text-primary transition-hover d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;" title="Log Note">
+                                            <i class="bi bi-clipboard2-plus-fill"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Academic Record -->
-                        <div class="col-12 col-md-4 mb-2 mb-md-0">
-                            <div class="d-flex flex-column lh-sm ps-5 ps-md-0">
-                                <span class="fw-bold text-dark mb-1" style="font-size: 0.85rem;"><i class="bi bi-calendar-event me-2 text-muted"></i>{{ s.month }} {{ s.academic_year }}</span>
-                                {% if s.teacher_comment %}
-                                    <span class="text-muted small fst-italic khmer-font text-truncate d-block" style="max-width: 250px;"><i class="bi bi-chat-left-quote me-1"></i>{{ s.teacher_comment }}</span>
-                                {% else %}
-                                    <span class="text-muted small fst-italic opacity-50"><i class="bi bi-chat-left-quote me-1"></i>No comments</span>
-                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="list-group-item text-center p-5 bg-light border-0">
+                                <i class="bi bi-check2-circle fs-1 text-muted opacity-25 d-block mb-3"></i>
+                                <h6 class="fw-bold text-dark mb-1">{{ empty_msg }}</h6>
                             </div>
-                        </div>
-
-                        <!-- Score & Actions -->
-                        <div class="col-12 col-md-3 d-flex justify-content-between justify-content-md-end align-items-center gap-3 ps-5 ps-md-0 mt-2 mt-md-0 pt-2 pt-md-0 border-top border-md-0 border-light">
-                            <div class="text-end">
-                                <h4 class="fw-bold text-danger mb-0 lh-1" style="font-family: 'Poppins', sans-serif;">{{ s.overall_average }}%</h4>
-                                <span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">{{ s.overall_grade if s.overall_grade else 'Fail' }}</span>
-                            </div>
-                            
-                            <div class="dropdown">
-                                <button class="btn btn-light border rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown" style="width: 35px; height: 35px; padding: 0;">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
-                                    <li>
-                                        <a class="dropdown-item fw-bold py-2 text-primary" href="/edit_report/{{ s.report_id }}">
-                                            <i class="bi bi-pencil-square me-2"></i>Edit Report Card
-                                        </a>
-                                    </li>
-                                    {% if session.get('can_create_followups') or session.get('can_manage_followups') %}
-                                    <li>
-                                        <a class="dropdown-item fw-bold py-2 text-danger" href="/add_followup/{{ s.id }}">
-                                            <i class="bi bi-clipboard2-heart-fill me-2"></i>Log Intervention Note
-                                        </a>
-                                    </li>
-                                    {% endif %}
-                                </ul>
-                            </div>
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
-                {% endfor %}
-            {% else %}
-                <div class="list-group-item text-center p-5 bg-white border-0 rounded-bottom-4">
-                    <i class="bi bi-check-circle-fill fs-1 text-success opacity-50 d-block mb-3"></i>
-                    <h5 class="fw-bold text-dark mb-1">Excellent News!</h5>
-                    <p class="text-muted small mb-0">No students found operating below the {{ threshold }}% threshold for this query.</p>
-                </div>
-            {% endif %}
+            {% endmacro %}
+
+            <div class="tab-pane fade show active" id="tab-critical" role="tabpanel">
+                {{ render_screen_list(critical, "No students are currently failing!") }}
+            </div>
+            <div class="tab-pane fade" id="tab-risk" role="tabpanel">
+                {{ render_screen_list(at_risk, "No students are in the At Risk category.") }}
+            </div>
+            <div class="tab-pane fade" id="tab-pass" role="tabpanel">
+                {{ render_screen_list(passing, "No students are currently holding a C average or higher.") }}
+            </div>
         </div>
-    </div>
+    </div> <!-- End Screen UI -->
+
+    <!-- ========================================== -->
+    <!-- 🖨️ PRINT ONLY UI: A4 REPORT GENERATION    -->
+    <!-- ========================================== -->
+    <div class="d-none d-print-block">
+        
+        <div class="print-header">
+            <div class="print-title">{{ session.get('organization_name', 'NGO Education Program') }}</div>
+            <div class="print-title" style="font-size: 18pt;">Academic Distribution Summary</div>
+            <div class="print-meta mt-2">
+                <strong>Scope:</strong> {{ timeframe_label }} | <strong>Academic Year:</strong> {{ academic_year }}<br>
+                <strong>Generated On:</strong> <span id="printDate"></span>
+            </div>
+        </div>
+
+        <!-- Critical Section -->
+        <h3 class="print-category-title print-danger">Critical Intervention / Failing (&lt; 50%)</h3>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">NGO ID</th>
+                    <th style="width: 25%;">Student Name</th>
+                    <th style="width: 15%;">Grade</th>
+                    <th style="width: 35%;">Latest Teacher Comment</th>
+                    <th style="width: 10%; text-align: right;">Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in critical %}
+                <tr>
+                    <td>{{ s.ngo_id }}</td>
+                    <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                    <td>{{ s.grade_level }}</td>
+                    <td style="font-style: italic; font-size: 10pt;">{{ s.latest_comment if s.latest_comment else '-' }}</td>
+                    <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- At Risk Section -->
+        <h3 class="print-category-title print-warning">At Risk / Under C (50% - 69%)</h3>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">NGO ID</th>
+                    <th style="width: 25%;">Student Name</th>
+                    <th style="width: 15%;">Grade</th>
+                    <th style="width: 35%;">Latest Teacher Comment</th>
+                    <th style="width: 10%; text-align: right;">Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in at_risk %}
+                <tr>
+                    <td>{{ s.ngo_id }}</td>
+                    <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                    <td>{{ s.grade_level }}</td>
+                    <td style="font-style: italic; font-size: 10pt;">{{ s.latest_comment if s.latest_comment else '-' }}</td>
+                    <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Good Standing Section -->
+        <h3 class="print-category-title print-success" style="page-break-before: auto;">On Track / C to A (70% - 100%)</h3>
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">NGO ID</th>
+                    <th style="width: 30%;">Student Name</th>
+                    <th style="width: 20%;">Grade</th>
+                    <th style="width: 20%; text-align: center;">Months Logged</th>
+                    <th style="width: 15%; text-align: right;">Average</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in passing %}
+                <tr>
+                    <td>{{ s.ngo_id }}</td>
+                    <td><strong>{{ s.first_name }} {{ s.last_name }}</strong></td>
+                    <td>{{ s.grade_level }}</td>
+                    <td style="text-align: center;">{{ s.months_calculated }}</td>
+                    <td style="text-align: right;"><strong>{{ s.overall_average }}%</strong></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; color: #666;">No students in this category.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </div> <!-- End Print UI -->
+
 </div>
+
+<script>
+    // Set dynamic print date
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateElement = document.getElementById('printDate');
+        if (dateElement) {
+            const today = new Date();
+            dateElement.innerText = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        
+        // CSS Overrides to ensure active tabs have colored text in the new UI
+        const tabLinks = document.querySelectorAll('#reportTabs .nav-link');
+        tabLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                tabLinks.forEach(l => {
+                    l.classList.remove('text-white');
+                });
+                // Find the badge color from the border class
+                if(this.classList.contains('border-danger')) this.classList.remove('text-danger');
+                if(this.classList.contains('border-warning')) this.classList.remove('text-warning', 'text-darken');
+                if(this.classList.contains('border-success')) this.classList.remove('text-success');
+                
+                this.classList.add('text-white');
+            });
+        });
+        
+        // Setup initial active state colors correctly
+        const activeTab = document.querySelector('#reportTabs .nav-link.active');
+        if(activeTab) {
+            activeTab.classList.remove('text-danger', 'text-warning', 'text-success', 'text-darken');
+            activeTab.classList.add('text-white');
+        }
+    });
+</script>
 {% endblock %}
+```eof
+
+### Try it out! 
+Head back to your Master Gradebook and click the **Query Tool** (or the red Active Risk card). You will see the brand new tabbed layout grouping everyone cleanly. Once you are satisfied with the timeline filters, hit the **"Print Official Report"** button in the top right to see the magic happen!
