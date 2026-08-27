@@ -22,7 +22,6 @@
     <!-- Auto-saving form -->
     <form id="addReportForm" action="/add_report/{{ student.id }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         
-        <!-- 🚀 DYNAMIC ROUTING ENGINE: JavaScript updates this hidden field before submission -->
         <input type="hidden" name="source_url" id="sourceUrlInput" value="/student/{{ student.id }}/academics">
         <input type="hidden" name="calendar_year" id="hidden_calendar_year" value="">
 
@@ -111,9 +110,15 @@
                         </select>
                     </div>
 
+                    <!-- 🚀 UPGRADED: SCHOOL SELECT DROPDOWN -->
                     <div class="col-md-6 col-lg-5">
                         <label class="form-label fw-bold small text-muted text-uppercase">School Name</label>
-                        <input type="text" name="school_name" class="form-control bg-light khmer-font" value="{{ student.current_school if student.current_school else '' }}" placeholder="Enter school name...">
+                        <select name="school_name" id="school_name" class="form-select bg-light fw-bold text-dark" onchange="filterSubjects()">
+                            <option value="">No Specific School Identified</option>
+                            {% for school in schools %}
+                                <option value="{{ school }}" {% if student.current_school == school %}selected{% endif %}>{{ school }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="col-md-12 col-lg-7">
@@ -180,56 +185,79 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- 3. DETAILED SUBJECTS (COMPACT DRAG & DROP) -->
+        <!-- 3. SMART SUBJECTS CURRICULUM GRID          -->
         <!-- ========================================== -->
         <div class="card shadow-sm border-0 rounded-4 mb-3 mb-md-4 border-secondary border-opacity-10 native-card bg-white">
             
             <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center rounded-top-4">
-                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>3. Detailed Subjects</h5>
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns-reverse me-2 text-warning"></i>3. Curriculum Data Entry</h5>
             </div>
 
             <div class="card-body p-3 p-md-4 pt-2 bg-light bg-opacity-50">
 
                 <div class="alert alert-secondary py-2 mb-4 border-0 bg-secondary bg-opacity-10 text-secondary-emphasis d-flex align-items-center">
-                    <i class="fw-bold bi bi-lightning-charge-fill text-secondary me-3 fs-3"></i> 
+                    <i class="fw-bold bi bi-magic text-secondary me-3 fs-3"></i> 
                     <span class="small fw-bold lh-sm">
-                        <strong>High Speed Entry:</strong> Type a score, hit <code>Tab</code>. 
-                        <strong>New:</strong> Grab the <i class="bi bi-grip-vertical"></i> handle to reorder the fields below to match the physical piece of paper!
+                        <strong>Smart Map:</strong> Subjects shown below strictly match the selected Grade and School. Grab the <i class="bi bi-grip-vertical"></i> handle to reorder them, or click the <i class="bi bi-eye-slash-fill"></i> to banish a subject you don't need!
                     </span>
                 </div>
 
-                <!-- High-Speed Sortable Grid -->
+                <!-- GROUPED & SORTABLE GRID -->
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-2 g-md-3" id="subjectsGrid">
                     
+                    {% set ns = namespace(current_cat=None) %}
                     {% for subject in subjects %}
-                    <div class="col subject-row" data-category="{{ subject.category }}">
-                        <div class="p-2 bg-white border border-secondary border-opacity-10 rounded-3 shadow-sm h-100 subject-card transition-hover d-flex flex-column justify-content-between">
-                            
-                            <!-- Title Row (With Grip Handle) -->
-                            <div class="d-flex justify-content-between align-items-start mb-2 px-1">
-                                <label class="khmer-font fw-bold text-dark lh-sm mb-0 d-flex align-items-center" style="font-size: 0.85rem;">
-                                    <i class="bi bi-grip-vertical text-muted opacity-50 me-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
-                                    <span class="text-muted opacity-50 small me-1 subject-index"></span>{{ subject.name }}
-                                </label>
-                                <span class="badge bg-light text-secondary border d-none d-sm-inline-block flex-shrink-0" style="font-size: 0.6rem;">{{ subject.category }}</span>
+                        {% set cat_display = subject.category if subject.category else 'General' %}
+                        
+                        <!-- Inject Visual Category Header -->
+                        {% if ns.current_cat != cat_display %}
+                            <div class="col-12 mt-4 mb-1 category-header-row" data-category="{{ cat_display }}">
+                                <h6 class="fw-bold text-primary border-bottom border-primary border-opacity-25 pb-2 mb-0" style="text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem;">
+                                    <i class="bi bi-folder2-open me-2"></i>{{ cat_display }}
+                                </h6>
                             </div>
+                            {% set ns.current_cat = cat_display %}
+                        {% endif %}
 
-                            <!-- Input Row -->
-                            <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-secondary border-opacity-10 focus-group mt-auto">
-                                <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
-                                <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="max_score_{{ subject.id }}" value="100" tabindex="-1" style="max-width: 55px;">
+                        <div class="col subject-row" data-category="{{ cat_display }}">
+                            <div class="p-2 bg-white border border-secondary border-opacity-10 rounded-3 shadow-sm h-100 subject-card transition-hover d-flex flex-column justify-content-between">
                                 
-                                <span class="input-group-text bg-primary bg-opacity-10 border-0 text-primary fw-bold border-start px-2" style="font-size: 0.8rem;">Score</span>
-                                <input type="text" class="form-control bg-primary bg-opacity-10 border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="score_{{ subject.id }}" placeholder="-" tabindex="1">
+                                <div class="d-flex justify-content-between align-items-start mb-2 px-1 gap-1">
+                                    <label class="khmer-font fw-bold text-dark lh-sm mb-0 d-flex align-items-start" style="font-size: 0.85rem;">
+                                        <i class="bi bi-grip-vertical text-muted opacity-50 me-1 mt-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
+                                        <div>
+                                            <span class="text-muted opacity-50 small subject-index me-1"></span>{{ subject.name }}
+                                        </div>
+                                    </label>
+                                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                        <!-- Hide Button -->
+                                        <button type="button" class="btn btn-sm p-0 text-muted opacity-25 hover-danger transition-hover ms-1" onclick="hideSubjectCard(this)" title="Hide this subject for this report">
+                                            <i class="bi bi-eye-slash-fill fs-6"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-secondary border-opacity-10 focus-group mt-auto">
+                                    <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
+                                    <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="max_score_{{ subject.id }}" value="100" tabindex="-1" style="max-width: 55px;">
+                                    
+                                    <span class="input-group-text bg-primary bg-opacity-10 border-0 text-primary fw-bold border-start px-2" style="font-size: 0.8rem;">Score</span>
+                                    <input type="text" class="form-control bg-primary bg-opacity-10 border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="score_{{ subject.id }}" placeholder="-" tabindex="1">
+                                </div>
                             </div>
                         </div>
-                    </div>
                     {% endfor %}
                     
-                    <!-- 🚀 INJECT CUSTOM SUBJECTS HERE VIA JS -->
                 </div>
                 
-                <!-- 🚀 BUTTON: ADD 1-OFF CUSTOM SUBJECT -->
+                <!-- Hidden Subjects Restore Button -->
+                <div id="hiddenSubjectsContainer" class="mt-3 text-center d-none">
+                    <button type="button" class="btn btn-sm btn-light border text-muted rounded-pill shadow-sm fw-bold px-3 transition-hover" onclick="restoreHiddenSubjects()">
+                        <i class="bi bi-eye-fill me-1"></i> Restore <span id="hiddenSubjectCount">0</span> Hidden Subjects
+                    </button>
+                </div>
+
+                <!-- BUTTON: ADD 1-OFF CUSTOM SUBJECT -->
                 <div class="mt-4 pt-3 border-top text-center">
                     <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-pill px-4 shadow-sm transition-hover bg-white" onclick="addCustomSubject()">
                         <i class="bi bi-plus-circle-fill me-1"></i> Add 1-Off Custom Subject
@@ -252,7 +280,7 @@
             </div>
         </div>
 
-        <!-- 🚀 DESKTOP ACTION BAR (SPLIT BUTTON WORKFLOW) -->
+        <!-- DESKTOP ACTION BAR -->
         <div class="d-none d-md-flex justify-content-between align-items-center bg-white p-4 rounded-4 shadow-sm border mt-4 mb-3">
             <a href="/student/{{ student.id }}/academics" class="btn btn-light border fw-bold px-4 py-2 rounded-pill text-dark transition-hover">Cancel</a>
             
@@ -279,7 +307,7 @@
         </div>
     </form>
 
-    <!-- 🚀 MOBILE FLOATING SAVE BUTTON (DROPUP WORKFLOW) -->
+    <!-- MOBILE FLOATING SAVE BUTTON -->
     <div class="btn-group dropup position-fixed d-flex d-md-none shadow-lg rounded-pill" style="bottom: 90px; right: 20px; z-index: 1040; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
         <button type="submit" form="addReportForm" class="btn btn-success text-white fw-bold transition-hover rounded-start-pill px-4 border-2 border-white border-end-0" style="height: 55px;" onclick="setSaveAction('/student/{{ student.id }}/academics')">
             <i class="bi bi-cloud-arrow-up-fill me-2 fs-5"></i> <span class="fs-6">Save Report</span>
@@ -301,16 +329,15 @@
         </ul>
     </div>
     
-    <!-- 🚀 DESKTOP FLOATING SCAN VIEWER BUTTON -->
+    <!-- DESKTOP FLOATING SCAN VIEWER BUTTON -->
     <button type="button" class="btn btn-info text-white fw-bold shadow-lg position-fixed transition-hover d-none align-items-center justify-content-center px-4 py-3 border border-end-0 border-white" id="fabDesktopScan" onclick="openViewer()" style="top: 50%; margin-top: -28px; right: 0; z-index: 990; border-radius: 50rem 0 0 50rem; opacity: 0.9;" disabled>
         <i class="bi bi-file-earmark-image fs-5 me-2"></i> View Scan
     </button>
 
 </div>
 
-<!-- 🚀 DRAGGABLE FLOATING SCAN VIEWER (Replaces Offcanvas) -->
+<!-- DRAGGABLE FLOATING SCAN VIEWER -->
 <div id="floatingScanViewer" class="shadow-lg border border-secondary border-opacity-25 rounded-4 bg-white d-none flex-column" style="position: fixed; top: 80px; right: 20px; width: 450px; height: 80vh; z-index: 1060; resize: both; overflow: hidden; min-width: 300px; min-height: 300px;">
-    
     <!-- Drag Handle & Controls -->
     <div id="viewerDragHandle" class="bg-dark text-white border-bottom-0 py-3 px-3 d-flex justify-content-between align-items-center" style="cursor: grab;">
         <h6 class="fw-bold small text-uppercase tracking-wide mb-0 d-flex align-items-center" style="user-select: none;">
@@ -318,11 +345,9 @@
             <span>Reference Document</span>
         </h6>
         <div class="d-flex gap-2 align-items-center">
-            <!-- Snapping Buttons -->
             <button type="button" class="btn btn-sm btn-outline-light border-0 rounded-circle py-0 px-1 d-none d-md-block" onclick="snapViewer('left')" title="Snap to Left"><i class="bi bi-box-arrow-in-left fs-6"></i></button>
             <button type="button" class="btn btn-sm btn-outline-light border-0 rounded-circle py-0 px-1 d-none d-md-block" onclick="snapViewer('right')" title="Snap to Right"><i class="bi bi-box-arrow-in-right fs-6"></i></button>
             <div class="vr bg-white opacity-25 mx-1 d-none d-md-block" style="width: 2px;"></div>
-            <!-- Close Button -->
             <button type="button" class="btn btn-sm btn-light text-dark border-0 rounded-circle py-0 px-1 ms-1" onclick="closeViewer()" title="Close Viewer"><i class="bi bi-x-lg fw-bold"></i></button>
         </div>
     </div>
@@ -346,7 +371,6 @@
 </div>
 
 <style>
-    /* 🚀 AUTO-EVASION & FLOATING VIEWER LOGIC */
     .scan-fab-hidden { transform: translateX(120%) !important; opacity: 0 !important; pointer-events: none; }
     .transition-hover { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
     .transition-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
@@ -359,18 +383,14 @@
     .drag-handle { cursor: grab; }
     .drag-handle:active { cursor: grabbing; }
 
-    /* Mobile overrides for the Floating Viewer (Acts as a bottom sheet instead of floating) */
+    .hover-danger:hover { color: #dc3545 !important; opacity: 1 !important; }
+
     @media (max-width: 767.98px) {
         .native-card { border-radius: 0 !important; margin-left: -1rem; margin-right: -1rem; }
         #floatingScanViewer {
-            top: auto !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            height: 60vh !important;
-            border-radius: 20px 20px 0 0 !important;
-            resize: none !important;
+            top: auto !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
+            width: 100% !important; height: 60vh !important;
+            border-radius: 20px 20px 0 0 !important; resize: none !important;
         }
         #viewerDragHandle { cursor: default !important; }
     }
@@ -378,11 +398,129 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Include SortableJS for Drag-and-Drop capability -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 
 <script>
-    // --- 🚀 DYNAMIC REAL-TIME DOM APPENDING ENGINE (No page reload) ---
+    // --- 🚀 SCAN VIEWER CONTROLS ---
+    window.openViewer = function() {
+        const viewer = document.getElementById('floatingScanViewer');
+        viewer.classList.remove('d-none');
+        viewer.classList.add('d-flex');
+    };
+    
+    window.closeViewer = function() {
+        const viewer = document.getElementById('floatingScanViewer');
+        viewer.classList.add('d-none');
+        viewer.classList.remove('d-flex');
+    };
+    
+    window.snapViewer = function(direction) {
+        const viewer = document.getElementById('floatingScanViewer');
+        viewer.style.top = '80px';
+        viewer.style.height = '80vh';
+        if (direction === 'left') {
+            viewer.style.left = '20px';
+            viewer.style.right = 'auto';
+        } else {
+            viewer.style.right = '20px';
+            viewer.style.left = 'auto';
+        }
+    };
+
+    // --- CURRICULUM BANISH ENGINE ---
+    window.hideSubjectCard = function(btn) {
+        const row = btn.closest('.subject-row');
+        row.classList.add('user-hidden'); 
+        row.style.display = 'none';
+        
+        const input = row.querySelector('.grade-input');
+        if (input) input.value = '';
+        
+        updateHiddenCount();
+        filterSubjects(); 
+    };
+
+    window.restoreHiddenSubjects = function() {
+        document.querySelectorAll('.subject-row.user-hidden').forEach(row => {
+            row.classList.remove('user-hidden');
+        });
+        filterSubjects(); 
+    };
+
+    function updateHiddenCount() {
+        const count = document.querySelectorAll('.subject-row.user-hidden').length;
+        const container = document.getElementById('hiddenSubjectsContainer');
+        const countSpan = document.getElementById('hiddenSubjectCount');
+        if (count > 0) {
+            container.classList.remove('d-none');
+            countSpan.innerText = count;
+        } else {
+            container.classList.add('d-none');
+        }
+    }
+
+    // --- 🚀 STRICT CURRICULUM FILTER ENGINE ---
+    window.filterSubjects = function() {
+        const gradeLevel = (document.getElementById('grade_level').value || '').toLowerCase();
+        const schoolSelect = document.getElementById('school_name');
+        const schoolName = (schoolSelect.value || '').toLowerCase();
+        
+        // Build a list of all OTHER schools to prevent cross-contamination
+        const allOtherSchools = Array.from(schoolSelect.options)
+            .map(opt => opt.value.toLowerCase())
+            .filter(val => val !== '' && val !== schoolName);
+
+        const rows = document.querySelectorAll('.subject-row:not(.custom-subject-row)');
+
+        rows.forEach(row => {
+            if (row.classList.contains('user-hidden')) return;
+
+            const category = (row.getAttribute('data-category') || '').toLowerCase();
+            let showRow = false;
+
+            // 1. Universal "General"
+            if (category === 'general' || category === '') {
+                showRow = true;
+            }
+            // 2. Exact Match (School AND Grade are in the category name) e.g., "New Life - Grade 6"
+            else if (schoolName !== '' && gradeLevel !== '' && category.includes(schoolName) && category.includes(gradeLevel)) {
+                showRow = true;
+            }
+            // 3. School-Wide Match (Only school is named) e.g., "SPS Core Subjects"
+            else if (schoolName !== '' && category.includes(schoolName) && !category.includes('grade')) {
+                showRow = true;
+            }
+            // 4. Grade-Wide Match (Only grade is named) e.g., "Grade 8"
+            else if (gradeLevel !== '' && category.includes(gradeLevel)) {
+                // Ensure this category doesn't accidentally belong to a DIFFERENT school
+                const belongsToOtherSchool = allOtherSchools.some(otherSchool => category.includes(otherSchool));
+                if (!belongsToOtherSchool) {
+                    showRow = true;
+                }
+            }
+
+            row.style.display = showRow ? '' : 'none'; 
+            
+            // SECURITY: Wipe inputs of hidden fields
+            if (!showRow) {
+                const input = row.querySelector('.grade-input');
+                if (input) input.value = '';
+            }
+        });
+        
+        // Hide Empty Category Headers
+        document.querySelectorAll('.category-header-row').forEach(header => {
+            const cat = header.getAttribute('data-category');
+            const safeCat = cat.replace(/"/g, '\\"');
+            const hasVisibleChildren = document.querySelectorAll(`.subject-row[data-category="${safeCat}"]:not([style*="display: none"])`).length > 0;
+            header.style.display = hasVisibleChildren ? '' : 'none';
+        });
+        
+        updateHiddenCount();
+        renumberSubjects();
+    };
+
+    // --- DYNAMIC REAL-TIME DOM APPENDING ENGINE ---
     window.appendNewSubjectToGrid = function(subjectId, name, category) {
         const grid = document.getElementById('subjectsGrid');
         if (!grid) return;
@@ -393,37 +531,33 @@
         
         newCol.innerHTML = `
             <div class="p-2 bg-white border border-secondary border-opacity-10 rounded-3 shadow-sm h-100 subject-card transition-hover d-flex flex-column justify-content-between">
-                <!-- Title Row -->
-                <div class="d-flex justify-content-between align-items-start mb-2 px-1">
-                    <label class="khmer-font fw-bold text-dark lh-sm mb-0 d-flex align-items-center" style="font-size: 0.85rem;">
-                        <i class="bi bi-grip-vertical text-muted opacity-50 me-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
-                        <span class="text-muted opacity-50 small me-1 subject-index"></span>\${name}
+                <div class="d-flex justify-content-between align-items-start mb-2 px-1 gap-1">
+                    <label class="khmer-font fw-bold text-dark lh-sm mb-0 d-flex align-items-start" style="font-size: 0.85rem;">
+                        <i class="bi bi-grip-vertical text-muted opacity-50 me-1 mt-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
+                        <div><span class="text-muted opacity-50 small subject-index me-1"></span>${name}</div>
                     </label>
-                    <span class="badge bg-light text-secondary border d-none d-sm-inline-block flex-shrink-0" style="font-size: 0.6rem;">\${category}</span>
+                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                        <button type="button" class="btn btn-sm p-0 text-muted opacity-25 hover-danger transition-hover ms-1" onclick="hideSubjectCard(this)" title="Hide this subject for this report">
+                            <i class="bi bi-eye-slash-fill fs-6"></i>
+                        </button>
+                    </div>
                 </div>
-
-                <!-- Input Row -->
                 <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-secondary border-opacity-10 focus-group mt-auto">
                     <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
-                    <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="max_score_\${subjectId}" value="100" tabindex="-1" style="max-width: 55px;">
-                    
+                    <input type="number" class="form-control bg-light border-0 text-center text-muted fw-bold px-1" name="max_score_${subjectId}" value="100" tabindex="-1" style="max-width: 55px;">
                     <span class="input-group-text bg-primary bg-opacity-10 border-0 text-primary fw-bold border-start px-2" style="font-size: 0.8rem;">Score</span>
-                    <input type="text" class="form-control bg-primary bg-opacity-10 border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="score_\${subjectId}" placeholder="-" tabindex="1">
+                    <input type="text" class="form-control bg-primary bg-opacity-10 border-0 text-center text-primary fw-bold fs-6 px-1 grade-input" name="score_${subjectId}" placeholder="-" tabindex="1">
                 </div>
             </div>
         `;
         
         grid.appendChild(newCol);
         attachFocusListeners(newCol.querySelector('.subject-card'));
-        
-        // Re-apply filters so it instantly hides/shows based on selected grade level
         filterSubjects();
-        
-        // Focus directly on the newly created subject card input
         newCol.querySelector('.grade-input').focus();
     };
 
-    // --- 🚀 1-OFF CUSTOM SUBJECT ENGINE ---
+    // --- 1-OFF CUSTOM SUBJECT ENGINE ---
     window.addCustomSubject = function(name = '', max = '100', score = '') {
         const grid = document.getElementById('subjectsGrid');
         const newCol = document.createElement('div');
@@ -435,7 +569,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-2 px-1 gap-2">
                     <i class="bi bi-grip-vertical text-primary opacity-50 mt-1 drag-handle hover-primary transition-hover" title="Drag to reorder"></i>
                     <input type="text" class="form-control form-control-sm border-0 border-bottom border-primary border-opacity-25 bg-transparent px-1 khmer-font text-dark shadow-none fw-bold w-100 custom-name-input" name="custom_subject_name[]" value="${name}" placeholder="Type Subject Name..." required>
-                    <button type="button" class="btn btn-sm text-danger p-0 ms-1 opacity-50 transition-hover" onclick="this.closest('.col').remove(); renumberSubjects();"><i class="bi bi-x-circle-fill fs-5"></i></button>
+                    <button type="button" class="btn btn-sm text-danger p-0 ms-1 opacity-50 transition-hover flex-shrink-0" onclick="this.closest('.col').remove(); renumberSubjects();"><i class="bi bi-x-circle-fill fs-5"></i></button>
                 </div>
                 <div class="input-group input-group-sm shadow-sm rounded-2 overflow-hidden border border-primary border-opacity-25 focus-group mt-auto">
                     <span class="input-group-text bg-light border-0 text-muted fw-bold px-2" style="font-size: 0.7rem;">Max</span>
@@ -450,13 +584,15 @@
         attachFocusListeners(newCol.querySelector('.subject-card'));
         renumberSubjects();
         
-        // Auto-focus the name input if we just clicked the button (not loading a draft)
         if (name === '') {
             newCol.querySelector('.custom-name-input').focus();
         }
     };
 
-    // --- 🚀 AUTO-EVASION DROP-DOWN LISTENER ---
+    window.setSaveAction = function(url) {
+        document.getElementById('sourceUrlInput').value = url;
+    };
+
     document.addEventListener('show.bs.dropdown', function () {
         const fab = document.getElementById('fabDesktopScan');
         if (fab && !fab.disabled) fab.classList.add('scan-fab-hidden');
@@ -467,65 +603,6 @@
         if (fab && !fab.disabled) fab.classList.remove('scan-fab-hidden');
     });
 
-
-    // --- 🚀 QUICK ADD SUBJECT (AJAX + Real-time Append) ---
-    document.getElementById('quickAddSubjectForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const btn = this.querySelector('button[type="submit"]');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Adding...';
-        btn.disabled = true;
-
-        const formData = new FormData(this);
-        
-        // Fetch with format=json to force JSON response
-        fetch('/settings?format=json', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            
-            if (data.success) {
-                // Append the subject directly into the grid in real-time!
-                appendNewSubjectToGrid(data.subject_id, data.subject_name, data.category);
-                
-                // Close the modal
-                const modalEl = document.getElementById('quickAddSubjectModal');
-                const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                
-                // Clear form
-                this.reset();
-                
-                // Show a quick success toast
-                const toast = document.createElement('div');
-                toast.className = 'position-fixed top-0 start-50 translate-middle-x mt-3';
-                toast.style.zIndex = '9999';
-                toast.innerHTML = `<div class="badge bg-success text-white px-3 py-2 rounded-pill shadow-lg"><i class="bi bi-check-circle-fill me-2"></i>Subject added to list!</div>`;
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2500);
-            } else {
-                alert("Error: " + (data.error || "Could not add subject."));
-            }
-        })
-        .catch(err => {
-            console.error('Error adding subject:', err);
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            alert("An error occurred while adding the subject.");
-        });
-    });
-
-    // --- 🚀 SMART CALENDAR YEAR CALCULATOR ---
     function updateCalendarYear() {
         const yearSelect = document.getElementById('academic_year_select');
         const monthSelect = document.getElementById('month_select');
@@ -552,7 +629,6 @@
         }
     }
 
-    // --- 🚀 SMART UX: Dynamic Focus Engine ---
     function attachFocusListeners(cardElement) {
         const inputs = cardElement.querySelectorAll('.grade-input, .form-control');
         inputs.forEach(input => {
@@ -570,7 +646,6 @@
         attachFocusListeners(card);
     });
 
-    // --- 🚀 DYNAMIC RE-NUMBERING ENGINE ---
     function renumberSubjects() {
         let visibleIndex = 1;
         document.querySelectorAll('.subject-row').forEach(row => {
@@ -580,44 +655,14 @@
             }
         });
     }
-    
-    function adjustOffcanvasPosition() {
-        const scanOffcanvas = document.getElementById('scanViewerOffcanvas');
-        if (!scanOffcanvas) return;
-        
-        if (window.innerWidth < 768) {
-            scanOffcanvas.classList.remove('offcanvas-end');
-            scanOffcanvas.classList.add('offcanvas-bottom');
-            scanOffcanvas.style.height = '55vh';
-            scanOffcanvas.style.width = '100%';
-            scanOffcanvas.style.maxWidth = '100%';
-            scanOffcanvas.style.borderTopLeftRadius = '20px';
-            scanOffcanvas.style.borderTopRightRadius = '20px';
-        } else {
-            scanOffcanvas.classList.remove('offcanvas-bottom');
-            scanOffcanvas.classList.add('offcanvas-end');
-            scanOffcanvas.style.height = '100%';
-            scanOffcanvas.style.width = '100%';
-            scanOffcanvas.style.maxWidth = '500px'; 
-            scanOffcanvas.style.borderTopLeftRadius = '0';
-            scanOffcanvas.style.borderTopRightRadius = '0';
-        }
-    }
-    
-    window.addEventListener('resize', adjustOffcanvasPosition);
 
     document.addEventListener("DOMContentLoaded", function() {
-        
-        adjustOffcanvasPosition(); 
-        
         const previewImg = document.getElementById('scan_preview');
         const previewPdf = document.getElementById('scan_preview_pdf');
         const placeholder = document.getElementById('placeholder_text');
         const imgWrapper = document.getElementById('img_wrapper');
         const desktopBtn = document.getElementById('fabDesktopScan');
-        const scanOffcanvas = document.getElementById('scanViewerOffcanvas');
         const scanUploadInput = document.getElementById('scan_upload');
-        const scanHintText = document.getElementById('scanHintText');
 
         const grid = document.getElementById('subjectsGrid');
         if (grid) {
@@ -646,19 +691,11 @@
                 previewPdf.style.display = 'block';
                 imgWrapper.style.display = 'none';
                 previewImg.style.display = 'none';
-                
-                if (scanHintText) {
-                    scanHintText.innerHTML = '<i class="bi bi-file-pdf-fill text-danger me-1"></i> <strong>PDF Viewer:</strong> Use the top menu to zoom, or select the Hand tool (✋) to pan easily.';
-                }
             } else {
                 previewImg.src = url;
                 previewImg.style.display = 'block';
                 imgWrapper.style.display = 'flex';
                 previewPdf.style.display = 'none';
-                
-                if (scanHintText) {
-                    scanHintText.innerHTML = '<i class="bi bi-image-fill text-info me-1"></i> <strong>Image Viewer:</strong> Hover your mouse over the document to zoom and pan.';
-                }
             }
         }
 
@@ -669,13 +706,8 @@
                 activateScanViewer(objectUrl, file.type === 'application/pdf');
                 
                 if (!scanUploadInput.hasAttribute('data-opened')) {
-                    if (desktopBtn && window.innerWidth >= 768) {
-                        new bootstrap.Offcanvas(scanOffcanvas).show();
-                        desktopBtn.setAttribute('data-opened', 'true');
-                    } else if (window.innerWidth < 768) {
-                        new bootstrap.Offcanvas(scanOffcanvas).show();
-                        scanUploadInput.setAttribute('data-opened', 'true');
-                    }
+                    openViewer();
+                    scanUploadInput.setAttribute('data-opened', 'true');
                 }
             }
         });
@@ -696,7 +728,6 @@
         });
     });
 
-    // --- 🚀 UPGRADED ARRAY-SAFE AUTO-SAVE DRAFT ENGINE ---
     const draftKey = 'eep_draft_report_{{ student.id }}';
     const reportForm = document.getElementById('addReportForm');
     
@@ -707,13 +738,11 @@
                 const data = JSON.parse(saved);
                 let restoredCount = 0;
                 
-                // First, inject dynamic custom blocks if they exist in the draft
                 if (data['custom_subject_name[]']) {
                     const names = Array.isArray(data['custom_subject_name[]']) ? data['custom_subject_name[]'] : [data['custom_subject_name[]']];
                     const scores = Array.isArray(data['custom_score[]']) ? data['custom_score[]'] : [data['custom_score[]']];
                     const maxes = Array.isArray(data['custom_max_score[]']) ? data['custom_max_score[]'] : [data['custom_max_score[]']];
                     
-                    // Clear out any existing custom blocks to prevent duplicating on multiple reloads
                     document.querySelectorAll('.custom-subject-row').forEach(e => e.remove());
                     
                     for(let i=0; i<names.length; i++) {
@@ -722,9 +751,8 @@
                     }
                 }
                 
-                // Then populate all regular fields
                 Object.keys(data).forEach(key => {
-                    if (key.endsWith('[]')) return; // handled arrays above
+                    if (key.endsWith('[]')) return; 
                     const input = reportForm.elements[key];
                     if (input && input.type !== 'file' && input.name !== 'academic_year' && input.name !== 'month' && input.name !== 'grade_level') {
                         if (data[key] !== '') {
@@ -753,7 +781,6 @@
         const formData = new FormData(reportForm);
         const data = {};
         
-        // Array-Safe capture for custom dynamic subjects
         for(let [key, value] of formData.entries()) {
             if (key === 'scanned_document') continue;
             if (key.endsWith('[]')) {
@@ -773,7 +800,6 @@
         }
     });
 
-    // --- FORM LOGIC: Set default academic year based on current date ---
     function setDefaultAcademicYear() {
         const yearSelect = document.getElementById('academic_year_select');
         if (yearSelect && !yearSelect.value) {
@@ -794,34 +820,6 @@
                 yearSelect.selectedIndex = 1; 
             }
         }
-    }
-
-    // --- 🚀 SMART SUBJECT FILTER LOGIC (With Auto-Numbering) ---
-    function filterSubjects() {
-        const gradeLevel = document.getElementById('grade_level').value;
-        const rows = document.querySelectorAll('.subject-row');
-
-        rows.forEach(row => {
-            const category = row.getAttribute('data-category');
-            let showRow = false;
-
-            if (!category || category === 'General') {
-                showRow = true;
-            } 
-            else if ((gradeLevel.includes('Kindergarten') || gradeLevel.match(/Grade [1-6]\b/)) && category === 'Primary / Lower Grade') {
-                showRow = true;
-            }
-            else if (gradeLevel.match(/Grade ([7-9]|1[0-2])\b/) && category === 'High School') {
-                showRow = true;
-            }
-            else if ((gradeLevel.includes('University') || gradeLevel.includes('Vocational')) && category === 'University / Vocational') {
-                showRow = true;
-            }
-
-            row.style.display = showRow ? '' : 'none'; 
-        });
-        
-        renumberSubjects();
     }
 
     // Run the filter & logic immediately when the page loads
@@ -852,3 +850,6 @@
     })()
 </script>
 {% endblock %}
+```eof
+
+http://googleusercontent.com/interactive_content_block/0

@@ -6,9 +6,6 @@ help generate boilerplate HTML, refine complex CSS/Bootstrap styling, architect
 the dynamic JavaScript filtering/zoom logic, and assist in debugging SQL syntax.
 """
 
-# ==============================================================================
-# NEIGHBORHOOD: SETUP & CONFIG
-# ==============================================================================
 import io
 import csv
 import os
@@ -17,12 +14,11 @@ import json
 import calendar
 import sqlite3
 from datetime import datetime, timedelta
-from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for, Response, send_from_directory, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 
-# 🚨 THE DRY REFACTOR: Importing all our tools from helpers.py!
-from helpers import login_required, admin_required, permission_required, real_admin_required, calculate_gpa, get_subject_grade_data, allowed_file, handle_file_upload
+# 🚨 THE DRY REFACTOR: Importing all our tools, PLUS the centralized db and logger!
+from helpers import login_required, admin_required, permission_required, real_admin_required, calculate_gpa, get_subject_grade_data, allowed_file, handle_file_upload, db, log_action
 
 # 1. Turn on the flask application
 app = Flask(__name__)
@@ -43,12 +39,9 @@ app.config['PROFILE_UPLOAD_FOLDER'] = PROFILE_UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROFILE_UPLOAD_FOLDER, exist_ok=True)
 
-# 2. Connect to your database
-db = SQL("sqlite:///eep.db")
-
 
 # ==============================================================================
-# GLOBAL CONTEXT PROCESSORS & AUDIT LOGS
+# GLOBAL CONTEXT PROCESSORS
 # ==============================================================================
 @app.context_processor
 def inject_pending_staff():
@@ -76,62 +69,28 @@ def inject_translator():
         
     return dict(_=translate)
 
-def log_action(description):
-    """Silently record what a staff member just did"""
-    if "user_id" in session:
-        user_agent_raw = request.headers.get('User-Agent', 'Unknown Device')
-        device_info = "Unknown Device"
-        
-        if "Windows" in user_agent_raw: os_name = "Windows"
-        elif "Macintosh" in user_agent_raw or "Mac OS" in user_agent_raw: os_name = "Mac"
-        elif "iPhone" in user_agent_raw or "iPad" in user_agent_raw: os_name = "iOS"
-        elif "Android" in user_agent_raw: os_name = "Android"
-        else: os_name = "Unknown OS"
-
-        if "Chrome" in user_agent_raw and "Edg" not in user_agent_raw: browser = "Chrome"
-        elif "Edg" in user_agent_raw: browser = "Edge"
-        elif "Safari" in user_agent_raw and "Chrome" not in user_agent_raw: browser = "Safari"
-        else: browser = "Unknown Browser"
-            
-        if user_agent_raw != 'Unknown Device':
-            device_info = f"{browser} on {os_name}"
-
-        try:
-            db.execute("INSERT INTO audit_logs (staff_id, action, device_info, timestamp) VALUES (?, ?, ?, datetime('now', 'localtime'))", 
-                       session["user_id"], description, device_info)
-        except Exception:
-            db.execute("INSERT INTO audit_logs (staff_id, action, timestamp) VALUES (?, ?, datetime('now', 'localtime'))", 
-                       session["user_id"], description)
-
 
 # ==============================================================================
 # NEIGHBORHOOD: AUTHENTICATION & STAFF MANAGEMENT
 # ==============================================================================
-
 @app.before_request
 def refresh_session_permissions():
     """Invisible Background Engine: Syncs the user's session cookie with the live DB on every click."""
-    # Only run if user is logged in AND they are not using the 'View As' testing feature
     if "user_id" in session and not session.get("real_role"):
         try:
-            # 1. Get Live Role & Workspace
             live_user = db.execute("SELECT role, program_id FROM staff WHERE id = ?", session["user_id"])
             if live_user:
                 session["role"] = live_user[0]["role"]
                 
-                # 🚀 FIX: Only set the default workspace if they don't currently have one active.
-                # Overwriting this every click breaks the Workspace Switcher!
                 if "program_id" not in session:
                     session["program_id"] = live_user[0]["program_id"]
 
-                # 2. Get Live Permissions for that role
                 live_perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", session["role"])
                 if live_perms:
                     for key, val in live_perms[0].items():
-                        if key != 'role':  # Skip the primary key string
+                        if key != 'role':  
                             session[key] = bool(val)
                 elif session["role"] == "Admin":
-                    # Failsafe: Admins get all permissions dynamically
                     session["can_edit_profiles"] = True
                     session["can_create_profiles"] = True
                     session["can_update_profiles"] = True
@@ -148,11 +107,10 @@ def refresh_session_permissions():
                     session["can_create_expenses"] = True
                     session["can_export_data"] = True
         except Exception:
-            pass # Fail silently to prevent crashing the app, fallback to existing cookie
+            pass 
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    """Public registration: Users create account, but stay 'Pending' until Admin approves"""
     if session.get("user_id"):
         return redirect("/")
 
@@ -167,12 +125,9 @@ def register():
 
         hash_pass = generate_password_hash(password)
         try:
-            # Hardcoded to 'Pending' so they can't see any data yet!
             db.execute("INSERT INTO staff (username, hash, role, program_id) VALUES (?, ?, 'Pending', 1)", 
                        username, hash_pass)
-            
             log_action(f"New public account request submitted: {username}")
-            # ✅ UPDATED CUSTOM MESSAGE
             flash("Your request has been submitted! Please wait for approval, or contact an Admin for faster processing.", "success")
             return redirect("/login")
         except ValueError:
@@ -181,10 +136,8 @@ def register():
     else:
         return render_template("auth/register.html")
 
-
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """Log user in and build their permissions backpack"""
     session.clear()
 
     if request.method == "POST":
@@ -201,29 +154,24 @@ def login():
             flash("Error: Invalid username and/or password", "danger")
             return redirect("/login")
             
-        # 🚨 THE BOUNCER: Reject them if they are still 'Pending'
         if rows[0]["role"] == "Pending":
             flash("Your account is currently pending. Please ask your Administrator to approve your access.", "warning")
             return redirect("/login")
 
-        # Standard Login Success
         session.permanent = True
         session["user_id"] = rows[0]["id"]
         session["username"] = rows[0]["username"]
         session["role"] = rows[0]["role"]
         
-        # 🛡️ THE DYNAMIC CRUD PERMISSIONS MATRIX
         try:
             perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", rows[0]["role"])
             if perms:
                 p = perms[0]
-                # Coarse legacy fallbacks
                 session["can_edit_profiles"] = bool(p["can_edit_profiles"])
                 session["can_manage_academics"] = bool(p["can_manage_academics"])
                 session["can_manage_followups"] = bool(p["can_manage_followups"])
                 session["can_upload_files"] = bool(p["can_upload_files"])
                 
-                # Granular CRUD 
                 session["can_create_profiles"] = bool(p.get("can_create_profiles", p["can_edit_profiles"]))
                 session["can_update_profiles"] = bool(p.get("can_update_profiles", p["can_edit_profiles"]))
                 session["can_create_academics"] = bool(p.get("can_create_academics", p["can_manage_academics"]))
@@ -248,11 +196,8 @@ def login():
                 session["can_create_expenses"] = False
                 session["can_export_data"] = False
         except Exception as e:
-            print("RBAC LOAD ERROR: Make sure /settings has run the auto-healer.", str(e))
             pass
         
-        # 🛡️ BULLETPROOF ADMIN OVERRIDE
-        # No matter what the database says, Admins ALWAYS get full UI buttons
         if session["role"] == "Admin":
             session["can_edit_profiles"] = True
             session["can_create_profiles"] = True
@@ -270,7 +215,6 @@ def login():
             session["can_create_expenses"] = True
             session["can_export_data"] = True
 
-        # Establish Program Context (Hat)
         program_id = rows[0].get("program_id", 1) 
         try:
             program_info = db.execute("SELECT name, icon FROM programs WHERE id = ?", program_id)
@@ -292,26 +236,20 @@ def login():
 
     return render_template("auth/login.html")
 
-
 @app.route("/account", methods=["GET", "POST"])
 @login_required
 def account():
-    """Allow users to manage their profile, picture, and password"""
     if request.method == "POST":
         action = request.form.get("action")
         
         if action == "update_profile":
             new_username = request.form.get("username")
-            
-            # Handle picture upload
             profile_picture = request.files.get("profile_picture")
             if profile_picture and profile_picture.filename != '':
-                # Assuming you have your handle_file_upload helper from students
                 saved_name, _ = handle_file_upload(profile_picture, session["user_id"], "staff", app.config['UPLOAD_FOLDER'])
                 if saved_name:
                     db.execute("UPDATE staff SET profile_picture = ? WHERE id = ?", saved_name, session["user_id"])
             
-            # Handle username change
             if new_username and new_username != session["username"]:
                 existing = db.execute("SELECT id FROM staff WHERE username = ? AND id != ?", new_username, session["user_id"])
                 if existing:
@@ -349,16 +287,13 @@ def account():
             return redirect("/")
 
     else:
-        # Load user info
         user_info = db.execute("SELECT * FROM staff WHERE id = ?", session["user_id"])[0]
         return render_template("auth/account.html", user_info=user_info)
     
-
 @app.route("/manage_staff", methods=["GET", "POST"])
 @login_required
 @admin_required
 def manage_staff():
-    """Enterprise dashboard to add, edit, reset, and delete staff accounts."""
     if request.method == "POST":
         action = request.form.get("action")
         
@@ -402,7 +337,6 @@ def manage_staff():
             log_action(f"Forced password reset for {staff_name}")
             flash(f"Password for {staff_name} has been reset to '123456'.", "info")
 
-        # ✅ NEW: DELETE / REJECT LOGIC
         elif action == "delete":
             staff_id = request.form.get("staff_id")
             if int(staff_id) == session["user_id"]:
@@ -419,7 +353,6 @@ def manage_staff():
 
         return redirect("/manage_staff")
     else:
-        # ✅ UPDATED: Now queries for profile_picture
         staff_members = db.execute("""
             SELECT s.id, s.username, s.role, s.program_id, s.profile_picture, p.name as program_name 
             FROM staff s 
@@ -429,30 +362,23 @@ def manage_staff():
         programs = db.execute("SELECT * FROM programs ORDER BY id ASC")
         return render_template("admin/manage_staff.html", staff_members=staff_members, programs=programs)
 
-
 @app.route("/logout")
 def logout():
-    """Log user out"""
     log_action("Logged out of the system")
     session.clear()
     flash("You have been successfully logged out.", "success")
     return redirect("/login")
 
-
 @app.route("/view_as/<role>")
 @login_required
 @real_admin_required
 def view_as(role):
-    """Allows an Admin to masquerade as another role to test UI/Permissions."""
-    # 1. Save their real admin status if not already saved
     if "real_role" not in session:
         session["real_role"] = session["role"]
-        # Save original permissions just in case
         for key in list(session.keys()):
             if key.startswith("can_"):
                 session[f"real_{key}"] = session[key]
 
-    # 2. Fetch the permissions for the target role
     perms = db.execute("SELECT * FROM role_permissions WHERE role = ?", role)
     if not perms:
         flash("Role not found.", "danger")
@@ -460,7 +386,6 @@ def view_as(role):
         
     p = perms[0]
     
-    # 3. Apply the fake role and permissions to the active session
     session["role"] = role
     session["can_create_profiles"] = bool(p.get("can_create_profiles", p.get("can_edit_profiles", 0)))
     session["can_update_profiles"] = bool(p.get("can_update_profiles", p.get("can_edit_profiles", 0)))
@@ -474,7 +399,6 @@ def view_as(role):
     session["can_create_expenses"] = bool(p.get("can_create_expenses", 0))
     session["can_export_data"] = bool(p.get("can_export_data", 0))
 
-    # Map fallbacks for legacy templates
     session["can_edit_profiles"] = session["can_update_profiles"]
     session["can_manage_academics"] = session["can_update_academics"]
     session["can_manage_followups"] = session["can_update_followups"]
@@ -484,16 +408,12 @@ def view_as(role):
     flash(f"You are now viewing the system as a {role}.", "warning")
     return redirect("/")
 
-
 @app.route("/view_as_revert")
 @login_required
 @real_admin_required
 def view_as_revert():
-    """Restores the Admin to their true powers."""
     if "real_role" in session:
         session["role"] = session.pop("real_role")
-        
-        # Restore all original permissions
         keys_to_restore = [k for k in session.keys() if k.startswith("real_can_")]
         for key in keys_to_restore:
             orig_key = key.replace("real_", "", 1)
@@ -501,26 +421,22 @@ def view_as_revert():
             
         log_action("Ended VIEW AS mode.")
         flash("Welcome back! Your Admin privileges have been restored.", "success")
-        
     return redirect(request.referrer or "/")
 
 @app.route("/set_language/<lang>")
 @login_required
 def set_language(lang):
-    """Phase 6: Toggles the active session language between English and Khmer"""
     if lang in ['en', 'kh']:
         session['lang'] = lang
-        
     return redirect(request.referrer or "/")
+
 
 # ==============================================================================
 # NEIGHBORHOOD: DASHBOARD, ROUTING & HUB
 # ==============================================================================
-
 @app.route("/switch_program/<int:pid>")
 @login_required
 def switch_program(pid):
-    """Allows Admins/Directors to switch their active program view"""
     if session.get("role") not in ["Admin", "Director"]:
         flash("Unauthorized: Only Admins can switch program views.", "danger")
         return redirect(request.referrer or "/")
@@ -539,11 +455,9 @@ def switch_program(pid):
     flash(f"Switched context to: {session['program_name']}", "info")
     return redirect(request.referrer or "/")
 
-
 @app.route("/")
 @login_required
 def index():
-    """Smart Homepage that changes based on the user's active program view"""
     program_id = session.get("program_id", 1) 
     
     if program_id == 0:
@@ -553,17 +467,13 @@ def index():
     elif program_id > 0:
         staff = db.execute("SELECT username FROM staff WHERE id = ?", session["user_id"])
         username = staff[0]["username"] if staff else "Staff"
-
-        # Fetch all active students for search and demographic calculations
         all_active_students = db.execute("SELECT * FROM students WHERE status = 'Active' AND program_id = ? ORDER BY first_name", program_id)
         
-        # --- DYNAMIC ALERTS ENGINE ---
         alerts = []
         today = datetime.now()
         today_str = today.strftime('%Y-%m-%d')
         next_week_str = (today + timedelta(days=7)).strftime('%Y-%m-%d')
 
-        # 1. Calendar Alerts (Holidays & High Priority Tasks)
         upcoming_events = db.execute("""
             SELECT title, due_date, status 
             FROM tasks 
@@ -584,7 +494,6 @@ def index():
                 "link": "/calendar"
             })
 
-        # 2. Academic Deadlines (Last 7 days of the month)
         last_day = calendar.monthrange(today.year, today.month)[1]
         if today.day >= (last_day - 7):
             alerts.append({
@@ -596,7 +505,6 @@ def index():
                 "link": "/roster"
             })
 
-        # 3. Child Protection & Risk Alerts (Recent High Risk)
         thirty_days_ago = (today - timedelta(days=30)).strftime('%Y-%m-%d')
         critical_risks = db.execute("""
             SELECT f.id, f.student_id, f.risk_level, f.child_protection_concerns, s.first_name, s.last_name 
@@ -618,7 +526,6 @@ def index():
                 "link": f"/student/{risk['student_id']}/timeline"
             })
             
-        # 4. Pending Staff Approvals (If Admin)
         if session.get("role") == "Admin":
             pending_staff = db.execute("SELECT COUNT(*) as count FROM staff WHERE role = 'Pending'")
             if pending_staff and pending_staff[0]['count'] > 0:
@@ -632,7 +539,6 @@ def index():
                     "link": "/manage_staff"
                 })
 
-        # 🚀 5. NEW: Missing Reports (Previous Month Fail-Safe - Excludes Uni/Voc)
         first_of_this_month = today.replace(day=1)
         last_month_date = first_of_this_month - timedelta(days=1)
         last_month_name = last_month_date.strftime('%B')
@@ -654,8 +560,6 @@ def index():
 
         if missing_reports:
             count = len(missing_reports)
-            
-            # Format the names beautifully for the alert card
             names_list = [f"{s['first_name']} {s['last_name']}" for s in missing_reports]
             if count > 5:
                 names_str = ", ".join(names_list[:5]) + f", and {count - 5} more."
@@ -676,19 +580,15 @@ def index():
                                students=all_active_students,
                                alerts=alerts)
 
-
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    """Smart Dashboard Router based on Active Program Context"""
     program_id = session.get("program_id", 1) 
     
-    # HAT 1: GOVT AFFAIRS & CENTRAL ADMIN
     if program_id == 0:
         today_date = datetime.now().strftime('%Y-%m-%d')
         return render_template("dashboard/dashboard_global.html", date_now=today_date)
         
-    # HAT 2: PROGRAM MANAGEMENT
     elif program_id > 0:
         try:
             months = int(request.args.get('timeframe', 1))
@@ -827,269 +727,14 @@ def dashboard():
                                academic_alerts=academic_alerts, protection_alerts=protection_alerts,
                                missing_letters=missing_letters, current_quarter=current_quarter, current_year=current_year,
                                timeframe=months, date_now=date_now, recent_activity=recent_activity)
-    
-# =========================================================
-# 🚀 ACADEMIC REVIEW DASHBOARD (TIERED, PRINTABLE, ANALYZED)
-# =========================================================
-@app.route("/academic_review", methods=["GET"])
-@login_required
-@permission_required("can_manage_academics")
-def academic_review():
-    """A powerful query tool to filter, tier, and analyze students by academic standing."""
-    program_id = session.get("program_id")
-    
-    # 1. Get System Defaults
-    sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
-    current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
-    
-    academic_year = request.args.get("academic_year", current_year_default)
-    timeframe = request.args.get("timeframe", "latest") 
-    
-    # 2. Fetch Available Metadata for Dropdowns
-    available_years = [r['academic_year'] for r in db.execute("SELECT DISTINCT academic_year FROM monthly_reports ORDER BY academic_year DESC")]
-    
-    months_raw = db.execute("""
-        SELECT DISTINCT m.month 
-        FROM monthly_reports m
-        JOIN students s ON m.student_id = s.id
-        WHERE m.academic_year = ? AND s.program_id = ?
-    """, academic_year, program_id)
-    
-    academic_order = ['August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June', 'July']
-    available_months = [r['month'] for r in months_raw]
-    available_months.sort(key=lambda x: academic_order.index(x) if x in academic_order else 99)
-
-    # 3. Fetch EXACT Report Data
-    if timeframe == "latest":
-        query = """
-            SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
-                   m.month, m.overall_average, m.overall_grade, m.teacher_comment, m.id as report_id
-            FROM students s
-            JOIN monthly_reports m ON s.id = m.student_id
-            INNER JOIN (
-                SELECT student_id, MAX(id) as max_id 
-                FROM monthly_reports 
-                WHERE academic_year = ? 
-                GROUP BY student_id
-            ) latest ON m.id = latest.max_id
-            WHERE s.status = 'Active' AND s.program_id = ?
-            AND m.overall_average IS NOT NULL
-        """
-        raw_reports = db.execute(query, academic_year, program_id)
-        timeframe_label = "Latest Report (Current Status)"
-    else:
-        query = """
-            SELECT s.id, s.first_name, s.last_name, s.khmer_name, s.ngo_id, s.grade_level, s.profile_picture,
-                   m.month, m.overall_average, m.overall_grade, m.teacher_comment, m.id as report_id
-            FROM students s
-            JOIN monthly_reports m ON s.id = m.student_id
-            WHERE s.status = 'Active' AND s.program_id = ? AND m.academic_year = ?
-            AND m.month = ? AND m.overall_average IS NOT NULL
-        """
-        raw_reports = db.execute(query, program_id, academic_year, timeframe)
-        timeframe_label = f"{timeframe} Report"
-
-    # 🚀 4. NEW: SUBJECT ANALYSIS ENGINE
-    report_ids = [r['report_id'] for r in raw_reports if r['report_id']]
-    grades_by_report = {}
-    
-    if report_ids:
-        placeholders = ','.join(['?'] * len(report_ids))
-        grades_raw = db.execute(f"""
-            SELECT g.report_id, g.score, g.max_score, COALESCE(s.name, g.custom_subject_name) as subject_name
-            FROM grades g
-            LEFT JOIN subjects s ON g.subject_id = s.id
-            WHERE g.report_id IN ({placeholders})
-        """, *report_ids)
-        
-        for g in grades_raw:
-            try:
-                score = float(g['score'])
-                max_score = float(g['max_score']) if g['max_score'] else 100.0
-                pct = (score / max_score) * 100
-                rid = g['report_id']
-                
-                if rid not in grades_by_report:
-                    grades_by_report[rid] = {'poor': [], 'good': []}
-                    
-                s_name = g['subject_name'] if g['subject_name'] else 'Unknown'
-                
-                # Flag failing subjects (< 50%) and excelling subjects (>= 80%)
-                if pct < 50:
-                    grades_by_report[rid]['poor'].append(s_name)
-                elif pct >= 80:
-                    grades_by_report[rid]['good'].append(s_name)
-            except (ValueError, TypeError):
-                pass
-
-    # 5. Tiering & Formatting Engine
-    critical = [] # < 50
-    at_risk = []  # 50 - 69.99
-    passing = []  # 70 - 100
-    
-    for r in raw_reports:
-        avg = float(r['overall_average'])
-        r['overall_average'] = round(avg, 1)
-        
-        # Attach Subject Analysis Strings
-        rid = r['report_id']
-        poor_list = grades_by_report.get(rid, {}).get('poor', [])
-        good_list = grades_by_report.get(rid, {}).get('good', [])
-        r['poor_str'] = ", ".join(poor_list) if poor_list else "None"
-        r['good_str'] = ", ".join(good_list) if good_list else "None"
-        r['poor_raw'] = poor_list
-        r['good_raw'] = good_list
-        
-        if avg < 50:
-            r['category'] = 'Critical'
-            r['badge'] = 'danger'
-            critical.append(r)
-        elif avg < 70:
-            r['category'] = 'At Risk'
-            r['badge'] = 'warning'
-            at_risk.append(r)
-        else:
-            r['category'] = 'On Track'
-            r['badge'] = 'success'
-            passing.append(r)
-            
-    # Sort worst to best for risks, best to worst for honors
-    critical.sort(key=lambda x: x['overall_average'])
-    at_risk.sort(key=lambda x: x['overall_average'])
-    passing.sort(key=lambda x: x['overall_average'], reverse=True)
-    
-    total_active_raw = db.execute("SELECT COUNT(id) as count FROM students WHERE status='Active' AND program_id = ?", program_id)
-    total_active = total_active_raw[0]['count'] if total_active_raw else 0
-    
-    return render_template("operations/academic_review.html",
-                           critical=critical, 
-                           at_risk=at_risk, 
-                           passing=passing,
-                           total_active=total_active,
-                           academic_year=academic_year,
-                           timeframe=timeframe,
-                           timeframe_label=timeframe_label,
-                           available_years=available_years,
-                           available_months=available_months)
-
-@app.route("/report_builder", methods=["GET"])
-@login_required
-@permission_required("can_export_data")  # Ensure only authorized people can pull massive stats
-def report_builder():
-    """Renders the UI to build the official monthly NGO report"""
-    return render_template("operations/report_builder.html")
-
-@app.route("/api/get_program_report", methods=["GET"])
-@login_required
-def get_program_report():
-    """API Endpoint to fetch a saved report draft"""
-    month = request.args.get("month")
-    year = request.args.get("year")
-    program_id = session.get("program_id")
-    
-    if not month or not year:
-         return jsonify({"success": False, "error": "Missing parameters"})
-         
-    try:
-        report = db.execute("SELECT achievements, goals, challenges FROM program_reports WHERE month = ? AND year = ? AND program_id = ?", month, year, program_id)
-        if report:
-            return jsonify({"success": True, "report": report[0]})
-        return jsonify({"success": False})
-    except Exception:
-        # Table doesn't exist yet, silently fail
-        return jsonify({"success": False})
-
-@app.route("/generate_monthly_report", methods=["POST"])
-@login_required
-def generate_monthly_report():
-    """Processes the form, calculates DB statistics, and generates the printable A4 report"""
-    
-    program_id = session.get("program_id")
-    month_name = request.form.get("report_month")
-    year = request.form.get("report_year")
-    achievements = request.form.get("achievements")
-    goals = request.form.get("goals")
-    challenges = request.form.get("challenges")
-    
-    # 1. Silently Save the Draft!
-    try:
-        # Check if table exists
-        cursor = sqlite3.connect("eep.db").cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS program_reports (id INTEGER PRIMARY KEY, program_id INTEGER, month TEXT, year TEXT, achievements TEXT, goals TEXT, challenges TEXT)")
-        
-        # Upsert logic
-        existing = db.execute("SELECT id FROM program_reports WHERE month = ? AND year = ? AND program_id = ?", month_name, year, program_id)
-        if existing:
-            db.execute("UPDATE program_reports SET achievements = ?, goals = ?, challenges = ? WHERE id = ?", achievements, goals, challenges, existing[0]['id'])
-        else:
-            db.execute("INSERT INTO program_reports (program_id, month, year, achievements, goals, challenges) VALUES (?, ?, ?, ?, ?, ?)", program_id, month_name, year, achievements, goals, challenges)
-    except Exception as e:
-        print(f"Error saving report draft: {e}")
-
-    # If this was an AJAX background save, return JSON success and stop processing the PDF
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({"success": True})
-        
-    # --- CONTINUE PDF GENERATION LOGIC ---
-    
-    khmer_months = {
-        "January": "មករា", "February": "កុម្ភៈ", "March": "មីនា", "April": "មេសា",
-        "May": "ឧសភា", "June": "មិថុនា", "July": "កក្កដា", "August": "សីហា",
-        "September": "កញ្ញា", "October": "តុលា", "November": "វិច្ឆិកា", "December": "ធ្នូ"
-    }
-    month_kh = khmer_months.get(month_name, month_name)
-
-    month_index = list(calendar.month_name).index(month_name)
-    month_num = str(month_index).zfill(2)
-    search_date_prefix = f"{year}-{month_num}"
-
-    new_kids = db.execute("""
-        SELECT first_name, last_name, khmer_name, gender, dob, grade_level, current_school 
-        FROM students 
-        WHERE strftime('%Y-%m', joined_date) = ? AND program_id = ?
-    """, search_date_prefix, program_id)
-
-    # Use try/except in case the program is entirely new and has no logs
-    try:
-        family_visits = db.execute("""
-            SELECT COUNT(f.id) as count FROM followups f
-            JOIN students s ON f.student_id = s.id
-            WHERE strftime('%Y-%m', f.followup_date) = ? AND f.location = 'Home Visit' AND s.program_id = ?
-        """, search_date_prefix, program_id)[0]['count']
-    except IndexError:
-        family_visits = 0
-
-    try:
-        meal_data = db.execute("""
-            SELECT COUNT(DISTINCT srv.student_id) as count FROM student_services srv
-            JOIN students s ON srv.student_id = s.id
-            WHERE strftime('%Y-%m', srv.service_date) = ? 
-            AND (srv.service_type = 'Monthly Groceries' OR srv.service_type = 'Missed Hot Lunch')
-            AND s.program_id = ?
-        """, search_date_prefix, program_id)[0]['count']
-    except IndexError:
-        meal_data = 0
-        
-    if meal_data == 0:
-        try:
-            meal_data = db.execute("SELECT COUNT(id) as count FROM students WHERE status='Active' AND meal_plan != 'None' AND meal_plan != '' AND program_id = ?", program_id)[0]['count']
-        except IndexError:
-            meal_data = 0
-
-    return render_template("print/monthly_report.html", 
-                           month=month_name, year=year, month_kh=month_kh,
-                           achievements=achievements, goals=goals, challenges=challenges,
-                           new_kids=new_kids, family_visits=family_visits, meal_count=meal_data)
 
 
 # ==============================================================================
 # NEIGHBORHOOD: STUDENT ROSTERS & PROFILES
 # ==============================================================================
-
 @app.route("/roster")
 @login_required
 def roster():
-    """Show the full active roster"""
     pid = session.get("program_id", 0)
     students = db.execute("SELECT * FROM students WHERE status != 'Dropped Out' AND status != 'Graduated' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
     return render_template("directory/roster.html", students=students, title="Active Roster")
@@ -1097,7 +742,6 @@ def roster():
 @app.route("/archive")
 @login_required
 def archive():
-    """Show dropped out / graduated students"""
     pid = session.get("program_id", 0)
     students = db.execute("SELECT * FROM students WHERE (status = 'Dropped Out' OR status = 'Graduated') AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
     return render_template("directory/roster.html", students=students, title="Archived Students")
@@ -1105,14 +749,12 @@ def archive():
 @app.route("/guide")
 @login_required
 def guide():
-    """Show the Beta Testing Instructions"""
     return render_template("dashboard/guide.html")
 
 @app.route("/add_student", methods=["GET", "POST"])
 @login_required
 @permission_required("can_create_profiles")
 def add_student():
-    """Add a new student to the database"""
     if request.method == "POST":
         ngo_id = request.form.get("ngo_id")
         status = request.form.get("status")
@@ -1141,12 +783,10 @@ def add_student():
 
         if not household_id:
             if guardian_name:
-                # Auto-create the household to prevent orphaned students!
                 db.execute("""
                     INSERT INTO households (guardian_name, phone_number, slum_area)
                     VALUES (?, ?, ?)
                 """, guardian_name, phone, slum)
-                # Grab the newly created ID
                 household_id = db.execute("SELECT id FROM households ORDER BY id DESC LIMIT 1")[0]['id']
             else:
                 household_id = None 
@@ -1189,7 +829,6 @@ def add_student():
 @login_required
 @permission_required("can_update_profiles")
 def edit_student(id):
-    """Edit an existing student's profile"""
     if request.method == "POST":
         ngo_id = request.form.get("ngo_id")
         status = request.form.get("status")
@@ -1272,11 +911,9 @@ def update_avatar(id):
 # ==============================================================================
 # NEIGHBORHOOD: HOUSEHOLDS
 # ==============================================================================
-
 @app.route("/manage_households", methods=["GET", "POST"])
 @login_required
 def manage_households():
-    """Enterprise view to manage all family units"""
     if request.method == "POST":
         action = request.form.get("action")
         
@@ -1340,7 +977,6 @@ def manage_households():
 @app.route("/household/<int:id>", methods=["GET", "POST"])
 @login_required
 def household_profile(id):
-    """Dedicated dashboard for a single family/household"""
     if request.method == "POST":
         action = request.form.get("action")
         
@@ -1399,11 +1035,9 @@ def household_profile(id):
 # ==============================================================================
 # NEIGHBORHOOD: STUDENT PROFILE (The Hub)
 # ==============================================================================
-
 @app.route("/student/<int:id>")
 @login_required
 def student_profile(id):
-    """Lightweight Hub for a student's profile."""
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
         return render_template("_layouts/apology.html", message="Student not found")
@@ -1423,7 +1057,6 @@ def student_profile(id):
             ORDER BY dob ASC
         """, student["household_id"], id)
 
-    # Snapshot queries - Lightning fast limit 1
     reports = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY academic_year DESC, id DESC LIMIT 1", id)
     followups = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC, id DESC LIMIT 1", id)
 
@@ -1434,12 +1067,9 @@ def student_profile(id):
                            reports=reports, 
                            followups=followups)
 
-# --- 🚀 NEW NATIVE SUB-PAGES FOR THE STUDENT HUB ---
-
 @app.route("/student/<int:id>/academics")
 @login_required
 def student_academics(id):
-    """Deep Dive: Academic History & Trajectory"""
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
         return render_template("_layouts/apology.html", message="Student not found")
@@ -1483,7 +1113,6 @@ def student_academics(id):
 @app.route("/student/<int:id>/timeline")
 @login_required
 def student_timeline(id):
-    """Deep Dive: Social Work & Notes Timeline"""
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
         return render_template("_layouts/apology.html", message="Student not found")
@@ -1495,7 +1124,6 @@ def student_timeline(id):
 @app.route("/student/<int:id>/files")
 @login_required
 def student_files(id):
-    """Deep Dive: Digital Documents"""
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
         return render_template("_layouts/apology.html", message="Student not found")
@@ -1510,7 +1138,6 @@ def student_files(id):
 @app.route("/student/<int:id>/finance")
 @login_required
 def student_finance(id):
-    """Deep Dive: Financial Ledger"""
     student_data = db.execute("SELECT * FROM students WHERE id = ?", id)
     if not student_data:
         return render_template("_layouts/apology.html", message="Student not found")
@@ -1528,390 +1155,8 @@ def student_finance(id):
 
 
 # ==============================================================================
-# NEIGHBORHOOD: ACADEMICS (MASTER GRADEBOOK, ADD/EDIT REPORTS)
-# ==============================================================================
-
-@app.route("/academics")
-@login_required
-def academics():
-    """Master Gradebook - Shows all students and all grades dynamically"""
-    pid = session.get("program_id", 0)
-    academic_records_raw = db.execute("""
-        SELECT r.*, s.first_name, s.last_name, s.ngo_id, s.khmer_name, s.gender, s.current_school, s.grade_level as student_grade
-        FROM monthly_reports r
-        JOIN students s ON r.student_id = s.id
-        WHERE s.status = 'Active' AND (s.program_id = ? OR ? = 0)
-        ORDER BY r.academic_year DESC, r.id DESC
-    """, pid, pid)
-
-    raw_grades = db.execute("""
-        SELECT g.*, COALESCE(subj.name, g.custom_subject_name) as subject_name,
-               COALESCE(subj.category, 'Custom') as category
-        FROM grades g
-        LEFT JOIN subjects subj ON g.subject_id = subj.id
-    """)
-
-    grades_by_report = {}
-    for g in raw_grades:
-        letter, box, text, badge = get_subject_grade_data(g['score'], g['max_score'])
-        g['grade_letter'] = letter
-        g['box_class'] = box
-        g['text_class'] = text
-        g['badge_class'] = badge
-
-        rep_id = g['report_id']
-        if rep_id not in grades_by_report:
-            grades_by_report[rep_id] = []
-        grades_by_report[rep_id].append(g)
-
-    for record in academic_records_raw:
-        record['subjects'] = grades_by_report.get(record['id'], [])
-        if not record['grade_level']:
-            record['grade_level'] = record['student_grade']
-
-    active_students = db.execute("SELECT id, first_name, last_name, ngo_id, profile_picture, grade_level FROM students WHERE status = 'Active' AND (program_id = ? OR ? = 0) ORDER BY first_name", pid, pid)
-
-    # 🚀 NEW: MISSING DATA AUDIT ENGINE
-    today = datetime.now()
-    first_of_this_month = today.replace(day=1)
-    last_month_date = first_of_this_month - timedelta(days=1)
-    last_month_name = last_month_date.strftime('%B')
-
-    sys_raw = db.execute("SELECT value FROM system_settings WHERE key = 'current_academic_year'")
-    current_year_default = sys_raw[0]['value'] if sys_raw else "2025-2026"
-
-    missing_audit = db.execute("""
-        SELECT id, first_name, last_name, ngo_id, profile_picture, grade_level
-        FROM students
-        WHERE status = 'Active' AND (program_id = ? OR ? = 0)
-        AND grade_level NOT LIKE '%University%'
-        AND grade_level NOT LIKE '%Vocational%'
-        AND id NOT IN (
-            SELECT student_id FROM monthly_reports
-            WHERE month = ? AND academic_year = ?
-        )
-        ORDER BY first_name ASC
-    """, pid, pid, last_month_name, current_year_default)
-
-    return render_template("academics/academics.html", 
-                           academic_records=academic_records_raw, 
-                           active_students=active_students,
-                           missing_audit=missing_audit,
-                           audit_month=last_month_name,
-                           audit_year=current_year_default)
-
-@app.route("/add_report/<int:student_id>", methods=["GET", "POST"])
-@login_required
-@permission_required("can_create_academics")
-def add_report(student_id):
-    """Add a monthly academic report for a student"""
-    if request.method == "POST":
-        month = request.form.get("month")
-        semester = request.form.get("semester")
-        academic_year = request.form.get("academic_year")
-        grade_level = request.form.get("grade_level")
-        school_name = request.form.get("school_name")
-        class_rank = request.form.get("class_rank")
-        teacher_comment = request.form.get("teacher_comment")
-        attendance_days = request.form.get("attendance_days")
-        source_url = request.form.get("source_url")
-
-        if source_url == "None" or not source_url:
-            source_url = None
-
-        if not month or not academic_year:
-            return render_template("_layouts/apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
-
-        existing_report = db.execute("""
-            SELECT id FROM monthly_reports
-            WHERE student_id = ? AND month = ? AND academic_year = ? AND IFNULL(semester, '') = IFNULL(?, '')
-        """, student_id, month, academic_year, semester)
-
-        if existing_report:
-            return render_template("_layouts/apology.html", message=f"A {semester if semester else 'Regular'} report for {month} {academic_year} already exists! Please use your browser's BACK arrow to return to the form.")
-
-        file = request.files.get('scanned_document')
-        scanned_filename, _ = handle_file_upload(file, student_id, "report", app.config['UPLOAD_FOLDER'])
-
-        report_id = db.execute("""
-            INSERT INTO monthly_reports (student_id, month, academic_year, semester, class_rank, teacher_comment, attendance_days, scanned_document, grade_level, school_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, student_id, month, academic_year, semester, class_rank, teacher_comment, attendance_days, scanned_filename, grade_level, school_name)
-
-        subjects = db.execute("SELECT * FROM subjects")
-        calculated_total = 0.0
-        calculated_max = 0.0
-        has_numeric = False
-        missing_max = False
-
-        # 1. PROCESS STANDARD SUBJECTS
-        for subject in subjects:
-            sub_id = subject['id']
-            score = request.form.get(f"score_{sub_id}")
-            max_score = request.form.get(f"max_score_{sub_id}")
-
-            if score:
-                db.execute("INSERT INTO grades (report_id, subject_id, score, max_score) VALUES (?, ?, ?, ?)",
-                           report_id, sub_id, score, max_score)
-                try:
-                    calculated_total += float(score)
-                    if max_score and str(max_score).strip() != "":
-                        calculated_max += float(max_score)
-                    else:
-                        missing_max = True
-                    has_numeric = True
-                except ValueError:
-                    pass
-
-        # 2. 🚀 PROCESS DYNAMIC CUSTOM SUBJECTS (Using getlist)
-        custom_names = request.form.getlist("custom_subject_name[]")
-        custom_scores = request.form.getlist("custom_score[]")
-        custom_maxes = request.form.getlist("custom_max_score[]")
-
-        # Loop through however many custom subjects the teacher added
-        for i in range(len(custom_scores)):
-            c_score = custom_scores[i]
-            c_name = custom_names[i] if i < len(custom_names) else "Custom Subject"
-            c_max = custom_maxes[i] if i < len(custom_maxes) else "100"
-
-            if c_score and str(c_score).strip() != "":
-                db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
-                           report_id, c_score, c_max, c_name)
-                try:
-                    calculated_total += float(c_score)
-                    if c_max and str(c_max).strip() != "":
-                        calculated_max += float(c_max)
-                    else:
-                        missing_max = True
-                    has_numeric = True
-                except ValueError:
-                    pass
-
-        # 3. CALCULATE FINALS
-        calculated_avg, calculated_grade = calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max)
-
-        manual_total = request.form.get("manual_total_score")
-        manual_average = request.form.get("manual_average")
-        manual_grade = request.form.get("manual_grade")
-
-        try:
-            final_total = float(manual_total) if manual_total and str(manual_total).strip() != "" else (calculated_total if has_numeric else None)
-        except ValueError:
-            final_total = calculated_total if has_numeric else None
-
-        try:
-            final_avg = float(manual_average) if manual_average and str(manual_average).strip() != "" else calculated_avg
-        except ValueError:
-            final_avg = calculated_avg
-
-        final_grade = str(manual_grade).strip() if manual_grade and str(manual_grade).strip() != "" else calculated_grade
-
-        db.execute("""
-            UPDATE monthly_reports
-            SET total_score = ?, overall_average = ?, overall_grade = ?
-            WHERE id = ?
-        """, final_total, final_avg, final_grade, report_id)
-
-        log_action(f"Added academic report for Student ID: {student_id}")
-        flash("Academic report successfully recorded!", "success")
-        return redirect(source_url) if source_url else redirect(f"/student/{student_id}")
-
-    student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
-    subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
-    return render_template("academics/add_report.html", student=student, subjects=subjects)
-
-@app.route("/edit_report/<int:report_id>", methods=["GET", "POST"])
-@login_required
-@permission_required("can_update_academics")
-def edit_report(report_id):
-    """Edit an existing monthly academic report"""
-    # Verify the report exists
-    report_data = db.execute("SELECT * FROM monthly_reports WHERE id = ?", report_id)
-    if not report_data:
-        flash("Error: Academic report not found.", "danger")
-        return redirect(request.referrer or "/roster")
-    
-    report = report_data[0]
-    student_id = report['student_id']
-
-    if request.method == "POST":
-        month = request.form.get("month")
-        semester = request.form.get("semester")
-        academic_year = request.form.get("academic_year")
-        grade_level = request.form.get("grade_level")
-        school_name = request.form.get("school_name")
-        class_rank = request.form.get("class_rank")
-        teacher_comment = request.form.get("teacher_comment")
-        attendance_days = request.form.get("attendance_days")
-        source_url = request.form.get("source_url")
-
-        if source_url == "None" or not source_url:
-            source_url = None
-
-        if not month or not academic_year:
-            return render_template("_layouts/apology.html", message="Report Month and Academic Year are required. Please use your browser's BACK arrow to return to the form without losing your typed grades.")
-
-        # Prevent duplicate reports (excluding this specific report ID)
-        existing_report = db.execute("""
-            SELECT id FROM monthly_reports
-            WHERE student_id = ? AND month = ? AND academic_year = ? AND IFNULL(semester, '') = IFNULL(?, '') AND id != ?
-        """, student_id, month, academic_year, semester, report_id)
-
-        if existing_report:
-            return render_template("_layouts/apology.html", message=f"A {semester if semester else 'Regular'} report for {month} {academic_year} already exists! Please use your browser's BACK arrow to return to the form.")
-
-        # Handle File Replacement (Optional)
-        file = request.files.get('scanned_document')
-        if file and file.filename != '':
-            scanned_filename, _ = handle_file_upload(file, student_id, "report", app.config['UPLOAD_FOLDER'])
-            db.execute("UPDATE monthly_reports SET scanned_document = ? WHERE id = ?", scanned_filename, report_id)
-
-        db.execute("""
-            UPDATE monthly_reports 
-            SET month = ?, academic_year = ?, semester = ?, class_rank = ?, teacher_comment = ?, attendance_days = ?, grade_level = ?, school_name = ?
-            WHERE id = ?
-        """, month, academic_year, semester, class_rank, teacher_comment, attendance_days, grade_level, school_name, report_id)
-
-        subjects = db.execute("SELECT * FROM subjects")
-        calculated_total = 0.0
-        calculated_max = 0.0
-        has_numeric = False
-        missing_max = False
-
-        # 1. PROCESS STANDARD SUBJECTS (Update existing or Insert new)
-        for subject in subjects:
-            sub_id = subject['id']
-            score = request.form.get(f"score_{sub_id}")
-            max_score = request.form.get(f"max_score_{sub_id}")
-
-            if score and str(score).strip() != "":
-                # Check if grade already exists for this subject
-                existing_grade = db.execute("SELECT id FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
-                
-                if existing_grade:
-                    db.execute("UPDATE grades SET score = ?, max_score = ? WHERE report_id = ? AND subject_id = ?", 
-                               score, max_score, report_id, sub_id)
-                else:
-                    db.execute("INSERT INTO grades (report_id, subject_id, score, max_score) VALUES (?, ?, ?, ?)",
-                               report_id, sub_id, score, max_score)
-                               
-                try:
-                    calculated_total += float(score)
-                    if max_score and str(max_score).strip() != "":
-                        calculated_max += float(max_score)
-                    else:
-                        missing_max = True
-                    has_numeric = True
-                except ValueError:
-                    pass
-            else:
-                # If the score was cleared out, delete the record from the db
-                db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = ?", report_id, sub_id)
-
-        # 2. 🚀 PROCESS DYNAMIC CUSTOM SUBJECTS (Wipe and Replace)
-        # Because arrays can change dynamically, it's safest to delete all custom subjects and re-insert
-        db.execute("DELETE FROM grades WHERE report_id = ? AND subject_id = 0", report_id)
-
-        custom_names = request.form.getlist("custom_subject_name[]")
-        custom_scores = request.form.getlist("custom_score[]")
-        custom_maxes = request.form.getlist("custom_max_score[]")
-
-        for i in range(len(custom_scores)):
-            c_score = custom_scores[i]
-            c_name = custom_names[i] if i < len(custom_names) else "Custom Subject"
-            c_max = custom_maxes[i] if i < len(custom_maxes) else "100"
-
-            if c_score and str(c_score).strip() != "":
-                db.execute("INSERT INTO grades (report_id, subject_id, score, max_score, custom_subject_name) VALUES (?, 0, ?, ?, ?)",
-                           report_id, c_score, c_max, c_name)
-                try:
-                    calculated_total += float(c_score)
-                    if c_max and str(c_max).strip() != "":
-                        calculated_max += float(c_max)
-                    else:
-                        missing_max = True
-                    has_numeric = True
-                except ValueError:
-                    pass
-
-        # 3. CALCULATE FINALS
-        calculated_avg, calculated_grade = calculate_gpa(calculated_total, calculated_max, has_numeric, missing_max)
-
-        manual_total = request.form.get("manual_total_score")
-        manual_average = request.form.get("manual_average")
-        manual_grade = request.form.get("manual_grade")
-
-        try:
-            final_total = float(manual_total) if manual_total and str(manual_total).strip() != "" else (calculated_total if has_numeric else None)
-        except ValueError:
-            final_total = calculated_total if has_numeric else None
-
-        try:
-            final_avg = float(manual_average) if manual_average and str(manual_average).strip() != "" else calculated_avg
-        except ValueError:
-            final_avg = calculated_avg
-
-        final_grade = str(manual_grade).strip() if manual_grade and str(manual_grade).strip() != "" else calculated_grade
-
-        db.execute("""
-            UPDATE monthly_reports
-            SET total_score = ?, overall_average = ?, overall_grade = ?
-            WHERE id = ?
-        """, final_total, final_avg, final_grade, report_id)
-
-        log_action(f"Updated academic report for Student ID: {student_id}")
-        flash("Academic report successfully updated!", "success")
-        return redirect(source_url) if source_url else redirect(f"/student/{student_id}")
-
-    # --- GET REQUEST (Load existing data for form) ---
-    student = db.execute("SELECT * FROM students WHERE id = ?", student_id)[0]
-    subjects = db.execute("SELECT * FROM subjects ORDER BY category ASC, sort_order ASC, name ASC")
-    
-    # Fetch all grades for this report
-    grades_raw = db.execute("SELECT * FROM grades WHERE report_id = ?", report_id)
-    
-    # 🚀 Map Standard Grades by subject_id
-    existing_grades = {g['subject_id']: g for g in grades_raw if g['subject_id'] != 0}
-    
-    # 🚀 Extract Custom Grades as a list
-    custom_grades = [g for g in grades_raw if g['subject_id'] == 0]
-
-    return render_template("academics/edit_report.html", 
-                           student=student, 
-                           report=report, 
-                           subjects=subjects, 
-                           existing_grades=existing_grades,
-                           custom_grades=custom_grades)
-
-@app.route("/delete_report/<int:report_id>", methods=["POST"])
-@login_required
-@permission_required("can_delete_academics")
-def delete_report(report_id):
-    report = db.execute("SELECT student_id, scanned_document FROM monthly_reports WHERE id = ?", report_id)
-    if not report:
-        flash("Report not found.", "danger")
-        return redirect(request.referrer or "/")
-
-    student_id = report[0]["student_id"]
-    scanned_doc = report[0]["scanned_document"]
-
-    if scanned_doc:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], scanned_doc)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    db.execute("DELETE FROM grades WHERE report_id = ?", report_id)
-    db.execute("DELETE FROM monthly_reports WHERE id = ?", report_id)
-
-    log_action(f"DELETED academic report #{report_id} for Student ID: {student_id}")
-    flash("Academic record deleted successfully.", "success")
-    return redirect(request.referrer or f"/student/{student_id}")
-
-
-# ==============================================================================
 # NEIGHBORHOOD: SOCIAL WORK & FOLLOW-UPS
 # ==============================================================================
-
 @app.route("/add_followup/<int:student_id>", methods=["GET", "POST"])
 @login_required
 @permission_required("can_create_followups")
@@ -1963,11 +1208,9 @@ def add_followup(student_id):
     last_followup_query = db.execute("SELECT * FROM followups WHERE student_id = ? ORDER BY followup_date DESC LIMIT 1", student_id)
     last_followup = last_followup_query[0] if last_followup_query else None
 
-    # 1. Fetch the latest academic report for the student
     latest_report_query = db.execute("SELECT * FROM monthly_reports WHERE student_id = ? ORDER BY id DESC LIMIT 1", student_id)
     latest_academic_report = latest_report_query[0] if latest_report_query else None
 
-    # 2. Fetch failing subjects (Score < 50)
     failing_subjects = []
     if latest_academic_report:
         grades = db.execute("""
@@ -1979,7 +1222,6 @@ def add_followup(student_id):
         
         for g in grades:
             try:
-                # Assumes your grades are numeric, but avoids crashing on "Pass"/"A"
                 if float(g['score']) < 50:
                     failing_subjects.append(g)
             except ValueError:
@@ -2042,42 +1284,28 @@ def edit_followup(followup_id):
 @login_required
 @permission_required("can_manage_followups")
 def print_followup(followup_id):
-    """Renders a clean, printer-friendly version of a specific follow-up report."""
-    
-    # 1. Fetch the specific followup
     followup_data = db.execute("SELECT * FROM followups WHERE id = ?", followup_id)
     if not followup_data:
         flash("Record not found.", "danger")
         return redirect(request.referrer or "/")
     followup = followup_data[0]
 
-    # 2. Fetch the associated student
     student_data = db.execute("SELECT * FROM students WHERE id = ?", followup['student_id'])
     student = student_data[0] if student_data else None
 
-    # Render the print template
     return render_template("print/followup.html", followup=followup, student=student)
 
 @app.route("/print/blank_followup")
 @login_required
 def print_blank_followup():
-    """Provides a blank, printable PDF/A4 template for field workers."""
     return render_template("print/blank_followup.html")
 
-# =========================================================
-# BULK OPERATIONS ENGINE
-# =========================================================
 @app.route("/bulk_followup", methods=["GET", "POST"])
 @login_required
 @permission_required("can_create_followups")
 def bulk_followup():
-    """Log a single follow-up note for multiple students at once"""
     if request.method == "POST":
-        
-        # 1. Identity
         student_ids = request.form.getlist("student_ids")
-
-        # 2. Logistics
         followup_date = request.form.get("followup_date")
         completed_by = request.form.get("completed_by")
         location = request.form.get("location")
@@ -2090,11 +1318,9 @@ def bulk_followup():
             flash("Date and Completed By are required.", "danger")
             return redirect("/roster?mode=bulk")
 
-        # 3. Check Task Toggles
         is_sponsor_update = request.form.get("is_sponsor_update") == "on"
         is_master_update = request.form.get("is_master_update") == "on"
 
-        # 4. Extract Sponsor Letter Data
         letter_quarter = request.form.get("letter_quarter") if is_sponsor_update else None
         letter_year = request.form.get("letter_year") if is_sponsor_update else None
         letter_given = request.form.get("letter_given") if is_sponsor_update else None
@@ -2103,11 +1329,9 @@ def bulk_followup():
         letter_sent = request.form.get("letter_sent") if is_sponsor_update else None
         letter_notes = request.form.get("letter_notes") if is_sponsor_update else None
 
-        # 5. Extract Permanent Master Data
         home_life = request.form.get("home_life") if is_master_update else None
         church_attendance = request.form.get("church_attendance") if is_master_update else None
         
-        # Smart Map: Mother & Father Working dropdowns seamlessly inject into working notes
         parent_working_notes = request.form.get("parent_working_notes", "") if is_master_update else ""
         if is_master_update:
             mother_working = request.form.get("mother_working")
@@ -2120,7 +1344,6 @@ def bulk_followup():
         risk_factors = ", ".join(risk_factors_list) if risk_factors_list else None
         risk_details = request.form.get("risk_details") if is_master_update else None
 
-        # 6. Extract Standard Followup Data (Monthly Pulse)
         physical_health = request.form.get("physical_health")
         physical_health_detail = request.form.get("physical_health_detail")
         social_interaction = request.form.get("social_interaction")
@@ -2132,16 +1355,13 @@ def bulk_followup():
         evidence_drugs_violence = request.form.get("evidence_drugs_violence")
         risk_level = request.form.get("risk_level")
 
-        # 7. Narrative & Protection
         general_notes = request.form.get("general_notes")
         child_protection_concerns = request.form.get("child_protection_concerns")
         trafficking_risk = request.form.get("trafficking_risk")
         staff_notes = request.form.get("staff_notes")
 
-        # System Alert Flag
         alert_status = 'Active' if child_protection_concerns and child_protection_concerns.strip() else None
 
-        # 8. Loop execution
         for sid in student_ids:
             db.execute("""
                 INSERT INTO followups (
@@ -2164,12 +1384,10 @@ def bulk_followup():
         return redirect("/roster")
 
     else:
-        # === GET REQUEST LOGIC (Triggered directly from the Roster Action Bar) ===
         student_ids = request.args.getlist("student_ids")
         
         selected_students = []
         if student_ids:
-            # Create dynamic IN clause (?,?,?) safely
             placeholders = ','.join('?' * len(student_ids))
             query = f"SELECT id, first_name, last_name, ngo_id FROM students WHERE id IN ({placeholders})"
             selected_students = db.execute(query, *student_ids)
@@ -2179,12 +1397,9 @@ def bulk_followup():
 @app.route("/print_bulk_followups", methods=["GET", "POST"])
 @login_required
 def print_bulk_followups():
-    """Generates pre-filled blank forms for selected students from the Roster."""
-    # 🚀 FIX: Use request.values to catch IDs whether they come from GET or POST
     student_ids = request.values.getlist("student_ids")
     
     if not student_ids:
-        # Fallback to generating 1 blank form if no IDs are passed
         return render_template("print/blank_followup.html", students=[])
         
     placeholders = ','.join('?' for _ in student_ids)
@@ -2199,15 +1414,10 @@ def print_bulk_followups():
     
     return render_template("print/blank_followup.html", students=students)
 
-# =========================================================
-# SPONSOR LETTER MATRIX (AJAX SPREADSHEET)
-# =========================================================
 @app.route("/letters", methods=["GET"])
 @login_required
 @permission_required("can_manage_followups")
 def letter_matrix():
-    """Spreadsheet-style tracking for Sponsor Letters"""
-    # Auto-calculate current quarter
     current_month = datetime.now().month
     current_year = datetime.now().year
     
@@ -2219,7 +1429,6 @@ def letter_matrix():
     selected_q = request.args.get("quarter", default_q)
     selected_y = request.args.get("year", str(current_year))
     
-    # Fetch active students and LEFT JOIN their LATEST letter record for this exact Quarter/Year
     query = """
         SELECT s.id, s.first_name, s.last_name, s.ngo_id, s.profile_picture,
                f.id as letter_id, f.letter_given, f.letter_translated, f.letter_scanned, f.letter_sent, f.letter_notes
@@ -2235,7 +1444,6 @@ def letter_matrix():
     """
     students_letters = db.execute(query, selected_q, selected_y)
     
-    # Calculate quick stats
     total = len(students_letters)
     sent_count = sum(1 for s in students_letters if s["letter_sent"] == "Yes")
     
@@ -2249,7 +1457,6 @@ def letter_matrix():
 @app.route("/api/update_letter", methods=["POST"])
 @login_required
 def api_update_letter():
-    """AJAX endpoint for the Letter Matrix auto-save"""
     data = request.get_json()
     student_id = data.get("student_id")
     quarter = data.get("quarter")
@@ -2261,7 +1468,6 @@ def api_update_letter():
     if field not in valid_fields:
         return jsonify({"success": False, "error": "Invalid security field"}), 400
         
-    # Find if an entry already exists for this quarter
     existing = db.execute("""
         SELECT id FROM followups 
         WHERE student_id = ? AND location = 'Sponsor Letter Update' AND letter_quarter = ? AND letter_year = ?
@@ -2269,11 +1475,9 @@ def api_update_letter():
     """, student_id, quarter, year)
     
     if existing:
-        # Update existing record
         record_id = existing[0]["id"]
         db.execute(f"UPDATE followups SET {field} = ? WHERE id = ?", value, record_id)
     else:
-        # Create a new pristine record just for this letter lifecycle
         today = datetime.now().strftime('%Y-%m-%d')
         staff_name = session.get("name", session.get("username", "Staff"))
         db.execute(f"""
@@ -2289,7 +1493,6 @@ def api_update_letter():
 @login_required
 @permission_required("can_update_followups")
 def resolve_alert(followup_id):
-    """Mark a protection alert as resolved"""
     db.execute("UPDATE followups SET alert_status = 'Resolved' WHERE id = ?", followup_id)
     log_action(f"Resolved Risk Alert from Follow-up #{followup_id}")
     flash("Alert marked as resolved!", "success")
@@ -2299,16 +1502,13 @@ def resolve_alert(followup_id):
 @login_required
 @admin_required
 def delete_followup(followup_id):
-    """Permanently deletes a social work follow-up note (Admins Only)"""
     followup = db.execute("SELECT student_id FROM followups WHERE id = ?", followup_id)
     if not followup:
         flash("Follow-up note not found.", "danger")
         return redirect(request.referrer or "/")
 
     student_id = followup[0]["student_id"]
-    
     db.execute("DELETE FROM followups WHERE id = ?", followup_id)
-    
     log_action(f"DELETED Social Work Follow-Up #{followup_id} for Student ID: {student_id}")
     flash("Follow-up note permanently deleted.", "success")
     return redirect(f"/student/{student_id}/timeline")
@@ -2317,7 +1517,6 @@ def delete_followup(followup_id):
 # ==============================================================================
 # NEIGHBORHOOD: FILES & FUNDS
 # ==============================================================================
-
 @app.route('/upload_document/<int:student_id>', methods=['POST'])
 @login_required
 @permission_required("can_create_files")
@@ -2382,11 +1581,9 @@ def log_expense(student_id):
 # ==============================================================================
 # NEIGHBORHOOD: SERVICES, ACTIVITIES & CALENDAR
 # ==============================================================================
-
 @app.route("/log_services", methods=["GET", "POST"])
 @login_required
 def log_services():
-    """Log meals, supplies, or absences for multiple students at once"""
     if request.method == "POST":
         service_date = request.form.get("service_date")
         service_type = request.form.get("service_type")
@@ -2401,7 +1598,6 @@ def log_services():
             flash("Service Date and Type are required.", "danger")
             return redirect("/roster?mode=bulk")
 
-        # Save the logs to the database
         for sid in student_ids:
             db.execute("""
                 INSERT INTO student_services (student_id, service_date, service_type, notes)
@@ -2413,14 +1609,11 @@ def log_services():
         return redirect("/dashboard")
 
     else:
-        # GET REQUEST: Catch the student IDs from the Roster's multi-select URL arguments
         student_ids = request.args.getlist("student_ids")
         
         selected_students = []
         if student_ids:
-            # Dynamically create the placeholders (?,?,?) based on how many kids were selected
             placeholders = ','.join('?' * len(student_ids))
-            # Include meal_plan so the template can show the indicator badges
             query = f"SELECT id, first_name, last_name, ngo_id, meal_plan FROM students WHERE id IN ({placeholders})"
             selected_students = db.execute(query, *student_ids)
 
@@ -2462,10 +1655,8 @@ def setup_calendar():
 @app.route("/calendar")
 @login_required
 def field_calendar():
-    """Main view for the Field Calendar"""
     pid = session.get("program_id", 0)
     
-    # 1. Fetch active students for the 'Relate to Student' dropdown
     students = db.execute("""
         SELECT id, first_name, last_name, ngo_id 
         FROM students 
@@ -2473,9 +1664,6 @@ def field_calendar():
         ORDER BY first_name ASC
     """, pid, pid)
     
-    # 2. Fetch Pending Tasks for the Sidebar
-    # LOGIC: Show (My Personal Tasks) OR (Any Team Tasks in my Program)
-    # Join with staff to get the 'creator_name'
     pending_tasks = db.execute("""
         SELECT t.*, s.first_name, s.last_name, st.username AS creator_name
         FROM tasks t 
@@ -2492,11 +1680,9 @@ def field_calendar():
 @app.route("/api/tasks")
 @login_required
 def api_tasks():
-    """JSON Feed for FullCalendar grid"""
     view_mode = request.args.get("view", "my")
     pid = session.get("program_id", 0)
     
-    # Filter query based on 'My Schedule' vs 'Team View' toggle
     if view_mode == "team":
         tasks = db.execute("""
             SELECT t.*, st.username AS creator_name 
@@ -2515,12 +1701,11 @@ def api_tasks():
         
     events = []
     for t in tasks:
-        # Determine Color Logic
-        color = "#0d6efd" # Default Blue
-        if t["status"] == "Holiday": color = "#ffc107" # Yellow
-        elif t["status"] == "Completed": color = "#198754" # Green
-        elif t["priority"] == "High": color = "#dc3545" # Red
-        elif t["priority"] == "Low": color = "#6c757d" # Gray
+        color = "#0d6efd" 
+        if t["status"] == "Holiday": color = "#ffc107" 
+        elif t["status"] == "Completed": color = "#198754" 
+        elif t["priority"] == "High": color = "#dc3545" 
+        elif t["priority"] == "Low": color = "#6c757d" 
 
         events.append({
             "id": t["id"],
@@ -2541,15 +1726,13 @@ def api_tasks():
 @app.route("/add_task", methods=["POST"])
 @login_required
 def add_task():
-    """Handles both single tasks and holiday date ranges"""
     title = request.form.get("title")
-    due_date = request.form.get("due_date") # This is Start Date
-    end_date = request.form.get("end_date") # For holidays
+    due_date = request.form.get("due_date") 
+    end_date = request.form.get("end_date") 
     description = request.form.get("description")
     priority = request.form.get("priority")
     student_id = request.form.get("student_id")
     
-    # 1. Clean data
     if not student_id or student_id == "None": student_id = None
     is_team_task = 1 if request.form.get("is_team_task") == "1" else 0
     is_holiday = request.form.get("is_holiday") == "1"
@@ -2561,13 +1744,10 @@ def add_task():
     pid = session.get("program_id", 1)
     if pid == 0: pid = 1 
     
-    # Holidays do not appear in to-do lists
     status = 'Holiday' if is_holiday else 'Pending'
     
-    # 2. HOLIDAY RANGE LOGIC: Loop through dates
     if is_holiday and end_date and end_date != due_date:
         try:
-            # Strip time if present to get pure dates
             start_str = due_date.split('T')[0]
             end_str = end_date.split('T')[0]
             
@@ -2587,7 +1767,6 @@ def add_task():
         except Exception as e:
             flash(f"Error processing range: {e}", "danger")
     else:
-        # 3. SINGLE TASK LOGIC
         db.execute("""
             INSERT INTO tasks (title, description, due_date, priority, status, student_id, staff_id, program_id, is_team_task) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -2601,14 +1780,12 @@ def add_task():
 @app.route("/edit_task", methods=["POST"])
 @login_required
 def edit_task():
-    """Handles updating existing task details"""
     task_id = request.form.get("task_id")
     title = request.form.get("title")
     due_date = request.form.get("due_date")
     description = request.form.get("description")
     priority = request.form.get("priority")
     
-    # Permission Check: Ensure the user owns the task or is Admin
     task = db.execute("SELECT staff_id FROM tasks WHERE id = ?", task_id)
     if not task:
         flash("Task not found.", "danger")
@@ -2657,20 +1834,15 @@ def delete_task(task_id):
 # ==============================================================================
 # NEIGHBORHOOD: SETTINGS, EXPORTS & UTILITIES
 # ==============================================================================
-
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 @admin_required
 def settings():
-    """Master Control Panel for the NGO"""
-    
-    # 1. LOCALIZATION SETUP
     translation_file = os.path.join(app.root_path, 'translations.json')
     if not os.path.exists(translation_file):
         with open(translation_file, 'w', encoding='utf-8') as f:
             json.dump({}, f)
 
-    # 2. DYNAMIC PERMISSIONS SETUP (WITH AUTO-HEALER FOR CRUD UPGRADE)
     db.execute("""
         CREATE TABLE IF NOT EXISTS role_permissions (
             role TEXT PRIMARY KEY,
@@ -2682,7 +1854,6 @@ def settings():
         )
     """)
     
-    # Auto-Healer: Add CRUD Columns if they don't exist
     try:
         db.execute("SELECT can_create_academics FROM role_permissions LIMIT 1")
     except Exception:
@@ -2699,7 +1870,6 @@ def settings():
             except Exception:
                 pass
         
-        # Migrate old coarse settings to granular
         db.execute("UPDATE role_permissions SET can_create_profiles = can_edit_profiles, can_update_profiles = can_edit_profiles")
         db.execute("UPDATE role_permissions SET can_create_academics = can_manage_academics, can_update_academics = can_manage_academics")
         db.execute("UPDATE role_permissions SET can_create_followups = can_manage_followups, can_update_followups = can_manage_followups")
@@ -2720,7 +1890,6 @@ def settings():
     if request.method == "POST":
         action = request.form.get("action")
         
-        # SUBJECTS
         if action == "add_subject":
             new_subject = request.form.get("new_subject")
             category = request.form.get("category", "General") 
@@ -2755,7 +1924,6 @@ def settings():
                 log_action(f"Deleted Subject: {sub_name}")
                 flash(f"Subject '{sub_name}' permanently deleted.", "success")
                 
-        # PROGRAMS
         elif action == "add_program":
             name = request.form.get("program_name")
             icon = request.form.get("program_icon", "bi-circle")
@@ -2783,9 +1951,7 @@ def settings():
                     log_action("Deleted an NGO Program")
                     flash("Program successfully deleted.", "success")
 
-        # SYSTEM
         elif action == "update_system":
-            # DYNAMIC KEY-VALUE STORE: Upsert ANY form field sent from the System tab
             for key, value in request.form.items():
                 if key != "action" and value and value.strip():
                     existing = db.execute("SELECT key FROM system_settings WHERE key = ?", key)
@@ -2796,7 +1962,6 @@ def settings():
             log_action("Updated Global System Configurations")
             flash("System variables updated successfully!", "success")
 
-        # LOCALIZATION
         elif action == "add_translation":
             new_key = request.form.get("new_key", "").strip()
             new_en = request.form.get("new_en", "").strip()
@@ -2821,7 +1986,6 @@ def settings():
                     json.dump(translations, f, ensure_ascii=False, indent=4)
                 flash(f"Deleted translation key '{del_key}'.", "success")
 
-        # DYNAMIC PERMISSIONS (CRUD UPDATE)
         elif action == "update_permissions":
             roles = ["Admin", "Director", "Program Manager", "Field Officer", "Teacher"]
             for r in roles:
@@ -2921,6 +2085,10 @@ def sw():
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('static', 'manifest.json', mimetype='application/manifest+json')
+
+# REGISTER BLUEPRINTS
+from routes_academic import academic_bp
+app.register_blueprint(academic_bp)
 
 if __name__ == "__main__":
     app.run(debug=True)
